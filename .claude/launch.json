@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "foody",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["foody/server.js"],
+      "port": 3000
+    }
+  ]
+}

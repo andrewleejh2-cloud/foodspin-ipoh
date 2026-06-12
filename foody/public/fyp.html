@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FYP · Foody</title>
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-fyp">
+
+  <!-- 顶栏 -->
+  <header class="fyp-top">
+    <a class="brand" href="index.html"><img src="img/logo.svg" alt=""><span>Foody</span></a>
+    <select class="chip" id="stateFilter" data-i18n-title="allRegions"></select>
+    <button class="chip" id="savedFilter" hidden>⭐ <span data-i18n="savedFilter"></span></button>
+    <button class="chip filter-chip" id="filterChip" hidden></button>
+    <div class="spacer"></div>
+    <button class="chip icon-chip" id="searchBtn" data-i18n-title="search"></button>
+    <button class="chip icon-chip" id="settingsBtn" data-i18n-title="playerSettings"></button>
+    <button class="chip icon-chip" id="langBtn" title="Language"></button>
+    <button class="chip" id="userChip"></button>
+  </header>
+
+  <!-- 桌面版发布按钮（顶部）；手机版圆形按钮（底部） -->
+  <button class="btn fab fab-desktop" id="uploadBtnTop" style="display:none"></button>
+  <button class="fab fab-mobile" id="uploadBtnFab" data-i18n-title="tapToPost"></button>
+
+  <!-- Feed -->
+  <main class="feed" id="feed"></main>
+
+  <!-- 帖子模板 -->
+  <template id="tplSlide">
+    <section class="slide">
+      <div class="media-wrap">
+        <div class="media-bg"></div>
+        <!-- media (img/video) 由 JS 插入 -->
+        <div class="play-badge"></div>
+        <button class="sound-hint"></button>
+        <div class="slide-info">
+          <div class="author"></div>
+          <div class="meta-row">
+            <span class="region-pill"></span>
+            <span class="ago"></span>
+          </div>
+          <p class="caption"></p>
+        </div>
+      </div>
+      <aside class="rail">
+        <div class="avatar"></div>
+        <button class="rail-btn like"><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn cmt"><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn sav"><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn wa"><span class="ic"></span><span class="cnt">WhatsApp</span></button>
+        <button class="rail-btn mut"><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn del" hidden><span class="ic"></span><span class="cnt"></span></button>
+      </aside>
+    </section>
+  </template>
+
+  <!-- 播放设置（音量/亮度/静音） -->
+  <div class="pop" id="settingsPop">
+    <div class="row">
+      <label><span data-i18n="volume"></span><output id="volOut"></output></label>
+      <input type="range" id="volRange" min="0" max="100" step="1">
+    </div>
+    <div class="row">
+      <label><span data-i18n="brightness"></span><output id="briOut"></output></label>
+      <input type="range" id="briRange" min="0" max="100" step="1">
+    </div>
+    <div class="row mute-row">
+      <span data-i18n="muteLabel"></span>
+      <span class="switch"><input type="checkbox" id="muteCheck"><i></i></span>
+    </div>
+  </div>
+
+  <!-- 上传弹窗 -->
+  <div class="overlay" id="uploadOverlay">
+    <div class="modal">
+      <h3><span data-i18n="uploadTitle"></span><button class="x" id="uploadClose"></button></h3>
+      <form id="uploadForm" novalidate>
+        <div class="drop" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*,video/*" hidden>
+          <div id="dropInner"></div>
+        </div>
+        <div class="field">
+          <textarea id="upCaption" rows="3" maxlength="500" data-i18n-ph="captionPh"></textarea>
+        </div>
+        <div class="field">
+          <label data-i18n="regionLabel"></label>
+          <div class="field-row" style="margin-bottom:0">
+            <div class="field" style="margin-bottom:0"><select id="upState" required></select></div>
+            <div class="field" style="margin-bottom:0"><input id="upCity" maxlength="30" data-i18n-ph="cityPh"></div>
+          </div>
+        </div>
+        <div class="progress" id="upProgress"><i></i></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="uploadCancel" data-i18n="cancel"></button>
+          <button type="submit" class="btn" id="uploadSubmit" data-i18n="postBtn"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 需要登录提示 -->
+  <div class="overlay" id="loginOverlay">
+    <div class="modal">
+      <h3><span data-i18n="needAccount"></span><button class="x" id="loginClose"></button></h3>
+      <p class="desc" data-i18n="needAccountDesc"></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="loginLater" data-i18n="keepBrowsing"></button>
+        <a class="btn" href="index.html" data-i18n="goLogin"></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认 -->
+  <div class="overlay" id="confirmOverlay">
+    <div class="modal">
+      <h3><span data-i18n="deletePost"></span><button class="x" id="confirmClose"></button></h3>
+      <p class="desc" data-i18n="confirmDelPost"></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="confirmCancel" data-i18n="cancel"></button>
+        <button class="btn btn-danger" id="confirmOk" data-i18n="confirm"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 搜索面板：用户 / 美食 / 标签 -->
+  <div class="search-panel" id="searchPanel">
+    <header class="s-head">
+      <div class="s-box">
+        <span class="s-ic"></span>
+        <input id="searchInput" data-i18n-ph="searchPh" autocomplete="off" maxlength="40" enterkeyhint="search">
+        <button class="s-clear" id="searchClear" hidden></button>
+      </div>
+      <button class="s-cancel" id="searchCancel" data-i18n="cancel"></button>
+    </header>
+    <div class="s-results" id="searchResults"></div>
+  </div>
+
+  <!-- 留言抽屉 -->
+  <div class="drawer-wrap" id="drawerWrap">
+    <div class="drawer">
+      <header>
+        <span><span data-i18n="comments"></span> · <span id="cCount">0</span></span>
+        <button class="x" id="drawerClose"></button>
+      </header>
+      <div class="c-list" id="cList"></div>
+      <form class="c-compose" id="cForm">
+        <input id="cInput" maxlength="300" data-i18n-ph="commentPh" autocomplete="off">
+        <button class="send" type="submit" id="cSend" data-i18n-title="send"></button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/fyp.js"></script>
+</body>
+</html>

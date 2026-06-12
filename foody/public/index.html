@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Foody · 大马美食分享 Kongsi Makanan Malaysia</title>
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-home">
+
+  <nav class="home-nav">
+    <a class="brand" href="index.html">
+      <img src="img/logo.svg" alt="Foody">
+      Foody <span class="beta">BETA</span>
+    </a>
+    <div class="lang-seg" id="langSeg" role="group" aria-label="Language">
+      <button data-lang="zh">中文</button>
+      <button data-lang="ms">BM</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <section class="hero-copy">
+      <h1 data-i18n="tagline"></h1>
+      <p class="sub" data-i18n="heroSub"></p>
+
+      <div class="feats">
+        <div class="feat"><div class="ico">📱</div><div><b data-i18n="feat1t"></b><span data-i18n="feat1d"></span></div></div>
+        <div class="feat"><div class="ico">📍</div><div><b data-i18n="feat2t"></b><span data-i18n="feat2d"></span></div></div>
+        <div class="feat"><div class="ico">💬</div><div><b data-i18n="feat3t"></b><span data-i18n="feat3d"></span></div></div>
+      </div>
+
+      <a class="btn-ghost" href="fyp.html" data-i18n="browseGuest"></a>
+
+      <div class="hero-minis" aria-hidden="true">
+        <img src="seed/nasi-lemak.svg" alt="">
+        <img src="seed/teh-tarik.svg" alt="">
+        <img src="seed/satay.svg" alt="">
+      </div>
+    </section>
+
+    <section class="auth-card" id="authCard">
+      <!-- 登录 / 注册 -->
+      <div id="authForms">
+        <div class="auth-tabs" role="tablist">
+          <button id="tabLogin" class="on" data-i18n="login"></button>
+          <button id="tabRegister" data-i18n="register"></button>
+        </div>
+
+        <div class="auth-err" id="authErr" role="alert"></div>
+
+        <form id="formLogin" class="on" novalidate>
+          <div class="field">
+            <label for="liName" data-i18n="username"></label>
+            <input id="liName" autocomplete="username" data-i18n-ph="usernamePh" required>
+          </div>
+          <div class="field">
+            <label for="liPass" data-i18n="password"></label>
+            <div class="pw-wrap">
+              <input id="liPass" type="password" autocomplete="current-password" data-i18n-ph="passwordPh" required>
+              <button type="button" class="pw-toggle" data-for="liPass" tabindex="-1"></button>
+            </div>
+          </div>
+          <button class="btn block" type="submit" data-i18n="loginBtn"></button>
+        </form>
+
+        <form id="formRegister" novalidate>
+          <div class="field">
+            <label for="rgName" data-i18n="username"></label>
+            <input id="rgName" autocomplete="username" maxlength="20" data-i18n-ph="usernamePh" required>
+          </div>
+          <div class="field">
+            <label for="rgPass" data-i18n="password"></label>
+            <div class="pw-wrap">
+              <input id="rgPass" type="password" autocomplete="new-password" data-i18n-ph="passwordPh" required>
+              <button type="button" class="pw-toggle" data-for="rgPass" tabindex="-1"></button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rgPhone" data-i18n="phone"></label>
+            <input id="rgPhone" type="tel" autocomplete="tel" maxlength="20" data-i18n-ph="phonePh" required>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="rgState" data-i18n="state"></label>
+              <select id="rgState" required></select>
+            </div>
+            <div class="field">
+              <label for="rgCity" data-i18n="city"></label>
+              <input id="rgCity" maxlength="30" data-i18n-ph="cityPh">
+            </div>
+          </div>
+          <button class="btn block" type="submit" data-i18n="registerBtn"></button>
+        </form>
+      </div>
+
+      <!-- 已登录（自动登入）状态 -->
+      <div class="welcome-card" id="welcomeCard" hidden>
+        <div class="avatar-big" id="wcAvatar"></div>
+        <h2><span data-i18n="welcomeBack"></span>, <span id="wcName"></span> 👋</h2>
+        <div class="region" id="wcRegion"></div>
+        <a class="btn block" href="fyp.html" data-i18n="goFyp"></a>
+        <a href="#" class="logout-link" id="logoutLink" data-i18n="logout"></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="home-footer" data-i18n="footerNote"></footer>
+
+  <script src="js/shared.js"></script>
+  <script src="js/index.js"></script>
+</body>
+</html>

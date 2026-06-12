@@ -1,0 +1,167 @@
+{
+ "users": [
+  {
+   "id": "3122b0ff-6845-4bc4-b452-0b3074794d6f",
+   "username": "foody_demo",
+   "usernameLower": "foody_demo",
+   "salt": "efba951df3996e686d286eb8c13b4668",
+   "passHash": "875247e4926fff7592b1984a0eefc988f0b7c5d8132b82687c19b72cf250c83487962d2b606ae69c4094045c1eb6f855d9c3d8bf953249c2d6ffe4aacc8b011f",
+   "phone": "011-0000 0000",
+   "phoneWa": "60110000000",
+   "state": "Johor",
+   "city": "新山 JB",
+   "createdAt": 1781245571714
+  },
+  {
+   "id": "2302fc9b-c969-4a00-8ab1-1e652cfe1183",
+   "username": "山庄烧腊",
+   "usernameLower": "山庄烧腊",
+   "salt": "a08d63b00d32c9477fae4111a6df21c5",
+   "passHash": "b8fe2bc3059624dccc386f5868fd9897f5ac2fe6a7554dc6e6d1fbd9f2493d11788bd0c86b77f8b724d1a90e4fc635ef4bc093cac86b405f9f4354c110ae03a3",
+   "phone": "011-16768374",
+   "phoneWa": "601116768374",
+   "state": "Perak",
+   "city": "Ipoh",
+   "createdAt": 1781246396809
+  },
+  {
+   "id": "ac6ad1e7-70d4-48e3-9955-f0871ddebddd",
+   "username": "安德鲁",
+   "usernameLower": "安德鲁",
+   "salt": "cb76b2e704804967c1c92c9127efaf8f",
+   "passHash": "253d87469ab91ae4073232ef609464a4da297bbd68fe71b6f8dc49e45e3bef288421af2f879daa48dd0a0b712a7b1d9d535eaf1c54f37dac8d945f2ca7178c85",
+   "phone": "011-16768374",
+   "phoneWa": "601116768374",
+   "state": "Perak",
+   "city": "Ipoh",
+   "createdAt": 1781247508096
+  }
+ ],
+ "sessions": [
+  {
+   "token": "a97f40cd631a6ea4b3d92e95236246d342be1770f5bea413d7d94d654b284254",
+   "userId": "2302fc9b-c969-4a00-8ab1-1e652cfe1183",
+   "expires": 1796798396809
+  },
+  {
+   "token": "c09efe09c7c0a944595226b9fe48d08c39e1a8bb0d79f4b8d42d0e060d2df78a",
+   "userId": "ac6ad1e7-70d4-48e3-9955-f0871ddebddd",
+   "expires": 1796799508097
+  }
+ ],
+ "posts": [
+  {
+   "id": "eb6d707b-5fa1-420f-be23-7ab74b687a9e",
+   "userId": "3122b0ff-6845-4bc4-b452-0b3074794d6f",
+   "mediaUrl": "/seed/nasi-lemak.svg",
+   "mediaType": "image",
+   "caption": "JB 老街这家 nasi lemak，sambal 香到隔壁桌都探头来问 🔥 椰浆饭粒粒分明，加 RM2 的 telur mata 绝配！ #NasiLemak #JB #sambal",
+   "state": "Johor",
+   "city": "新山 JB",
+   "createdAt": 1780986371714,
+   "tags": [
+    "nasilemak",
+    "jb",
+    "sambal"
+   ]
+  },
+  {
+   "id": "50a394f3-30d1-4892-a707-43315ff4f985",
+   "userId": "3122b0ff-6845-4bc4-b452-0b3074794d6f",
+   "mediaUrl": "/seed/teh-tarik.svg",
+   "mediaType": "image",
+   "caption": "Mamak 档的 teh tarik kaw kaw ☕ 配酥到飞起的 roti canai 蘸 dhal，这就是大马人的下午茶天花板。 #TehTarik #mamak #RotiCanai",
+   "state": "Kuala Lumpur",
+   "city": "Brickfields",
+   "createdAt": 1781072771714,
+   "tags": [
+    "tehtarik",
+    "mamak",
+    "roticanai"
+   ]
+  },
+  {
+   "id": "fd1adaa1-231b-4803-942a-756a2c3c7891",
+   "userId": "3122b0ff-6845-4bc4-b452-0b3074794d6f",
+   "mediaUrl": "/seed/satay.svg",
+   "mediaType": "image",
+   "caption": "Kajang satay 排队 40 分钟 🍢 炭香满满，蘸上厚厚的 kuah kacang 一口下去，值了！ #satay #Kajang",
+   "state": "Selangor",
+   "city": "Kajang",
+   "createdAt": 1781159171714,
+   "tags": [
+    "satay",
+    "kajang"
+   ]
+  },
+  {
+   "id": "c8d6d3ff-bdec-4b34-8897-d3bb27ae349c",
+   "userId": "2302fc9b-c969-4a00-8ab1-1e652cfe1183",
+   "mediaUrl": "/uploads/1781246427017-2ac7ae09-0168-41ec-8d80-7fd767ff39ce.mp4",
+   "mediaType": "video",
+   "caption": "test 1",
+   "state": "Perak",
+   "city": "Ipoh",
+   "createdAt": 1781246427022,
+   "tags": []
+  },
+  {
+   "id": "49f6fb18-10b1-4ff6-b710-ef169163320f",
+   "userId": "ac6ad1e7-70d4-48e3-9955-f0871ddebddd",
+   "mediaUrl": "/uploads/1781247533546-8ad60cf2-4c0f-424a-933a-0c4aca81c5ed.jpg",
+   "mediaType": "image",
+   "caption": "test 1",
+   "tags": [],
+   "state": "Perak",
+   "city": "Ipoh",
+   "createdAt": 1781247534768
+  }
+ ],
+ "comments": [
+  {
+   "id": "1f477bce-13b9-47fe-a9f4-9b66fde202c7",
+   "postId": "fd1adaa1-231b-4803-942a-756a2c3c7891",
+   "userId": "3122b0ff-6845-4bc4-b452-0b3074794d6f",
+   "text": "欢迎来到 Foody！把你身边的美食发上来吧 😋 Jom share makanan sedap!",
+   "createdAt": 1781241971714
+  },
+  {
+   "id": "c454d0fb-b856-4dd4-88eb-93c2dc5d44b2",
+   "postId": "c8d6d3ff-bdec-4b34-8897-d3bb27ae349c",
+   "userId": "2302fc9b-c969-4a00-8ab1-1e652cfe1183",
+   "text": "test",
+   "createdAt": 1781246437429
+  },
+  {
+   "id": "b47c7a98-bd5a-408b-8ab2-4b4418adc92d",
+   "postId": "49f6fb18-10b1-4ff6-b710-ef169163320f",
+   "userId": "ac6ad1e7-70d4-48e3-9955-f0871ddebddd",
+   "text": "test",
+   "createdAt": 1781247543994
+  }
+ ],
+ "likes": [
+  {
+   "postId": "c8d6d3ff-bdec-4b34-8897-d3bb27ae349c",
+   "userId": "2302fc9b-c969-4a00-8ab1-1e652cfe1183",
+   "createdAt": 1781246447467
+  },
+  {
+   "postId": "49f6fb18-10b1-4ff6-b710-ef169163320f",
+   "userId": "ac6ad1e7-70d4-48e3-9955-f0871ddebddd",
+   "createdAt": 1781247537969
+  }
+ ],
+ "saves": [
+  {
+   "postId": "c8d6d3ff-bdec-4b34-8897-d3bb27ae349c",
+   "userId": "2302fc9b-c969-4a00-8ab1-1e652cfe1183",
+   "createdAt": 1781246463268
+  },
+  {
+   "postId": "49f6fb18-10b1-4ff6-b710-ef169163320f",
+   "userId": "ac6ad1e7-70d4-48e3-9955-f0871ddebddd",
+   "createdAt": 1781247548976
+  }
+ ]
+}

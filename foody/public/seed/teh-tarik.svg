@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2DCB6"/>
+      <stop offset="1" stop-color="#E2BC8A"/>
+    </linearGradient>
+    <linearGradient id="tea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C27A33"/>
+      <stop offset="1" stop-color="#8A4D1C"/>
+    </linearGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+  <rect width="720" height="1080" fill="url(#bg)"/>
+
+  <!-- 散落小点 -->
+  <g fill="#8B5A38" opacity=".15">
+    <circle cx="92" cy="140" r="5"/><circle cx="630" cy="110" r="4"/><circle cx="560" cy="250" r="6"/>
+    <circle cx="80" cy="420" r="4"/><circle cx="648" cy="430" r="5"/><circle cx="160" cy="300" r="4"/>
+  </g>
+
+  <!-- 桌面 -->
+  <rect y="700" width="720" height="380" fill="#8B5A38"/>
+  <g stroke="#7A4C2E" stroke-width="6">
+    <path d="M0 700H720" stroke-width="10"/>
+    <path d="M0 820H720M0 950H720"/>
+  </g>
+
+  <!-- 蒸汽 -->
+  <g stroke="#FFF8E8" stroke-width="11" stroke-linecap="round" fill="none" opacity=".55">
+    <path d="M268 218c-22 26 22 42 0 68"/>
+    <path d="M340 190c-20 24 20 38 0 62"/>
+  </g>
+
+  <!-- 玻璃杯影子 -->
+  <ellipse cx="305" cy="708" rx="130" ry="26" fill="#5E3A22" opacity=".4" filter="url(#soft)"/>
+
+  <!-- 拉茶玻璃杯 -->
+  <g>
+    <rect x="215" y="330" width="180" height="372" rx="26" fill="url(#tea)"/>
+    <rect x="215" y="330" width="180" height="372" rx="26" fill="none" stroke="#FFF8E8" stroke-width="5" opacity=".35"/>
+    <!-- 泡沫 -->
+    <ellipse cx="305" cy="338" rx="100" ry="40" fill="#FFF4DE"/>
+    <circle cx="248" cy="320" r="30" fill="#FFF4DE"/>
+    <circle cx="305" cy="306" r="37" fill="#FFF4DE"/>
+    <circle cx="362" cy="322" r="28" fill="#FFF4DE"/>
+    <g fill="#EFDDBC">
+      <circle cx="270" cy="330" r="7"/><circle cx="318" cy="318" r="8"/><circle cx="352" cy="338" r="6"/><circle cx="292" cy="346" r="5"/>
+    </g>
+    <!-- 沿杯流下的奶泡 -->
+    <path d="M386 352c10 26 4 44-6 56 14-4 20-22 16-40Z" fill="#FFF4DE" opacity=".9"/>
+    <!-- 杯身高光 -->
+    <rect x="238" y="372" width="22" height="296" rx="11" fill="#FFF8E8" opacity=".22"/>
+    <!-- 茶色分层 -->
+    <path d="M218 470h174" stroke="#A9601F" stroke-width="8" opacity=".5"/>
+    <path d="M218 560h174" stroke="#7E441A" stroke-width="8" opacity=".4"/>
+  </g>
+
+  <!-- 盘子 + Roti Canai -->
+  <ellipse cx="462" cy="900" rx="205" ry="62" fill="#5E3A22" opacity=".35" filter="url(#soft)"/>
+  <ellipse cx="455" cy="878" rx="210" ry="68" fill="#FFF9EC"/>
+  <ellipse cx="455" cy="872" rx="175" ry="52" fill="none" stroke="#E8D8BD" stroke-width="5"/>
+  <g>
+    <circle cx="408" cy="852" r="98" fill="#E9CB92"/>
+    <path d="M330 852a78 78 0 1 1 156 0" fill="none" stroke="#CFA45F" stroke-width="9" stroke-linecap="round"/>
+    <path d="M466 852a58 58 0 1 1-116 0" fill="none" stroke="#CFA45F" stroke-width="8" stroke-linecap="round"/>
+    <path d="M368 852a40 40 0 1 1 80 0" fill="none" stroke="#CFA45F" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="408" cy="852" r="15" fill="none" stroke="#CFA45F" stroke-width="6"/>
+    <g stroke="#F7E7C2" stroke-width="5" stroke-linecap="round">
+      <path d="M356 812l16 8M442 800l12 12M462 880l14 6M362 894l14-8"/>
+    </g>
+  </g>
+
+  <!-- Dhal 咖喱小碗 -->
+  <g>
+    <circle cx="568" cy="836" r="54" fill="#A85B28"/>
+    <circle cx="568" cy="830" r="44" fill="#C97A3A"/>
+    <path d="M538 830c12-10 24-12 38-6 12 5 22 4 30-2" stroke="#A05526" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <ellipse cx="586" cy="812" rx="14" ry="6" transform="rotate(-24 586 812)" fill="#5E8C4A"/>
+  </g>
+</svg>

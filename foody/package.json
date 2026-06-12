@@ -1,0 +1,13 @@
+{
+  "name": "foody",
+  "version": "0.1.0",
+  "description": "Foody — 大马美食分享平台 (Beta)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.2"
+  }
+}

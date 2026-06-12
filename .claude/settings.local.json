@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "PowerShell(Stop-Process -Id 16636 -Force -Confirm:$false; Start-Sleep -Milliseconds 800; \\(Test-NetConnection -ComputerName localhost -Port 3000 -WarningAction SilentlyContinue\\).TcpTestSucceeded)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,OwningProcess | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; \"$\\($_.LocalAddress\\) PID=$\\($_.OwningProcess\\) $\\($p.ProcessName\\)\" })",
+      "mcp__Claude_Preview__preview_start",
+      "PowerShell(Set-Location C:\\\\Users\\\\User\\\\Claudecodedesktop\\\\foody; Add-Type -AssemblyName System.Drawing; $bmp = New-Object System.Drawing.Bitmap\\(720,1080\\); $g = [System.Drawing.Graphics]::FromImage\\($bmp\\); $g.Clear\\([System.Drawing.Color]::FromArgb\\(217,106,59\\)\\); $g.FillEllipse\\([System.Drawing.Brushes]::Beige, 160, 340, 400, 400\\); $g.Dispose\\(\\); $bmp.Save\\(\"$PWD\\\\test-food.png\", [System.Drawing.Imaging.ImageFormat]::Png\\); $bmp.Dispose\\(\\); \"png created\"; curl.exe -s -b cookies.txt -F \"media=@test-food.png;type=image/png\" -F \"caption=PNG upload test\" -F \"state=Johor\" -F \"city=JB\" http://localhost:3000/api/posts)"
+    ]
+  }
+}
