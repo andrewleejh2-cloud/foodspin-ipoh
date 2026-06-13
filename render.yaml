@@ -1,0 +1,28 @@
+# Render 蓝图（Blueprint）：在 Render 连接你的 GitHub 仓库后，
+# 它会自动读取这个文件，一键创建好服务。文档：https://render.com/docs/blueprint-spec
+#
+# 注意：持久磁盘（disk）需要付费实例（starter，约 US$7/月）。
+# 免费实例没有持久磁盘——重新部署会清空数据，只适合临时试玩。
+
+services:
+  - type: web
+    name: foody
+    runtime: node
+    plan: starter            # 常驻不休眠；想免费试玩可改 free（会闲置休眠 + 重启丢数据）
+    region: singapore        # 离马来西亚最近，延迟低
+    rootDir: foody
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true         # 推送到 GitHub 后自动重新部署
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FOODY_DATA_DIR
+        value: /var/data/db
+      - key: FOODY_UPLOAD_DIR
+        value: /var/data/uploads
+    disk:
+      name: foody-data
+      mountPath: /var/data   # 数据库 + 上传文件都存这块持久磁盘，重启不丢
+      sizeGB: 1

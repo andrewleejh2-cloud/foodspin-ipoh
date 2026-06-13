@@ -1,0 +1,16 @@
+# 依赖：部署时用 npm install 自动装回，不进版本库（体积大、无意义）
+node_modules/
+foody/node_modules/
+
+# 用户数据 & 上传文件：运行时生成、含隐私（电话号码、密码哈希），绝不进版本库
+foody/data/
+foody/uploads/
+
+# 环境变量（含密钥）
+.env
+foody/.env
+
+# 系统 / 编辑器杂物
+.DS_Store
+Thumbs.db
+*.log

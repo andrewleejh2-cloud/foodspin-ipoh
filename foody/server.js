@@ -11,11 +11,16 @@ const path = require('path');
 const os = require('os');
 
 const ROOT = __dirname;
-const DATA_DIR = path.join(ROOT, 'data');
-const UPLOAD_DIR = path.join(ROOT, 'uploads');
+// 数据/上传目录可用环境变量覆盖（部署到云端时指向挂载的持久磁盘，重启不丢数据）
+const DATA_DIR = process.env.FOODY_DATA_DIR || path.join(ROOT, 'data');
+const UPLOAD_DIR = process.env.FOODY_UPLOAD_DIR || path.join(ROOT, 'uploads');
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const PORT = process.env.PORT || 3000;
 const SESSION_DAYS = 180; // 自动登入有效期
+// 生产模式（部署在 HTTPS + 反向代理后面）：Cookie 加 Secure、限流按 X-Forwarded-For 取真实 IP
+const PROD = process.env.NODE_ENV === 'production';
+const TRUST_PROXY = PROD || process.env.TRUST_PROXY === '1';
 
 const STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang',
@@ -25,6 +30,7 @@ const STATES = [
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
 /* ---------------- 数据库（JSON 文件，原子写入） ---------------- */
 let db;
@@ -33,6 +39,23 @@ function saveDb() {
   const tmp = DB_FILE + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(db, null, 1), 'utf8');
   fs.renameSync(tmp, DB_FILE);
+}
+
+/* 自动备份：复制一份带时间戳的 db，保留最近若干份。
+   万一硬盘故障 / 文件写坏，可以从 data/backups/ 里恢复。 */
+const BACKUP_KEEP = 24;
+function backupDb() {
+  try {
+    if (!fs.existsSync(DB_FILE)) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    fs.copyFileSync(DB_FILE, path.join(BACKUP_DIR, `db-${stamp}.json`));
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.startsWith('db-') && f.endsWith('.json'))
+      .sort();
+    while (files.length > BACKUP_KEEP) fs.unlinkSync(path.join(BACKUP_DIR, files.shift()));
+  } catch (e) {
+    console.error('  ⚠ 备份失败:', e.message);
+  }
 }
 
 /* 旧的示范帖子没有标签 → 补上，让搜索/热门标签有内容可看 */
@@ -143,8 +166,9 @@ function getCookie(req, name) {
 }
 
 function setSessionCookie(res, token, maxAgeSec) {
+  const secure = PROD ? '; Secure' : ''; // HTTPS 下加 Secure，防止 Cookie 明文泄露
   res.setHeader('Set-Cookie',
-    `foody_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}`);
+    `foody_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${secure}`);
 }
 
 function createSession(res, userId) {
@@ -245,7 +269,33 @@ const upload = multer({
 
 /* ---------------- App ---------------- */
 const app = express();
+app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
+
+/* 安全响应头（手写，不引入额外依赖）。CSP 允许 Google Fonts 与同源资源。 */
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob:",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "script-src 'self'",
+    "connect-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; '));
+  next();
+});
+
+/* 健康检查：给监控 / 部署平台探活用 */
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, users: db.users.length, posts: db.posts.length, uptime: Math.round(process.uptime()) });
+});
 
 function requireAuth(req, res, next) {
   const user = currentUser(req);
@@ -254,7 +304,16 @@ function requireAuth(req, res, next) {
   next();
 }
 
-/* 简单的登录防爆破：每个 IP 10 分钟内最多错 20 次 */
+/* 取真实客户端 IP：部署在反向代理 / CDN 后面时读 X-Forwarded-For */
+function clientIp(req) {
+  if (TRUST_PROXY) {
+    const xff = req.headers['x-forwarded-for'];
+    if (xff) return String(xff).split(',')[0].trim();
+  }
+  return req.socket.remoteAddress || '?';
+}
+
+/* 登录防爆破：每个 IP 10 分钟内最多错 20 次 */
 const loginFails = new Map();
 function tooManyFails(ip) {
   const rec = loginFails.get(ip);
@@ -268,8 +327,28 @@ function recordFail(ip) {
   else loginFails.set(ip, { n: 1, t: Date.now() });
 }
 
+/* 通用限流中间件：windowMs 时间窗内每个 IP 最多 max 次（防刷注册 / 发帖 / 留言） */
+function rateLimit({ windowMs, max }) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const ip = clientIp(req);
+    const now = Date.now();
+    const rec = hits.get(ip);
+    if (!rec || now - rec.t > windowMs) hits.set(ip, { n: 1, t: now });
+    else if (rec.n >= max) return res.status(429).json({ error: 'too_many' });
+    else rec.n++;
+    if (hits.size > 5000) { // 顺手清理过期项，避免 Map 无限增长
+      for (const [k, v] of hits) if (now - v.t > windowMs) hits.delete(k);
+    }
+    next();
+  };
+}
+const registerLimit = rateLimit({ windowMs: 3600000, max: 10 }); // 每 IP 每小时最多注册 10 个
+const postLimit = rateLimit({ windowMs: 600000, max: 30 });      // 每 IP 每 10 分钟最多发 30 帖
+const commentLimit = rateLimit({ windowMs: 600000, max: 60 });   // 每 IP 每 10 分钟最多 60 条留言
+
 /* ---- 账号 ---- */
-app.post('/api/register', (req, res) => {
+app.post('/api/register', registerLimit, (req, res) => {
   const { username, password, phone, state, city } = req.body || {};
   if (!username || !password || !phone || !state) return res.status(400).json({ error: 'missing' });
 
@@ -305,7 +384,7 @@ app.post('/api/register', (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
-  const ip = req.socket.remoteAddress || '?';
+  const ip = clientIp(req);
   if (tooManyFails(ip)) return res.status(429).json({ error: 'too_many' });
 
   const { username, password } = req.body || {};
@@ -431,7 +510,7 @@ app.get('/api/search', (req, res) => {
   res.json({ q, tags, users, posts });
 });
 
-app.post('/api/posts', requireAuth, (req, res) => {
+app.post('/api/posts', requireAuth, postLimit, (req, res) => {
   upload(req, res, (err) => {
     if (err) {
       const code = err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file';
@@ -527,7 +606,7 @@ app.get('/api/posts/:id/comments', (req, res) => {
   res.json({ comments });
 });
 
-app.post('/api/posts/:id/comments', requireAuth, (req, res) => {
+app.post('/api/posts/:id/comments', requireAuth, commentLimit, (req, res) => {
   const post = db.posts.find(p => p.id === req.params.id);
   if (!post) return res.status(404).json({ error: 'not_found' });
   const text = String((req.body || {}).text || '').trim().slice(0, 300);
@@ -556,6 +635,8 @@ app.use(express.static(path.join(ROOT, 'public'), { extensions: ['html'] }));
 
 /* ---------------- 启动 ---------------- */
 loadDb();
+backupDb();                          // 启动时先备份一份
+setInterval(backupDb, 6 * 3600000);  // 之后每 6 小时自动备份
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('  🍜 Foody (Beta) 已启动!');
@@ -570,6 +651,8 @@ app.listen(PORT, '0.0.0.0', () => {
     }
   }
   console.log('  ----------------------------------------');
+  console.log(`  自动备份: 每6小时一次, 保留最近${BACKUP_KEEP}份`);
+  if (PROD) console.log('  模式: 生产 (HTTPS Secure Cookie 已开启)');
   console.log('  按 Ctrl+C 停止服务器');
   console.log('');
 });
