@@ -24,6 +24,7 @@ const DICT = {
     errBadPassword: '密码至少要 6 位',
     errBadPhone: '电话号码格式不对（例：011-1901 9070）',
     errUsernameTaken: '这个用户名已经被人用了，换一个吧',
+    errPhoneTaken: '这个电话号码已经注册过账号了，一个号码只能开一个账号',
     errBadLogin: '用户名或密码不对',
     errTooMany: '尝试太多次了，休息 10 分钟再来',
     errNet: '网络出了点问题，再试一次',
@@ -83,6 +84,7 @@ const DICT = {
     errBadPassword: 'Kata laluan mesti sekurang-kurangnya 6 aksara',
     errBadPhone: 'Format nombor telefon tak betul (cth: 011-1901 9070)',
     errUsernameTaken: 'Nama ini dah diambil, cuba yang lain',
+    errPhoneTaken: 'Nombor telefon ini sudah ada akaun — satu nombor satu akaun',
     errBadLogin: 'Nama pengguna atau kata laluan salah',
     errTooMany: 'Terlalu banyak percubaan, rehat 10 minit dulu',
     errNet: 'Ada masalah sambungan, cuba lagi',
@@ -141,6 +143,7 @@ const DICT = {
     errBadPassword: 'Password must be at least 6 characters',
     errBadPhone: 'Invalid phone number (e.g. 011-1901 9070)',
     errUsernameTaken: 'That username is taken — try another',
+    errPhoneTaken: 'This phone number already has an account — one number, one account',
     errBadLogin: 'Wrong username or password',
     errTooMany: 'Too many attempts — take a 10 min break',
     errNet: 'Network hiccup — try again',
@@ -221,6 +224,7 @@ function errMsg(code) {
   const map = {
     missing: 'errMissing', bad_username: 'errBadUsername', bad_password: 'errBadPassword',
     bad_phone: 'errBadPhone', bad_state: 'errMissing', username_taken: 'errUsernameTaken',
+    phone_taken: 'errPhoneTaken',
     bad_login: 'errBadLogin', too_many: 'errTooMany', auth: 'errAuth',
     file_too_big: 'errNet', bad_file: 'errNet', net: 'errNet'
   };

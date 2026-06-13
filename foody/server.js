@@ -363,6 +363,10 @@ app.post('/api/register', registerLimit, (req, res) => {
   if (db.users.some(u => u.usernameLower === name.toLowerCase())) {
     return res.status(409).json({ error: 'username_taken' });
   }
+  // 一个电话号码只能注册一个账号（按归一化后的号码比对，不同写法视为同一个）
+  if (db.users.some(u => u.phoneWa === phoneWa)) {
+    return res.status(409).json({ error: 'phone_taken' });
+  }
 
   const salt = crypto.randomBytes(16).toString('hex');
   const user = {
