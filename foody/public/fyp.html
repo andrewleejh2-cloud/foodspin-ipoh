@@ -15,6 +15,10 @@
   <!-- 顶栏 -->
   <header class="fyp-top">
     <a class="brand" href="index.html"><img src="img/logo.svg" alt=""><span>Foody</span></a>
+    <div class="feed-seg" id="feedSeg" role="group" aria-label="Feed mode">
+      <button data-sort="hot" class="on"><i class="sg-ic"></i><span data-i18n="feedForYou"></span></button>
+      <button data-sort="new"><i class="sg-ic"></i><span data-i18n="feedLatest"></span></button>
+    </div>
     <select class="chip" id="stateFilter" data-i18n-title="allRegions"></select>
     <button class="chip" id="savedFilter" hidden>⭐ <span data-i18n="savedFilter"></span></button>
     <button class="chip filter-chip" id="filterChip" hidden></button>

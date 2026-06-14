@@ -60,7 +60,8 @@ const DICT = {
     trendingTags: '热门标签 🔥', secTags: '标签', secUsers: '用户', secPosts: '美食',
     noResults: '什么都没找到…换个词试试？',
     nPosts: '{n} 个帖子',
-    searchTip: '试试搜 “nasi lemak”、地区，或 @用户名'
+    searchTip: '试试搜 “nasi lemak”、地区，或 @用户名',
+    feedForYou: '推荐', feedLatest: '最新'
   },
   ms: {
     langName: 'BM',
@@ -119,7 +120,8 @@ const DICT = {
     trendingTags: 'Tag hangat 🔥', secTags: 'Tag', secUsers: 'Pengguna', secPosts: 'Makanan',
     noResults: 'Tiada hasil… cuba kata lain?',
     nPosts: '{n} post',
-    searchTip: 'Cuba cari "nasi lemak", kawasan, atau @nama'
+    searchTip: 'Cuba cari "nasi lemak", kawasan, atau @nama',
+    feedForYou: 'Cadangan', feedLatest: 'Terbaru'
   },
   en: {
     langName: 'EN',
@@ -178,7 +180,8 @@ const DICT = {
     trendingTags: 'Trending tags 🔥', secTags: 'Tags', secUsers: 'Users', secPosts: 'Food',
     noResults: 'Nothing found — try another word?',
     nPosts: '{n} posts',
-    searchTip: 'Try "nasi lemak", a region, or @username'
+    searchTip: 'Try "nasi lemak", a region, or @username',
+    feedForYou: 'For You', feedLatest: 'Latest'
   }
 };
 
@@ -292,7 +295,9 @@ const ICONS = {
   eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></svg>',
   eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 12S6 5.8 12 5.8c1.6 0 3 .4 4.3 1M21.5 12S18 18.2 12 18.2c-1.6 0-3-.4-4.3-1M4 20 20 4"/></svg>',
   image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.7"/><path d="M5 18.5 10.5 13l3 3 2.5-2.5 3.5 3.5"/></svg>',
-  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>'
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.3l1.75 5.1a1 1 0 0 0 .62.62L19.5 9.8l-5.13 1.78a1 1 0 0 0-.62.62L12 17.3l-1.75-5.1a1 1 0 0 0-.62-.62L4.5 9.8l5.13-1.78a1 1 0 0 0 .62-.62L12 2.3Z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l2.8 1.8"/></svg>'
 };
 
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */

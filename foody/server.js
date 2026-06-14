@@ -481,6 +481,7 @@ app.get('/api/posts', (req, res) => {
   const tag = String(req.query.tag || '').trim().toLowerCase();
   const userQ = String(req.query.user || '').trim().toLowerCase();
   const q = String(req.query.q || '').trim().toLowerCase();
+  const sort = req.query.sort === 'new' ? 'new' : 'hot'; // hot=推荐算法(默认), new=最新优先
 
   if (savedOnly && !viewer) return res.status(401).json({ error: 'auth' });
 
@@ -497,8 +498,8 @@ app.get('/api/posts', (req, res) => {
   }
   if (q) posts = posts.filter(p => matchQ(p, q));
 
-  // 排序：收藏夹保持「最近的在前」；其余 FYP 一律走推荐算法
-  if (savedOnly) posts.sort((a, b) => b.createdAt - a.createdAt);
+  // 排序：收藏夹 / 选了「最新」→ 按时间；否则走推荐算法
+  if (savedOnly || sort === 'new') posts.sort((a, b) => b.createdAt - a.createdAt);
   else posts = rankPosts(posts, viewer);
 
   /* start=帖子ID：从该帖子开始返回（搜索结果点进 feed 用） */

@@ -14,7 +14,8 @@
 
   const feedState = {
     offset: 0, hasMore: true, loading: false, state: '', saved: false,
-    tag: '', user: '', q: '', startId: '' // 搜索筛选：标签 / 用户 / 关键词 / 起始帖子
+    tag: '', user: '', q: '', startId: '', // 搜索筛选：标签 / 用户 / 关键词 / 起始帖子
+    sort: 'hot' // hot=推荐算法, new=最新优先
   };
 
   const feed = $('#feed');
@@ -272,6 +273,7 @@
       if (feedState.tag) q.set('tag', feedState.tag);
       if (feedState.user) q.set('user', feedState.user);
       if (feedState.q) q.set('q', feedState.q);
+      if (feedState.sort === 'new') q.set('sort', 'new');
       const data = await api('/api/posts?' + q);
       hideLoading();
       sentinel.remove();
@@ -829,6 +831,17 @@
     resetFeed();
   });
 
+  // 推荐 / 最新 切换
+  document.querySelectorAll('#feedSeg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('on')) return;
+      document.querySelectorAll('#feedSeg button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      feedState.sort = btn.dataset.sort;
+      resetFeed();
+    });
+  });
+
   $('#savedFilter').addEventListener('click', () => {
     feedState.saved = !feedState.saved;
     $('#savedFilter').classList.toggle('on', feedState.saved);
@@ -902,6 +915,8 @@
     $('#searchBtn').innerHTML = ICONS.search;
     document.querySelector('.s-ic').innerHTML = ICONS.search;
     $('#searchClear').innerHTML = ICONS.close;
+    $('#feedSeg button[data-sort="hot"] .sg-ic').innerHTML = ICONS.spark;
+    $('#feedSeg button[data-sort="new"] .sg-ic').innerHTML = ICONS.clock;
     paintUploadBtns();
     syncSettingsUI();
     try {

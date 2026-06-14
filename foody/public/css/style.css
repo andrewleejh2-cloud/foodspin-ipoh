@@ -269,6 +269,23 @@ input, select, textarea { font-family: inherit; font-size: 15px; color: inherit;
 .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .chip svg { width: 17px; height: 17px; }
 
+/* 推荐 / 最新 切换 */
+.feed-seg {
+  display: inline-flex; align-items: center; flex: none;
+  background: rgba(255, 246, 230, .1);
+  border: 1px solid rgba(255, 246, 230, .16);
+  border-radius: 999px; padding: 3px;
+}
+.feed-seg button {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 13px; border-radius: 999px;
+  font-size: 13px; font-weight: 800; color: #F4EDE2;
+  opacity: .6; white-space: nowrap; transition: background .15s, opacity .15s;
+}
+.feed-seg button.on { background: var(--accent); color: #fff; opacity: 1; }
+.feed-seg .sg-ic { display: none; }
+.feed-seg .sg-ic svg { width: 15px; height: 15px; display: block; }
+
 select.chip {
   appearance: none; -webkit-appearance: none;
   padding-right: 30px; cursor: pointer;
@@ -712,9 +729,13 @@ select.chip option { background: #241E18; color: #F4EDE2; }
   .fab-mobile { display: grid; }
   #savedFilter span { display: none; }
   #userChip > span + span { display: none; }
-  .fyp-top { padding-top: calc(10px + env(safe-area-inset-top)); }
-  .fyp-top .brand span { display: none; }
-  select.chip { max-width: 132px; }
+  .fyp-top { padding-top: calc(10px + env(safe-area-inset-top)); gap: 6px; }
+  .fyp-top .brand { display: none; }
+  .feed-seg button { padding: 6px 9px; }
+  .feed-seg .sg-ic { display: inline-flex; }
+  .feed-seg button span { display: none; }
+  .icon-chip { flex: none; width: 34px; height: 34px; }
+  select.chip { max-width: 80px; padding-right: 22px; background-position: right 7px center; }
   .drawer {
     top: auto; left: 0; right: 0; width: 100%; height: 72dvh;
     border-left: none; border-top: 1px solid var(--line);
