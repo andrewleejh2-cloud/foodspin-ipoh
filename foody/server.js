@@ -5,6 +5,7 @@
  */
 const express = require('express');
 const multer = require('multer');
+const sharp = require('sharp');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -322,6 +323,35 @@ const upload = multer({
   }
 }).single('media');
 
+/* 图片压缩：自动转正方向（读 EXIF）、限制最大边长 1600px、转 JPEG、顺带去掉 EXIF
+   （省空间也保护用户隐私，如拍摄地点）。美食照片常从几 MB 压到几百 KB。
+   失败则保留原图，绝不因压缩出错而丢帖。GIF 跳过以保留动画。
+   返回最终文件名（扩展名可能从 .png 变为 .jpg）。 */
+async function compressImage(filename) {
+  if (path.extname(filename).toLowerCase() === '.gif') return filename;
+  const srcPath = path.join(UPLOAD_DIR, filename);
+  const outName = filename.replace(/\.[^.]+$/, '.jpg');
+  const outPath = path.join(UPLOAD_DIR, outName);
+  const tmpPath = outPath + '.tmp';
+  try {
+    const before = fs.statSync(srcPath).size;
+    await sharp(srcPath, { failOn: 'none' })
+      .rotate()
+      .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 82, mozjpeg: true })
+      .toFile(tmpPath);
+    fs.renameSync(tmpPath, outPath);
+    if (outPath !== srcPath) fs.unlinkSync(srcPath);
+    const after = fs.statSync(outPath).size;
+    console.log(`[压缩] 图片 ${(before / 1048576).toFixed(1)}MB → ${(after / 1048576).toFixed(2)}MB`);
+    return outName;
+  } catch (e) {
+    try { fs.unlinkSync(tmpPath); } catch {}
+    console.error('[压缩] 图片压缩失败，保留原图:', e.message);
+    return filename;
+  }
+}
+
 /* ---------------- App ---------------- */
 const app = express();
 app.disable('x-powered-by');
@@ -575,7 +605,7 @@ app.get('/api/search', (req, res) => {
 });
 
 app.post('/api/posts', requireAuth, postLimit, (req, res) => {
-  upload(req, res, (err) => {
+  upload(req, res, async (err) => {
     if (err) {
       const code = err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file';
       return res.status(400).json({ error: code });
@@ -588,6 +618,9 @@ app.post('/api/posts', requireAuth, postLimit, (req, res) => {
 
     const ext = path.extname(req.file.filename).toLowerCase();
     const mediaType = (req.file.mimetype.startsWith('video/') || VIDEO_EXT.has(ext)) ? 'video' : 'image';
+
+    // 图片自动压缩（省空间、加载更快、去掉 EXIF 隐私）；视频暂不转码，原样保存
+    if (mediaType === 'image') req.file.filename = await compressImage(req.file.filename);
 
     const cleanCaption = String(caption || '').trim().slice(0, 500);
     const post = {
