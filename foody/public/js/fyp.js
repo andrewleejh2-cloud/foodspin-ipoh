@@ -76,7 +76,7 @@
     authorEl.textContent = '@' + p.username;
     authorEl.addEventListener('click', (e) => {
       e.stopPropagation();
-      applySearchFilter({ user: p.username });
+      location.href = 'profile.html?u=' + encodeURIComponent(p.username);
     });
     node.querySelector('.region-pill').innerHTML =
       ICONS.pin + '<span></span>';
@@ -88,7 +88,10 @@
     cap.addEventListener('click', () => cap.classList.toggle('open'));
 
     // 右侧操作栏
-    node.querySelector('.avatar').textContent = p.username.slice(0, 1).toUpperCase();
+    const avEl = node.querySelector('.avatar');
+    avEl.textContent = p.username.slice(0, 1).toUpperCase();
+    avEl.style.cursor = 'pointer';
+    avEl.addEventListener('click', () => { location.href = 'profile.html?u=' + encodeURIComponent(p.username); });
 
     const likeBtn = node.querySelector('.like');
     likeBtn.querySelector('.ic').innerHTML = ICONS.heart;
@@ -776,7 +779,7 @@
         meta.textContent = (u.state || '') + (u.city ? ' · ' + u.city : '') + ' · ' + t('nPosts', { n: u.postCount });
         body.append(nm, meta);
         row.append(av, body);
-        row.addEventListener('click', () => applySearchFilter({ user: u.username }));
+        row.addEventListener('click', () => { location.href = 'profile.html?u=' + encodeURIComponent(u.username); });
         frag.appendChild(row);
       }
     }
@@ -872,19 +875,13 @@
     const chip = $('#userChip');
     if (ME) {
       chip.innerHTML = `<span class="avatar-sm">${ME.username.slice(0, 1).toUpperCase()}</span><span>@${ME.username}</span>`;
-      chip.onclick = async () => {
-        if (confirmLogout()) {
-          try { await api('/api/logout', { method: 'POST' }); } catch {}
-          location.reload();
-        }
-      };
-      chip.title = t('logout');
+      chip.onclick = () => { location.href = 'profile.html?u=' + encodeURIComponent(ME.username); };
+      chip.title = t('pfMine');
     } else {
       chip.textContent = t('login');
       chip.onclick = () => { location.href = 'index.html'; };
     }
   }
-  function confirmLogout() { return window.confirm(t('logout') + '?'); }
 
   function paintUploadBtns() {
     const top = $('#uploadBtnTop');
@@ -929,6 +926,15 @@
     paintUserChip();
     $('#savedFilter').hidden = !ME;
     $('#uploadBtnTop').style.display = '';
+    // 从 profile / 分享链接进来：?user= / ?tag= / ?q=（可带 ?start=帖子ID）直接进对应 feed
+    const sp = new URLSearchParams(location.search);
+    if (sp.get('user') || sp.get('tag') || sp.get('q')) {
+      feedState.user = sp.get('user') || '';
+      feedState.tag = (sp.get('tag') || '').toLowerCase();
+      feedState.q = sp.get('q') || '';
+      feedState.startId = sp.get('start') || '';
+      paintFilterChip();
+    }
     loadMore();
   });
 })();

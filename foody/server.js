@@ -197,7 +197,7 @@ function normPhone(raw) {
 }
 
 function pubUser(u) {
-  return { id: u.id, username: u.username, phone: u.phone, state: u.state, city: u.city };
+  return { id: u.id, username: u.username, phone: u.phone, state: u.state, city: u.city, bio: u.bio || '' };
 }
 
 /* 从文案抽出 #标签（支持中文），统一小写存储 */
@@ -502,6 +502,14 @@ app.get('/api/me', (req, res) => {
   res.json({ user: user ? pubUser(user) : null, states: STATES });
 });
 
+/* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
+app.patch('/api/me', requireAuth, (req, res) => {
+  const { bio } = req.body || {};
+  if (typeof bio === 'string') req.user.bio = bio.replace(/\s+/g, ' ').trim().slice(0, 160);
+  saveDb();
+  res.json({ user: pubUser(req.user) });
+});
+
 /* ---- 帖子 ---- */
 app.get('/api/posts', (req, res) => {
   const viewer = currentUser(req);
@@ -602,6 +610,35 @@ app.get('/api/search', (req, res) => {
     });
 
   res.json({ q, tags, users, posts });
+});
+
+/* 用户主页（profile）：公开资料 + 统计 + 该用户的作品。
+   电话不直接返回，只在已登入时给 wa.me 链接（与帖子一致的隐私规则）。 */
+app.get('/api/users/:username', (req, res) => {
+  const viewer = currentUser(req);
+  const uname = String(req.params.username || '').trim().toLowerCase();
+  const author = db.users.find(u => u.usernameLower === uname);
+  if (!author) return res.status(404).json({ error: 'not_found' });
+
+  const myPosts = db.posts
+    .filter(p => p.userId === author.id)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  const postIds = new Set(myPosts.map(p => p.id));
+  const likeTotal = db.likes.reduce((n, l) => n + (postIds.has(l.postId) ? 1 : 0), 0);
+
+  res.json({
+    user: {
+      username: author.username,
+      state: author.state,
+      city: author.city,
+      bio: author.bio || '',
+      createdAt: author.createdAt
+    },
+    stats: { postCount: myPosts.length, likeTotal },
+    isMe: !!(viewer && viewer.id === author.id),
+    waUrl: viewer && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null,
+    posts: myPosts.map(p => postJson(p, viewer))
+  });
 });
 
 app.post('/api/posts', requireAuth, postLimit, (req, res) => {

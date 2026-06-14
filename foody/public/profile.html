@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>主页 · Foody</title>
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-profile">
+
+  <!-- 顶栏 -->
+  <header class="pf-top">
+    <button class="chip icon-chip" id="backBtn"></button>
+    <span class="pf-top-name" id="topName"></span>
+    <div class="spacer"></div>
+    <button class="chip icon-chip" id="shareBtn" data-i18n-title="pfShare"></button>
+    <button class="chip icon-chip" id="langBtn" title="Language"></button>
+  </header>
+
+  <!-- 主体（由 profile.js 渲染） -->
+  <main class="pf-wrap" id="pfWrap"></main>
+
+  <!-- 编辑资料弹窗（仅自己可见） -->
+  <div class="overlay" id="editOverlay">
+    <div class="modal">
+      <h3><span data-i18n="pfEdit"></span><button class="x" id="editClose"></button></h3>
+      <form id="editForm" novalidate>
+        <div class="field">
+          <textarea id="editBio" rows="3" maxlength="160" data-i18n-ph="pfBioPh"></textarea>
+          <div class="bio-count"><span id="bioCount">0</span>/160</div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="editCancel" data-i18n="cancel"></button>
+          <button type="submit" class="btn" id="editSave" data-i18n="pfSave"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

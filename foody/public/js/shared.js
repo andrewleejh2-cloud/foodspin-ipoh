@@ -61,7 +61,13 @@ const DICT = {
     noResults: '什么都没找到…换个词试试？',
     nPosts: '{n} 个帖子',
     searchTip: '试试搜 “nasi lemak”、地区，或 @用户名',
-    feedForYou: '推荐', feedLatest: '最新'
+    feedForYou: '推荐', feedLatest: '最新',
+    /* Profile 主页 */
+    pfPosts: '作品', pfLikes: '获赞',
+    pfEdit: '编辑资料', pfSave: '保存', pfBioPh: '介绍一下你的美食 / 店…',
+    pfBioEmptyMe: '写个简介，让大家认识你 →', pfBioSaved: '简介更新好啦 ✅',
+    pfWa: 'WhatsApp 联系', pfShare: '分享主页', pfShareCopied: '主页链接已复制 ✅',
+    pfNoPosts: '还没有发布作品', pfNotFound: '找不到这个用户', pfMine: '我的主页'
   },
   ms: {
     langName: 'BM',
@@ -121,7 +127,13 @@ const DICT = {
     noResults: 'Tiada hasil… cuba kata lain?',
     nPosts: '{n} post',
     searchTip: 'Cuba cari "nasi lemak", kawasan, atau @nama',
-    feedForYou: 'Cadangan', feedLatest: 'Terbaru'
+    feedForYou: 'Cadangan', feedLatest: 'Terbaru',
+    /* Profile */
+    pfPosts: 'Kiriman', pfLikes: 'Suka',
+    pfEdit: 'Edit profil', pfSave: 'Simpan', pfBioPh: 'Cerita pasal makanan / kedai anda…',
+    pfBioEmptyMe: 'Tulis bio, biar orang kenal anda →', pfBioSaved: 'Bio dikemas kini ✅',
+    pfWa: 'Hubungi WhatsApp', pfShare: 'Kongsi profil', pfShareCopied: 'Pautan profil disalin ✅',
+    pfNoPosts: 'Belum ada kiriman', pfNotFound: 'Pengguna tidak dijumpai', pfMine: 'Profil saya'
   },
   en: {
     langName: 'EN',
@@ -181,7 +193,13 @@ const DICT = {
     noResults: 'Nothing found — try another word?',
     nPosts: '{n} posts',
     searchTip: 'Try "nasi lemak", a region, or @username',
-    feedForYou: 'For You', feedLatest: 'Latest'
+    feedForYou: 'For You', feedLatest: 'Latest',
+    /* Profile */
+    pfPosts: 'Posts', pfLikes: 'Likes',
+    pfEdit: 'Edit profile', pfSave: 'Save', pfBioPh: 'Tell people about your food / shop…',
+    pfBioEmptyMe: 'Add a bio so people get to know you →', pfBioSaved: 'Bio updated ✅',
+    pfWa: 'Contact on WhatsApp', pfShare: 'Share profile', pfShareCopied: 'Profile link copied ✅',
+    pfNoPosts: 'No posts yet', pfNotFound: 'User not found', pfMine: 'My profile'
   }
 };
 
@@ -297,7 +315,10 @@ const ICONS = {
   image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.7"/><path d="M5 18.5 10.5 13l3 3 2.5-2.5 3.5 3.5"/></svg>',
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>',
   spark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.3l1.75 5.1a1 1 0 0 0 .62.62L19.5 9.8l-5.13 1.78a1 1 0 0 0-.62.62L12 17.3l-1.75-5.1a1 1 0 0 0-.62-.62L4.5 9.8l5.13-1.78a1 1 0 0 0 .62-.62L12 2.3Z"/></svg>',
-  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l2.8 1.8"/></svg>'
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l2.8 1.8"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.8-2.8L5 17.2V20Z"/><path d="M14 7l3 3"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.4"/><circle cx="17" cy="6" r="2.4"/><circle cx="17" cy="18" r="2.4"/><path d="M8.1 11 14.9 7.2M8.1 13l6.8 3.8"/></svg>'
 };
 
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
