@@ -219,6 +219,61 @@ function matchQ(p, q) {
   return hay.includes(q);
 }
 
+/* ---------------- FYP 推荐算法 ----------------
+   给每个帖子打分后排序：综合「新鲜度 + 热度 + 个人口味」。
+   - 新鲜度：越新分越高（约 30 小时减半），让新帖有机会被看到
+   - 热度：点赞/评论/收藏，收藏和评论权重更高（更代表真喜欢），用 log 压一压避免爆款一直霸屏
+   - 个人化（仅登入用户）：同地区 + 你常赞的 #标签 加分；已经赞过的、你自己发的往后排
+   纯文件存储、无机器学习、不碰金钱与法律。权重都可随时调。 */
+function rankPosts(posts, viewer) {
+  const now = Date.now();
+
+  // 一次遍历预统计各帖互动数，避免每个帖子都全表过滤
+  const likeCount = new Map(), commentCount = new Map(), saveCount = new Map();
+  for (const l of db.likes) likeCount.set(l.postId, (likeCount.get(l.postId) || 0) + 1);
+  for (const c of db.comments) commentCount.set(c.postId, (commentCount.get(c.postId) || 0) + 1);
+  for (const s of db.saves) saveCount.set(s.postId, (saveCount.get(s.postId) || 0) + 1);
+
+  // 登入用户的口味画像：从他点赞过的帖子统计标签偏好
+  let likedTags = null, likedPostIds = null;
+  if (viewer) {
+    likedPostIds = new Set();
+    likedTags = new Map();
+    for (const l of db.likes) {
+      if (l.userId !== viewer.id) continue;
+      likedPostIds.add(l.postId);
+      const p = db.posts.find(x => x.id === l.postId);
+      if (p) for (const tg of (p.tags || [])) likedTags.set(tg, (likedTags.get(tg) || 0) + 1);
+    }
+  }
+
+  const scored = posts.map(p => {
+    const likes = likeCount.get(p.id) || 0;
+    const comments = commentCount.get(p.id) || 0;
+    const saves = saveCount.get(p.id) || 0;
+
+    const ageHours = (now - p.createdAt) / 3600000;
+    const freshness = 1 / (1 + ageHours / 30);                 // 0~1，越新越高
+    const engagement = Math.log(1 + likes + 2 * comments + 2 * saves);
+
+    let score = freshness * 2 + engagement;
+
+    if (viewer) {
+      if (p.state && p.state === viewer.state) score += 0.5;   // 同地区：本地美食更相关
+      let tagBonus = 0;
+      for (const tg of (p.tags || [])) if (likedTags.has(tg)) tagBonus += 0.4;
+      score += Math.min(tagBonus, 1.2);                        // 口味匹配（设上限，别失衡）
+      if (likedPostIds.has(p.id)) score -= 1.0;                // 已经赞过 → 往后（你看过了）
+      if (p.userId === viewer.id) score -= 0.3;                // 自己的帖子稍微往后
+    }
+
+    return { p, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score || b.p.createdAt - a.p.createdAt); // 同分时新的优先
+  return scored.map(s => s.p);
+}
+
 function postJson(p, viewer) {
   const author = db.users.find(u => u.id === p.userId);
   const likes = db.likes.filter(l => l.postId === p.id);
@@ -429,7 +484,7 @@ app.get('/api/posts', (req, res) => {
 
   if (savedOnly && !viewer) return res.status(401).json({ error: 'auth' });
 
-  let posts = [...db.posts].sort((a, b) => b.createdAt - a.createdAt);
+  let posts = [...db.posts];
   if (state && STATES.includes(state)) posts = posts.filter(p => p.state === state);
   if (savedOnly) {
     const savedIds = new Set(db.saves.filter(s => s.userId === viewer.id).map(s => s.postId));
@@ -441,6 +496,10 @@ app.get('/api/posts', (req, res) => {
     posts = u ? posts.filter(p => p.userId === u.id) : [];
   }
   if (q) posts = posts.filter(p => matchQ(p, q));
+
+  // 排序：收藏夹保持「最近的在前」；其余 FYP 一律走推荐算法
+  if (savedOnly) posts.sort((a, b) => b.createdAt - a.createdAt);
+  else posts = rankPosts(posts, viewer);
 
   /* start=帖子ID：从该帖子开始返回（搜索结果点进 feed 用） */
   let offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
