@@ -286,6 +286,7 @@ function postJson(p, viewer) {
     mine: !!(viewer && viewer.id === p.userId),
     mediaUrl: p.mediaUrl,
     mediaType: p.mediaType,
+    media: (p.media && p.media.length) ? p.media : [{ url: p.mediaUrl, type: p.mediaType }],
     caption: p.caption,
     state: p.state,
     city: p.city,
@@ -321,7 +322,7 @@ const upload = multer({
     if (okType && (IMAGE_EXT.has(ext) || VIDEO_EXT.has(ext))) cb(null, true);
     else cb(new Error('bad_file'));
   }
-}).single('media');
+}).array('media', 9);  // 一帖最多 9 个媒体（照片/视频混排）
 
 /* 图片压缩：自动转正方向（读 EXIF）、限制最大边长 1600px、转 JPEG、顺带去掉 EXIF
    （省空间也保护用户隐私，如拍摄地点）。美食照片常从几 MB 压到几百 KB。
@@ -647,24 +648,29 @@ app.post('/api/posts', requireAuth, postLimit, (req, res) => {
       const code = err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file';
       return res.status(400).json({ error: code });
     }
-    const cleanup = () => { if (req.file) fs.unlink(req.file.path, () => {}); };
+    const files = req.files || [];
+    const cleanup = () => { for (const f of files) fs.unlink(f.path, () => {}); };
 
-    if (!req.file) return res.status(400).json({ error: 'bad_file' });
+    if (!files.length) return res.status(400).json({ error: 'bad_file' });
     const { caption, state, city } = req.body || {};
     if (!state || !STATES.includes(state)) { cleanup(); return res.status(400).json({ error: 'bad_state' }); }
 
-    const ext = path.extname(req.file.filename).toLowerCase();
-    const mediaType = (req.file.mimetype.startsWith('video/') || VIDEO_EXT.has(ext)) ? 'video' : 'image';
-
-    // 图片自动压缩（省空间、加载更快、去掉 EXIF 隐私）；视频暂不转码，原样保存
-    if (mediaType === 'image') req.file.filename = await compressImage(req.file.filename);
+    // 逐个处理：图片压缩（省空间、去 EXIF），视频原样；组装 media 数组（保持选择顺序）
+    const media = [];
+    for (const f of files) {
+      const ext = path.extname(f.filename).toLowerCase();
+      const type = (f.mimetype.startsWith('video/') || VIDEO_EXT.has(ext)) ? 'video' : 'image';
+      const name = type === 'image' ? await compressImage(f.filename) : f.filename;
+      media.push({ url: '/uploads/' + name, type });
+    }
 
     const cleanCaption = String(caption || '').trim().slice(0, 500);
     const post = {
       id: crypto.randomUUID(),
       userId: req.user.id,
-      mediaUrl: '/uploads/' + req.file.filename,
-      mediaType,
+      media,
+      mediaUrl: media[0].url,        // 封面：第一个媒体（兼容旧代码与缩略图）
+      mediaType: media[0].type,
       caption: cleanCaption,
       tags: extractTags(cleanCaption),
       state,
@@ -682,10 +688,10 @@ app.delete('/api/posts/:id', requireAuth, (req, res) => {
   if (!post) return res.status(404).json({ error: 'not_found' });
   if (post.userId !== req.user.id) return res.status(403).json({ error: 'forbidden' });
 
-  // 删除上传的媒体文件（示范帖子的 /seed/ 文件不删）
-  if (post.mediaUrl.startsWith('/uploads/')) {
-    const file = path.join(UPLOAD_DIR, path.basename(post.mediaUrl));
-    fs.unlink(file, () => {});
+  // 删除该帖所有上传的媒体文件（示范帖子的 /seed/ 文件不删）
+  const urls = (post.media && post.media.length) ? post.media.map(m => m.url) : [post.mediaUrl];
+  for (const u of urls) {
+    if (u && u.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(u)), () => {});
   }
   db.posts = db.posts.filter(p => p.id !== post.id);
   db.likes = db.likes.filter(l => l.postId !== post.id);

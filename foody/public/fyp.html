@@ -87,7 +87,7 @@
       <h3><span data-i18n="uploadTitle"></span><button class="x" id="uploadClose"></button></h3>
       <form id="uploadForm" novalidate>
         <div class="drop" id="dropZone">
-          <input type="file" id="fileInput" accept="image/*,video/*" hidden>
+          <input type="file" id="fileInput" accept="image/*,video/*" multiple hidden>
           <div id="dropInner"></div>
         </div>
         <div class="field">
@@ -159,6 +159,16 @@
         <button class="send" type="submit" id="cSend" data-i18n-title="send"></button>
       </form>
     </div>
+  </div>
+
+  <!-- 多图查看器（点网格里的图/视频放大看） -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lb-close" id="lbClose"></button>
+    <span class="lb-count" id="lbCount"></span>
+    <button class="lb-nav lb-prev" id="lbPrev"></button>
+    <div class="lb-stage" id="lbStage"></div>
+    <button class="lb-nav lb-next" id="lbNext"></button>
+    <div class="lb-dots" id="lbDots"></div>
   </div>
 
   <script src="js/shared.js"></script>

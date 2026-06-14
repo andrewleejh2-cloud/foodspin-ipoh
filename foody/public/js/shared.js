@@ -67,7 +67,8 @@ const DICT = {
     pfEdit: '编辑资料', pfSave: '保存', pfBioPh: '介绍一下你的美食 / 店…',
     pfBioEmptyMe: '写个简介，让大家认识你 →', pfBioSaved: '简介更新好啦 ✅',
     pfWa: 'WhatsApp 联系', pfShare: '分享主页', pfShareCopied: '主页链接已复制 ✅',
-    pfNoPosts: '还没有发布作品', pfNotFound: '找不到这个用户', pfMine: '我的主页'
+    pfNoPosts: '还没有发布作品', pfNotFound: '找不到这个用户', pfMine: '我的主页',
+    nSelected: '已选 {n} 个', maxFiles: '最多 {n} 个，多出的没加上'
   },
   ms: {
     langName: 'BM',
@@ -133,7 +134,8 @@ const DICT = {
     pfEdit: 'Edit profil', pfSave: 'Simpan', pfBioPh: 'Cerita pasal makanan / kedai anda…',
     pfBioEmptyMe: 'Tulis bio, biar orang kenal anda →', pfBioSaved: 'Bio dikemas kini ✅',
     pfWa: 'Hubungi WhatsApp', pfShare: 'Kongsi profil', pfShareCopied: 'Pautan profil disalin ✅',
-    pfNoPosts: 'Belum ada kiriman', pfNotFound: 'Pengguna tidak dijumpai', pfMine: 'Profil saya'
+    pfNoPosts: 'Belum ada kiriman', pfNotFound: 'Pengguna tidak dijumpai', pfMine: 'Profil saya',
+    nSelected: '{n} dipilih', maxFiles: 'Maksimum {n} sahaja'
   },
   en: {
     langName: 'EN',
@@ -199,7 +201,8 @@ const DICT = {
     pfEdit: 'Edit profile', pfSave: 'Save', pfBioPh: 'Tell people about your food / shop…',
     pfBioEmptyMe: 'Add a bio so people get to know you →', pfBioSaved: 'Bio updated ✅',
     pfWa: 'Contact on WhatsApp', pfShare: 'Share profile', pfShareCopied: 'Profile link copied ✅',
-    pfNoPosts: 'No posts yet', pfNotFound: 'User not found', pfMine: 'My profile'
+    pfNoPosts: 'No posts yet', pfNotFound: 'User not found', pfMine: 'My profile',
+    nSelected: '{n} selected', maxFiles: 'Up to {n} only'
   }
 };
 

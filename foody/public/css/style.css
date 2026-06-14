@@ -855,3 +855,93 @@ select.chip option { background: #241E18; color: #F4EDE2; }
   .pf-stats { gap: 28px; }
   .pf-grid { gap: 5px; }
 }
+
+/* ============================================================
+   多图：上传预览网格 / feed 网格拼图 / 全屏查看器
+   ============================================================ */
+
+/* 上传弹窗里的多文件预览 */
+.up-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+.up-cell { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--surface-2, #F0E8DA); }
+.up-cell .preview { width: 100%; height: 100%; object-fit: cover; }
+.up-rm {
+  position: absolute; top: 3px; right: 3px; width: 22px; height: 22px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: rgba(20, 14, 8, .62); color: #fff;
+}
+.up-rm svg { width: 12px; height: 12px; }
+.up-vbadge {
+  position: absolute; left: 4px; bottom: 4px; width: 20px; height: 20px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: rgba(20, 14, 8, .55); color: #fff; pointer-events: none;
+}
+.up-vbadge svg { width: 11px; height: 11px; margin-left: 1px; }
+.up-add {
+  aspect-ratio: 1; border: 1.5px dashed var(--line); border-radius: 10px;
+  display: grid; place-items: center; color: var(--ink-2); background: var(--surface);
+}
+.up-add svg { width: 22px; height: 22px; }
+.up-add:hover { border-color: var(--accent); color: var(--accent); }
+.up-hint { margin-top: 9px; font-size: 12.5px; color: var(--ink-2); text-align: center; font-weight: 700; }
+
+/* feed 里的多图网格拼图（铺满 9:16 媒体区） */
+.media-grid {
+  position: relative; z-index: 1;
+  width: 100%; height: 100%;
+  display: grid; gap: 3px; background: #0B0908;
+}
+.media-grid.n2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+.media-grid.n3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1.35fr 1fr; }
+.media-grid.n3 .mg-cell:first-child { grid-column: 1 / 3; }
+.media-grid.n4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.mg-cell { position: relative; overflow: hidden; background: #0B0908; padding: 0; border-radius: 0; }
+.mg-cell img, .mg-cell video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mg-play {
+  position: absolute; inset: 0; margin: auto; width: 46px; height: 46px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: rgba(20, 14, 8, .5); color: #fff; pointer-events: none;
+}
+.mg-play svg { width: 22px; height: 22px; margin-left: 3px; }
+.mg-more {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .5); color: #fff; font-size: 30px; font-weight: 800;
+  pointer-events: none;
+}
+.slide.multi .play-badge { display: none; }
+
+/* 全屏查看器 lightbox */
+body.lb-open { overflow: hidden; }
+.lightbox { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, .93); display: flex; }
+.lb-stage {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 58px 16px;
+}
+.lb-media { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+.lb-close {
+  position: absolute; top: 14px; right: 14px; z-index: 2;
+  width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(255, 255, 255, .14); color: #fff;
+}
+.lb-close svg { width: 20px; height: 20px; }
+.lb-count {
+  position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 2;
+  color: #fff; font-size: 14px; font-weight: 700;
+}
+.lb-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(255, 255, 255, .14); color: #fff;
+}
+.lb-nav svg { width: 24px; height: 24px; }
+.lb-prev { left: 12px; }
+.lb-next { right: 12px; }
+.lb-next svg { transform: scaleX(-1); }
+.lb-dots {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 2;
+  display: flex; gap: 7px;
+}
+.lb-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .4); cursor: pointer; }
+.lb-dot.on { background: #fff; }
+@media (max-width: 760px) {
+  .lb-nav { width: 38px; height: 38px; background: rgba(255, 255, 255, .1); }
+}

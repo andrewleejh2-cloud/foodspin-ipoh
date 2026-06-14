@@ -40,25 +40,33 @@
     node.dataset.id = p.id;
 
     const wrap = node.querySelector('.media-wrap');
+    const list = (p.media && p.media.length) ? p.media : [{ url: p.mediaUrl, type: p.mediaType }];
 
-    // 媒体元素
-    let media;
-    if (p.mediaType === 'video') {
-      media = document.createElement('video');
-      media.src = p.mediaUrl;
-      media.loop = true;
-      media.playsInline = true;
-      media.preload = 'metadata';
-      media.muted = true;
+    // 单个媒体：全屏铺满（现状自动播放）；多个：Facebook 式网格拼图，点开看大图
+    let media = null;  // 仅单媒体时存在，供声音/播放控制使用
+    if (list.length === 1) {
+      const m = list[0];
+      if (m.type === 'video') {
+        media = document.createElement('video');
+        media.src = m.url;
+        media.loop = true;
+        media.playsInline = true;
+        media.preload = 'metadata';
+        media.muted = true;
+      } else {
+        media = document.createElement('img');
+        media.src = m.url;
+        media.alt = p.caption || 'Foody post';
+        media.loading = 'lazy';
+        node.querySelector('.media-bg').style.backgroundImage = `url("${encodeURI(m.url)}")`;
+      }
+      media.className = 'media';
+      wrap.insertBefore(media, node.querySelector('.play-badge'));
     } else {
-      media = document.createElement('img');
-      media.src = p.mediaUrl;
-      media.alt = p.caption || 'Foody post';
-      media.loading = 'lazy';
-      node.querySelector('.media-bg').style.backgroundImage = `url("${encodeURI(p.mediaUrl)}")`;
+      node.classList.add('multi');   // 让自动播放 observer 跳过这帖
+      node.querySelector('.media-bg').style.backgroundImage = `url("${encodeURI(list[0].url)}")`;
+      wrap.insertBefore(buildMediaGrid(list, p), node.querySelector('.play-badge'));
     }
-    media.className = 'media';
-    wrap.insertBefore(media, node.querySelector('.play-badge'));
     applyAVTo(node);
 
     node.querySelector('.play-badge').innerHTML = ICONS.play;
@@ -67,7 +75,7 @@
     soundHint.addEventListener('click', (e) => {
       e.stopPropagation();
       AV.muted = false; saveAV(); syncSettingsUI(); applyAVAll();
-      if (media.tagName === 'VIDEO') media.play().catch(() => {});
+      if (media && media.tagName === 'VIDEO') media.play().catch(() => {});
       soundHint.classList.remove('show');
     });
 
@@ -127,7 +135,7 @@
     paintMute();
     mutBtn.addEventListener('click', () => {
       AV.muted = !AV.muted; saveAV(); syncSettingsUI(); applyAVAll();
-      if (!AV.muted && media.tagName === 'VIDEO') media.play().catch(() => {});
+      if (!AV.muted && media && media.tagName === 'VIDEO') media.play().catch(() => {});
     });
     node.paintMute = paintMute;
 
@@ -152,7 +160,7 @@
       } else {
         tapTimer = setTimeout(() => {
           tapTimer = null;
-          if (media.tagName === 'VIDEO') {
+          if (media && media.tagName === 'VIDEO') {
             if (media.paused) { media.play().catch(() => {}); node.classList.remove('paused'); }
             else { media.pause(); node.classList.add('paused'); }
           }
@@ -163,6 +171,108 @@
     observer.observe(node);
     return node;
   }
+
+  /* 多媒体帖：Facebook 式网格拼图（最多展示 4 格，第 4 格盖 +N）。点任意格开全屏查看器 */
+  function buildMediaGrid(list, p) {
+    const grid = document.createElement('div');
+    grid.className = 'media-grid n' + Math.min(list.length, 4);
+    list.slice(0, 4).forEach((m, i) => {
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'mg-cell';
+      if (m.type === 'video') {
+        const v = document.createElement('video');
+        v.src = m.url; v.muted = true; v.playsInline = true; v.preload = 'metadata';
+        const badge = document.createElement('span');
+        badge.className = 'mg-play'; badge.innerHTML = ICONS.play;
+        cell.append(v, badge);
+      } else {
+        const img = document.createElement('img');
+        img.src = m.url; img.loading = 'lazy'; img.alt = '';
+        cell.appendChild(img);
+      }
+      if (i === 3 && list.length > 4) {
+        const more = document.createElement('span');
+        more.className = 'mg-more';
+        more.textContent = '+' + (list.length - 4);
+        cell.appendChild(more);
+      }
+      cell.addEventListener('click', (e) => { e.stopPropagation(); openLightbox(list, i); });
+      grid.appendChild(cell);
+    });
+    return grid;
+  }
+
+  /* ============ 多图查看器 lightbox ============ */
+  const lb = $('#lightbox');
+  const lbStage = $('#lbStage');
+  let lbList = [], lbIdx = 0;
+  $('#lbClose').innerHTML = ICONS.close;
+  $('#lbPrev').innerHTML = ICONS.back;
+  $('#lbNext').innerHTML = ICONS.back;   // CSS 水平翻转成向右箭头
+
+  function openLightbox(list, index) {
+    lbList = list; lbIdx = index || 0;
+    lb.hidden = false;
+    document.body.classList.add('lb-open');
+    paintLightbox();
+  }
+  function closeLightbox() {
+    lb.hidden = true;
+    document.body.classList.remove('lb-open');
+    lbStage.innerHTML = '';   // 移除元素 → 停止视频播放
+    lbList = [];
+  }
+  function lbGo(d) {
+    if (lbList.length < 2) return;
+    lbIdx = (lbIdx + d + lbList.length) % lbList.length;
+    paintLightbox();
+  }
+  function paintLightbox() {
+    lbStage.innerHTML = '';
+    const m = lbList[lbIdx];
+    let el;
+    if (m.type === 'video') {
+      el = document.createElement('video');
+      el.src = m.url; el.controls = true; el.playsInline = true; el.autoplay = true; el.loop = true;
+    } else {
+      el = document.createElement('img');
+      el.src = m.url; el.alt = '';
+    }
+    el.className = 'lb-media';
+    lbStage.appendChild(el);
+    const multi = lbList.length > 1;
+    $('#lbCount').textContent = multi ? (lbIdx + 1) + ' / ' + lbList.length : '';
+    $('#lbPrev').hidden = !multi;
+    $('#lbNext').hidden = !multi;
+    const dots = $('#lbDots');
+    dots.hidden = !multi;
+    dots.innerHTML = '';
+    if (multi) lbList.forEach((_, i) => {
+      const dot = document.createElement('span');
+      dot.className = 'lb-dot' + (i === lbIdx ? ' on' : '');
+      dot.addEventListener('click', () => { lbIdx = i; paintLightbox(); });
+      dots.appendChild(dot);
+    });
+  }
+  $('#lbClose').addEventListener('click', closeLightbox);
+  $('#lbPrev').addEventListener('click', () => lbGo(-1));
+  $('#lbNext').addEventListener('click', () => lbGo(1));
+  lb.addEventListener('click', (e) => { if (e.target === lb) closeLightbox(); });
+  document.addEventListener('keydown', (e) => {
+    if (lb.hidden) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') lbGo(-1);
+    else if (e.key === 'ArrowRight') lbGo(1);
+  });
+  let lbTouchX = null;
+  lbStage.addEventListener('touchstart', (e) => { lbTouchX = e.touches[0].clientX; }, { passive: true });
+  lbStage.addEventListener('touchend', (e) => {
+    if (lbTouchX === null) return;
+    const dx = e.changedTouches[0].clientX - lbTouchX;
+    if (Math.abs(dx) > 45) lbGo(dx < 0 ? 1 : -1);
+    lbTouchX = null;
+  });
 
   /* 文案里的 #标签 渲染成可点击按钮 → 筛选该标签 */
   function renderCaption(el, text) {
@@ -200,7 +310,7 @@
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       const node = entry.target;
-      const video = node.querySelector('video');
+      const video = node.classList.contains('multi') ? null : node.querySelector('video');
       if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
         activeSlide = node;
         if (video) {
@@ -492,11 +602,12 @@
   const uploadOverlay = $('#uploadOverlay');
   const fileInput = $('#fileInput');
   const dropInner = $('#dropInner');
-  let chosenFile = null;
+  let chosenFiles = [];
+  const MAX_MEDIA = 9;
 
   function openUpload() {
     if (!ME) return needLogin();
-    chosenFile = null;
+    chosenFiles = [];
     paintDrop();
     $('#upCaption').value = '';
     fillStateSelect($('#upState'), false);
@@ -511,39 +622,67 @@
 
   function paintDrop() {
     dropInner.innerHTML = '';
-    if (!chosenFile) {
+    if (!chosenFiles.length) {
       dropInner.innerHTML = `${ICONS.image}<b>${t('chooseFile')}</b><span>${t('fromGallery')}</span>`;
       return;
     }
-    const url = URL.createObjectURL(chosenFile);
-    let prev;
-    if (chosenFile.type.startsWith('video/')) {
-      prev = document.createElement('video');
-      prev.src = url; prev.muted = true; prev.autoplay = true; prev.loop = true; prev.playsInline = true;
-    } else {
-      prev = document.createElement('img');
-      prev.src = url;
+    const grid = document.createElement('div');
+    grid.className = 'up-grid';
+    chosenFiles.forEach((file, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'up-cell';
+      const url = URL.createObjectURL(file);
+      let prev;
+      if (file.type.startsWith('video/')) {
+        prev = document.createElement('video');
+        prev.src = url; prev.muted = true; prev.playsInline = true; prev.preload = 'metadata';
+      } else {
+        prev = document.createElement('img');
+        prev.src = url;
+      }
+      prev.className = 'preview';
+      cell.appendChild(prev);
+      if (file.type.startsWith('video/')) {
+        const vb = document.createElement('span'); vb.className = 'up-vbadge'; vb.innerHTML = ICONS.play;
+        cell.appendChild(vb);
+      }
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'up-rm'; rm.innerHTML = ICONS.close;
+      rm.addEventListener('click', (e) => { e.stopPropagation(); URL.revokeObjectURL(url); chosenFiles.splice(i, 1); paintDrop(); });
+      cell.appendChild(rm);
+      grid.appendChild(cell);
+    });
+    if (chosenFiles.length < MAX_MEDIA) {
+      const add = document.createElement('button');
+      add.type = 'button'; add.className = 'up-add'; add.innerHTML = ICONS.plus;
+      add.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+      grid.appendChild(add);
     }
-    prev.className = 'preview';
-    const hint = document.createElement('span');
-    hint.textContent = t('changeFile');
-    dropInner.append(prev, hint);
+    const hint = document.createElement('div');
+    hint.className = 'up-hint';
+    hint.textContent = t('nSelected', { n: chosenFiles.length });
+    dropInner.append(grid, hint);
   }
 
-  $('#dropZone').addEventListener('click', () => fileInput.click());
+  $('#dropZone').addEventListener('click', (e) => { if (!e.target.closest('.up-cell')) fileInput.click(); });
   fileInput.addEventListener('change', () => {
-    if (fileInput.files && fileInput.files[0]) { chosenFile = fileInput.files[0]; paintDrop(); }
+    for (const f of Array.from(fileInput.files || [])) {
+      if (chosenFiles.length >= MAX_MEDIA) { toast(t('maxFiles', { n: MAX_MEDIA })); break; }
+      chosenFiles.push(f);
+    }
+    fileInput.value = '';      // 清空，允许再次选同一个文件
+    paintDrop();
   });
 
   $('#uploadForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!ME) return needLogin();
-    if (!chosenFile) { $('#dropZone').style.borderColor = 'var(--accent)'; return; }
+    if (!chosenFiles.length) { $('#dropZone').style.borderColor = 'var(--accent)'; return; }
     const state = $('#upState').value;
     if (!state) { $('#upState').focus(); return; }
 
     const fd = new FormData();
-    fd.append('media', chosenFile);
+    for (const f of chosenFiles) fd.append('media', f);
     fd.append('caption', $('#upCaption').value.trim());
     fd.append('state', state);
     fd.append('city', $('#upCity').value.trim());
