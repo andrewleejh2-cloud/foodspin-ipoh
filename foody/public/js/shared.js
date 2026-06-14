@@ -68,7 +68,8 @@ const DICT = {
     pfBioEmptyMe: '写个简介，让大家认识你 →', pfBioSaved: '简介更新好啦 ✅',
     pfWa: 'WhatsApp 联系', pfShare: '分享主页', pfShareCopied: '主页链接已复制 ✅',
     pfNoPosts: '还没有发布作品', pfNotFound: '找不到这个用户', pfMine: '我的主页',
-    nSelected: '已选 {n} 个', maxFiles: '最多 {n} 个，多出的没加上'
+    nSelected: '已选 {n} 个', maxFiles: '最多 {n} 个，多出的没加上',
+    pfUsername: '用户名', pfChangePhoto: '换头像', pfSaved: '资料更新好啦 ✅'
   },
   ms: {
     langName: 'BM',
@@ -135,7 +136,8 @@ const DICT = {
     pfBioEmptyMe: 'Tulis bio, biar orang kenal anda →', pfBioSaved: 'Bio dikemas kini ✅',
     pfWa: 'Hubungi WhatsApp', pfShare: 'Kongsi profil', pfShareCopied: 'Pautan profil disalin ✅',
     pfNoPosts: 'Belum ada kiriman', pfNotFound: 'Pengguna tidak dijumpai', pfMine: 'Profil saya',
-    nSelected: '{n} dipilih', maxFiles: 'Maksimum {n} sahaja'
+    nSelected: '{n} dipilih', maxFiles: 'Maksimum {n} sahaja',
+    pfUsername: 'Nama pengguna', pfChangePhoto: 'Tukar foto', pfSaved: 'Profil dikemas kini ✅'
   },
   en: {
     langName: 'EN',
@@ -202,7 +204,8 @@ const DICT = {
     pfBioEmptyMe: 'Add a bio so people get to know you →', pfBioSaved: 'Bio updated ✅',
     pfWa: 'Contact on WhatsApp', pfShare: 'Share profile', pfShareCopied: 'Profile link copied ✅',
     pfNoPosts: 'No posts yet', pfNotFound: 'User not found', pfMine: 'My profile',
-    nSelected: '{n} selected', maxFiles: 'Up to {n} only'
+    nSelected: '{n} selected', maxFiles: 'Up to {n} only',
+    pfUsername: 'Username', pfChangePhoto: 'Change photo', pfSaved: 'Profile updated ✅'
   }
 };
 
@@ -280,6 +283,22 @@ async function api(url, opts = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw Object.assign(new Error(data.error || 'net'), { code: data.error || 'net', status: res.status });
   return data;
+}
+
+/* ---------------- 头像 ---------------- */
+/* 有头像就放图，没有就显示用户名首字母（圆形外观由 CSS 控制） */
+function fillAvatar(el, username, avatarUrl) {
+  if (!el) return;
+  if (avatarUrl) {
+    el.textContent = '';
+    const img = document.createElement('img');
+    img.className = 'av-img';
+    img.src = avatarUrl;
+    img.alt = '';
+    el.appendChild(img);
+  } else {
+    el.textContent = (username || '?').slice(0, 1).toUpperCase();
+  }
 }
 
 /* ---------------- Toast ---------------- */

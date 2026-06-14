@@ -97,7 +97,7 @@
 
     // 右侧操作栏
     const avEl = node.querySelector('.avatar');
-    avEl.textContent = p.username.slice(0, 1).toUpperCase();
+    fillAvatar(avEl, p.username, p.avatar);
     avEl.style.cursor = 'pointer';
     avEl.addEventListener('click', () => { location.href = 'profile.html?u=' + encodeURIComponent(p.username); });
 
@@ -532,7 +532,7 @@
     el.className = 'c-item';
     const av = document.createElement('div');
     av.className = 'avatar-sm';
-    av.textContent = c.username.slice(0, 1).toUpperCase();
+    fillAvatar(av, c.username, c.avatar);
     const body = document.createElement('div');
     body.className = 'body';
     const who = document.createElement('div');
@@ -909,7 +909,7 @@
         row.className = 's-user';
         const av = document.createElement('span');
         av.className = 'avatar-sm';
-        av.textContent = u.username.slice(0, 1).toUpperCase();
+        fillAvatar(av, u.username, u.avatar);
         const body = document.createElement('span');
         body.className = 'body';
         const nm = document.createElement('b');
@@ -1013,7 +1013,8 @@
   function paintUserChip() {
     const chip = $('#userChip');
     if (ME) {
-      chip.innerHTML = `<span class="avatar-sm">${ME.username.slice(0, 1).toUpperCase()}</span><span>@${ME.username}</span>`;
+      chip.innerHTML = `<span class="avatar-sm"></span><span>@${ME.username}</span>`;
+      fillAvatar(chip.querySelector('.avatar-sm'), ME.username, ME.avatar);
       chip.onclick = () => { location.href = 'profile.html?u=' + encodeURIComponent(ME.username); };
       chip.title = t('pfMine');
     } else {

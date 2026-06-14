@@ -29,6 +29,15 @@
     <div class="modal">
       <h3><span data-i18n="pfEdit"></span><button class="x" id="editClose"></button></h3>
       <form id="editForm" novalidate>
+        <div class="edit-av-row">
+          <div class="edit-av" id="editAvatar"></div>
+          <button type="button" class="btn-ghost edit-av-btn" id="editAvatarBtn" data-i18n="pfChangePhoto"></button>
+          <input type="file" id="editAvatarInput" accept="image/*" hidden>
+        </div>
+        <div class="field">
+          <label data-i18n="pfUsername"></label>
+          <input id="editUsername" maxlength="20" autocomplete="off">
+        </div>
         <div class="field">
           <textarea id="editBio" rows="3" maxlength="160" data-i18n-ph="pfBioPh"></textarea>
           <div class="bio-count"><span id="bioCount">0</span>/160</div>

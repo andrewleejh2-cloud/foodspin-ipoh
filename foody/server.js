@@ -197,7 +197,7 @@ function normPhone(raw) {
 }
 
 function pubUser(u) {
-  return { id: u.id, username: u.username, phone: u.phone, state: u.state, city: u.city, bio: u.bio || '' };
+  return { id: u.id, username: u.username, phone: u.phone, state: u.state, city: u.city, bio: u.bio || '', avatar: u.avatar || null };
 }
 
 /* 从文案抽出 #标签（支持中文），统一小写存储 */
@@ -283,6 +283,7 @@ function postJson(p, viewer) {
   return {
     id: p.id,
     username: author ? author.username : '???',
+    avatar: author ? (author.avatar || null) : null,
     mine: !!(viewer && viewer.id === p.userId),
     mediaUrl: p.mediaUrl,
     mediaType: p.mediaType,
@@ -324,6 +325,17 @@ const upload = multer({
   }
 }).array('media', 9);  // 一帖最多 9 个媒体（照片/视频混排）
 
+// 头像上传：单张图片（不收视频），上限 20MB
+const avatarUpload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (file.mimetype.startsWith('image/') && IMAGE_EXT.has(ext)) cb(null, true);
+    else cb(new Error('bad_file'));
+  }
+}).single('avatar');
+
 /* 图片压缩：自动转正方向（读 EXIF）、限制最大边长 1600px、转 JPEG、顺带去掉 EXIF
    （省空间也保护用户隐私，如拍摄地点）。美食照片常从几 MB 压到几百 KB。
    失败则保留原图，绝不因压缩出错而丢帖。GIF 跳过以保留动画。
@@ -349,6 +361,25 @@ async function compressImage(filename) {
   } catch (e) {
     try { fs.unlinkSync(tmpPath); } catch {}
     console.error('[压缩] 图片压缩失败，保留原图:', e.message);
+    return filename;
+  }
+}
+
+/* 头像压缩：居中方形裁剪 400x400、转 JPEG、去 EXIF。失败则保留原图。 */
+async function compressAvatar(filename) {
+  const srcPath = path.join(UPLOAD_DIR, filename);
+  const outName = filename.replace(/\.[^.]+$/, '') + '-av.jpg';
+  const outPath = path.join(UPLOAD_DIR, outName);
+  try {
+    await sharp(srcPath, { failOn: 'none' })
+      .rotate()
+      .resize(400, 400, { fit: 'cover', position: 'centre' })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toFile(outPath);
+    fs.unlinkSync(srcPath);
+    return outName;
+  } catch (e) {
+    console.error('[头像] 压缩失败，保留原图:', e.message);
     return filename;
   }
 }
@@ -505,10 +536,35 @@ app.get('/api/me', (req, res) => {
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
 app.patch('/api/me', requireAuth, (req, res) => {
-  const { bio } = req.body || {};
+  const { bio, username } = req.body || {};
+  if (typeof username === 'string') {
+    const name = username.trim();
+    if (!/^[\p{L}\p{N}_]{2,20}$/u.test(name)) return res.status(400).json({ error: 'bad_username' });
+    const lower = name.toLowerCase();
+    // 改名只改 user 记录：帖子/点赞/评论都按 userId 关联，不受影响
+    if (lower !== req.user.usernameLower && db.users.some(u => u.usernameLower === lower)) {
+      return res.status(409).json({ error: 'username_taken' });
+    }
+    req.user.username = name;
+    req.user.usernameLower = lower;
+  }
   if (typeof bio === 'string') req.user.bio = bio.replace(/\s+/g, ' ').trim().slice(0, 160);
   saveDb();
   res.json({ user: pubUser(req.user) });
+});
+
+/* 上传/更换头像：方形压缩后存为 user.avatar，并删掉旧头像文件 */
+app.post('/api/me/avatar', requireAuth, (req, res) => {
+  avatarUpload(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file' });
+    if (!req.file) return res.status(400).json({ error: 'bad_file' });
+    const name = await compressAvatar(req.file.filename);
+    const old = req.user.avatar;
+    req.user.avatar = '/uploads/' + name;
+    if (old && old.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(old)), () => {});
+    saveDb();
+    res.json({ user: pubUser(req.user) });
+  });
 });
 
 /* ---- 帖子 ---- */
@@ -587,6 +643,7 @@ app.get('/api/search', (req, res) => {
     .slice(0, 8)
     .map(u => ({
       username: u.username,
+      avatar: u.avatar || null,
       state: u.state,
       city: u.city,
       postCount: db.posts.filter(p => p.userId === u.id).length
@@ -630,6 +687,7 @@ app.get('/api/users/:username', (req, res) => {
   res.json({
     user: {
       username: author.username,
+      avatar: author.avatar || null,
       state: author.state,
       city: author.city,
       bio: author.bio || '',
@@ -738,6 +796,7 @@ app.get('/api/posts/:id/comments', (req, res) => {
       return {
         id: c.id,
         username: u ? u.username : '???',
+        avatar: u ? (u.avatar || null) : null,
         text: c.text,
         createdAt: c.createdAt,
         mine: !!(viewer && viewer.id === c.userId)
@@ -755,7 +814,7 @@ app.post('/api/posts/:id/comments', requireAuth, commentLimit, (req, res) => {
   db.comments.push(comment);
   saveDb();
   res.json({
-    comment: { id: comment.id, username: req.user.username, text, createdAt: comment.createdAt, mine: true },
+    comment: { id: comment.id, username: req.user.username, avatar: req.user.avatar || null, text, createdAt: comment.createdAt, mine: true },
     commentCount: db.comments.filter(c => c.postId === post.id).length
   });
 });

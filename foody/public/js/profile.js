@@ -3,7 +3,7 @@
    三语字典、API、Toast、图标。点作品 → 跳回 FYP 该用户的 feed 从该帖播起。 */
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
-  const UNAME = (new URLSearchParams(location.search).get('u') || '').trim();
+  let UNAME = (new URLSearchParams(location.search).get('u') || '').trim();
 
   // backBtn 的本地化标签（字典里没有这个词，单独映射）
   const BACK = { zh: '返回', ms: 'Kembali', en: 'Back' };
@@ -82,7 +82,7 @@
 
     const av = document.createElement('div');
     av.className = 'pf-avatar';
-    av.textContent = u.username.slice(0, 1).toUpperCase();
+    fillAvatar(av, u.username, u.avatar);
 
     const name = document.createElement('h1');
     name.className = 'pf-name';
@@ -182,13 +182,17 @@
     return c;
   }
 
-  /* ---------------- 编辑简介（仅自己） ---------------- */
+  /* ---------------- 编辑资料（仅自己）：头像 + 用户名 + 简介 ---------------- */
+  let pendingAvatar = null;   // 待上传的新头像文件（保存时才真正上传）
   function openEdit() {
+    pendingAvatar = null;
+    $('#editUsername').value = DATA.user.username;
+    fillAvatar($('#editAvatar'), DATA.user.username, DATA.user.avatar);
     const ta = $('#editBio');
     ta.value = DATA.user.bio || '';
     $('#bioCount').textContent = ta.value.length;
     $('#editOverlay').classList.add('show');
-    setTimeout(() => ta.focus(), 50);
+    setTimeout(() => $('#editUsername').focus(), 50);
   }
   function closeEdit() { $('#editOverlay').classList.remove('show'); }
 
@@ -196,16 +200,49 @@
   $('#editCancel').addEventListener('click', closeEdit);
   $('#editOverlay').addEventListener('click', (e) => { if (e.target === $('#editOverlay')) closeEdit(); });
   $('#editBio').addEventListener('input', () => { $('#bioCount').textContent = $('#editBio').value.length; });
+  $('#editAvatarBtn').addEventListener('click', () => $('#editAvatarInput').click());
+  $('#editAvatarInput').addEventListener('change', () => {
+    const f = $('#editAvatarInput').files && $('#editAvatarInput').files[0];
+    if (!f) return;
+    pendingAvatar = f;
+    const av = $('#editAvatar');
+    av.textContent = '';
+    const img = document.createElement('img');
+    img.className = 'av-img'; img.src = URL.createObjectURL(f); img.alt = '';
+    av.appendChild(img);
+    $('#editAvatarInput').value = '';
+  });
   $('#editForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const save = $('#editSave');
+    save.disabled = true;
     try {
-      const res = await api('/api/me', { method: 'PATCH', body: { bio: $('#editBio').value.trim() } });
+      // 1) 先传头像（若选了新的）
+      if (pendingAvatar) {
+        const fd = new FormData();
+        fd.append('avatar', pendingAvatar);
+        const ar = await api('/api/me/avatar', { method: 'POST', body: fd });
+        DATA.user.avatar = ar.user.avatar;
+        pendingAvatar = null;
+      }
+      // 2) 改用户名 + 简介
+      const res = await api('/api/me', { method: 'PATCH', body: { username: $('#editUsername').value.trim(), bio: $('#editBio').value.trim() } });
+      const renamed = res.user.username !== DATA.user.username;
+      DATA.user.username = res.user.username;
       DATA.user.bio = res.user.bio;
       closeEdit();
-      toast(t('pfBioSaved'));
+      toast(t('pfSaved'));
+      // 改名后同步页面 URL / 顶栏 / 分享链接里的用户名
+      if (renamed) {
+        UNAME = res.user.username;
+        history.replaceState(null, '', '?u=' + encodeURIComponent(UNAME));
+        $('#topName').textContent = '@' + UNAME;
+      }
       render();
     } catch (err) {
-      toast(t(err.code === 'auth' ? 'errAuth' : 'errNet'));
+      toast(errMsg(err.code));
+    } finally {
+      save.disabled = false;
     }
   });
 
