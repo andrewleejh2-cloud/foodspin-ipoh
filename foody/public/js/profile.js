@@ -97,7 +97,19 @@
     stats.className = 'pf-stats';
     stats.append(statBox(fmtN(st.postCount), t('pfPosts')), statBox(fmtN(st.likeTotal), t('pfLikes')));
 
-    head.append(av, name, region, stats);
+    // 个人留言气泡（IG Note 风格）：访客可见；自己未填时显示「+ 留言」入口
+    const note = document.createElement('div');
+    note.className = 'pf-note';
+    if (u.note) {
+      note.textContent = u.note;
+    } else if (DATA.isMe) {
+      note.classList.add('empty');
+      note.textContent = '+ ' + t('pfNote');
+      note.addEventListener('click', openEdit);
+    } else {
+      note.hidden = true;
+    }
+    head.append(av, name, region, note, stats);
 
     // 简介
     const bio = document.createElement('p');
@@ -123,10 +135,12 @@
       out.addEventListener('click', logout);
       actions.append(edit, out);
     } else {
+      const loginThen = (go) => DATA.waUrl ? go() : (toast(t('errAuth')), setTimeout(() => { location.href = 'index.html'; }, 900));
+      const msg = mkBtn('pf-msg', ICONS.send, t('pfMessage'));
+      msg.addEventListener('click', () => loginThen(() => { location.href = 'messages.html?u=' + encodeURIComponent(u.username); }));
       const wa = mkBtn('pf-wa', ICONS.whatsapp, t('pfWa'));
-      if (DATA.waUrl) wa.addEventListener('click', () => { location.href = DATA.waUrl; });
-      else wa.addEventListener('click', () => { toast(t('errAuth')); setTimeout(() => { location.href = 'index.html'; }, 900); });
-      actions.appendChild(wa);
+      wa.addEventListener('click', () => loginThen(() => { location.href = DATA.waUrl; }));
+      actions.append(msg, wa);
     }
     head.appendChild(actions);
     wrap.appendChild(head);
@@ -187,6 +201,7 @@
   function openEdit() {
     pendingAvatar = null;
     $('#editUsername').value = DATA.user.username;
+    $('#editNote').value = DATA.user.note || '';
     fillAvatar($('#editAvatar'), DATA.user.username, DATA.user.avatar);
     const ta = $('#editBio');
     ta.value = DATA.user.bio || '';
@@ -226,10 +241,11 @@
         pendingAvatar = null;
       }
       // 2) 改用户名 + 简介
-      const res = await api('/api/me', { method: 'PATCH', body: { username: $('#editUsername').value.trim(), bio: $('#editBio').value.trim() } });
+      const res = await api('/api/me', { method: 'PATCH', body: { username: $('#editUsername').value.trim(), note: $('#editNote').value.trim(), bio: $('#editBio').value.trim() } });
       const renamed = res.user.username !== DATA.user.username;
       DATA.user.username = res.user.username;
       DATA.user.bio = res.user.bio;
+      DATA.user.note = res.user.note;
       closeEdit();
       toast(t('pfSaved'));
       // 改名后同步页面 URL / 顶栏 / 分享链接里的用户名

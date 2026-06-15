@@ -1010,6 +1010,11 @@
     feed.querySelectorAll('.sound-hint').forEach(el => { el.textContent = t('soundHint'); });
   });
 
+  async function pollUnread() {
+    if (!ME) return;
+    try { const d = await api('/api/me/unread'); $('#msgDot').hidden = !(d.count > 0); } catch {}
+  }
+
   function paintUserChip() {
     const chip = $('#userChip');
     if (ME) {
@@ -1050,6 +1055,8 @@
     document.querySelectorAll('.x').forEach(b => { b.innerHTML = ICONS.close; });
     $('#cSend').innerHTML = ICONS.send;
     $('#searchBtn').innerHTML = ICONS.search;
+    $('#msgBtn').insertAdjacentHTML('afterbegin', ICONS.bubble);
+    $('#msgBtn').addEventListener('click', () => { location.href = 'messages.html'; });
     document.querySelector('.s-ic').innerHTML = ICONS.search;
     $('#searchClear').innerHTML = ICONS.close;
     $('#feedSeg button[data-sort="hot"] .sg-ic').innerHTML = ICONS.spark;
@@ -1065,6 +1072,8 @@
     fillStateSelect($('#upState'), false);
     paintUserChip();
     $('#savedFilter').hidden = !ME;
+    $('#msgBtn').hidden = !ME;
+    if (ME) { pollUnread(); setInterval(pollUnread, 15000); }
     $('#uploadBtnTop').style.display = '';
     // 从 profile / 分享链接进来：?user= / ?tag= / ?q=（可带 ?start=帖子ID）直接进对应 feed
     const sp = new URLSearchParams(location.search);

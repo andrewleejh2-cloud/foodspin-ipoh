@@ -69,7 +69,10 @@ const DICT = {
     pfWa: 'WhatsApp 联系', pfShare: '分享主页', pfShareCopied: '主页链接已复制 ✅',
     pfNoPosts: '还没有发布作品', pfNotFound: '找不到这个用户', pfMine: '我的主页',
     nSelected: '已选 {n} 个', maxFiles: '最多 {n} 个，多出的没加上',
-    pfUsername: '用户名', pfChangePhoto: '换头像', pfSaved: '资料更新好啦 ✅'
+    pfUsername: '用户名', pfChangePhoto: '换头像', pfSaved: '资料更新好啦 ✅',
+    pfNote: '留言', pfNotePh: '发条留言…（如：今天招牌菜半价 🦐）',
+    pfMessage: '发消息', dmTitle: '私信', dmPh: '输入消息…', dmYou: '你：',
+    dmEmpty: '还没有私信。去别人主页点「发消息」就能开聊啦 💬', dmSayHi: '给 @{name} 发条消息，打个招呼吧 👋'
   },
   ms: {
     langName: 'BM',
@@ -137,7 +140,10 @@ const DICT = {
     pfWa: 'Hubungi WhatsApp', pfShare: 'Kongsi profil', pfShareCopied: 'Pautan profil disalin ✅',
     pfNoPosts: 'Belum ada kiriman', pfNotFound: 'Pengguna tidak dijumpai', pfMine: 'Profil saya',
     nSelected: '{n} dipilih', maxFiles: 'Maksimum {n} sahaja',
-    pfUsername: 'Nama pengguna', pfChangePhoto: 'Tukar foto', pfSaved: 'Profil dikemas kini ✅'
+    pfUsername: 'Nama pengguna', pfChangePhoto: 'Tukar foto', pfSaved: 'Profil dikemas kini ✅',
+    pfNote: 'Nota', pfNotePh: 'Tulis nota… (cth: spesial separuh harga 🦐)',
+    pfMessage: 'Mesej', dmTitle: 'Mesej', dmPh: 'Taip mesej…', dmYou: 'Anda:',
+    dmEmpty: 'Belum ada mesej. Buka profil orang & tekan「Mesej」untuk mula 💬', dmSayHi: 'Hantar mesej kepada @{name} 👋'
   },
   en: {
     langName: 'EN',
@@ -205,7 +211,10 @@ const DICT = {
     pfWa: 'Contact on WhatsApp', pfShare: 'Share profile', pfShareCopied: 'Profile link copied ✅',
     pfNoPosts: 'No posts yet', pfNotFound: 'User not found', pfMine: 'My profile',
     nSelected: '{n} selected', maxFiles: 'Up to {n} only',
-    pfUsername: 'Username', pfChangePhoto: 'Change photo', pfSaved: 'Profile updated ✅'
+    pfUsername: 'Username', pfChangePhoto: 'Change photo', pfSaved: 'Profile updated ✅',
+    pfNote: 'Note', pfNotePh: 'Leave a note… (e.g. half-price special 🦐)',
+    pfMessage: 'Message', dmTitle: 'Messages', dmPh: 'Type a message…', dmYou: 'You:',
+    dmEmpty: 'No messages yet. Open a profile and tap "Message" to start 💬', dmSayHi: 'Say hi to @{name} 👋'
   }
 };
 

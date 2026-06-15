@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>私信 · Foody</title>
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-msg">
+
+  <header class="msg-top">
+    <button class="chip icon-chip" id="backBtn"></button>
+    <span class="msg-title" id="msgTitle"></span>
+    <div class="spacer"></div>
+    <button class="chip icon-chip" id="langBtn" title="Language"></button>
+  </header>
+
+  <!-- 收件箱列表 或 聊天气泡，由 messages.js 渲染 -->
+  <main class="msg-wrap" id="msgWrap"></main>
+
+  <!-- 仅聊天视图显示 -->
+  <form class="msg-compose" id="msgForm" hidden>
+    <input id="msgInput" maxlength="1000" autocomplete="off" enterkeyhint="send" data-i18n-ph="dmPh">
+    <button class="send" type="submit" id="msgSend" data-i18n-title="send"></button>
+  </form>
+
+  <script src="js/shared.js"></script>
+  <script src="js/messages.js"></script>
+</body>
+</html>

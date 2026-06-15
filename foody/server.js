@@ -69,11 +69,11 @@ const SEED_TAGS = {
 function loadDb() {
   if (fs.existsSync(DB_FILE)) {
     db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves']) {
+    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages']) {
       if (!Array.isArray(db[k])) db[k] = [];
     }
   } else {
-    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [] };
+    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [] };
     seed();
   }
   let changed = !fs.existsSync(DB_FILE);
@@ -197,7 +197,7 @@ function normPhone(raw) {
 }
 
 function pubUser(u) {
-  return { id: u.id, username: u.username, phone: u.phone, state: u.state, city: u.city, bio: u.bio || '', avatar: u.avatar || null };
+  return { id: u.id, username: u.username, phone: u.phone, state: u.state, city: u.city, bio: u.bio || '', avatar: u.avatar || null, note: u.note || '' };
 }
 
 /* 从文案抽出 #标签（支持中文），统一小写存储 */
@@ -463,6 +463,7 @@ function rateLimit({ windowMs, max }) {
 const registerLimit = rateLimit({ windowMs: 3600000, max: 10 }); // 每 IP 每小时最多注册 10 个
 const postLimit = rateLimit({ windowMs: 600000, max: 30 });      // 每 IP 每 10 分钟最多发 30 帖
 const commentLimit = rateLimit({ windowMs: 600000, max: 60 });   // 每 IP 每 10 分钟最多 60 条留言
+const messageLimit = rateLimit({ windowMs: 600000, max: 150 });  // 每 IP 每 10 分钟最多 150 条私信
 
 /* ---- 账号 ---- */
 app.post('/api/register', registerLimit, (req, res) => {
@@ -536,7 +537,7 @@ app.get('/api/me', (req, res) => {
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
 app.patch('/api/me', requireAuth, (req, res) => {
-  const { bio, username } = req.body || {};
+  const { bio, username, note } = req.body || {};
   if (typeof username === 'string') {
     const name = username.trim();
     if (!/^[\p{L}\p{N}_]{2,20}$/u.test(name)) return res.status(400).json({ error: 'bad_username' });
@@ -549,6 +550,7 @@ app.patch('/api/me', requireAuth, (req, res) => {
     req.user.usernameLower = lower;
   }
   if (typeof bio === 'string') req.user.bio = bio.replace(/\s+/g, ' ').trim().slice(0, 160);
+  if (typeof note === 'string') req.user.note = note.replace(/\s+/g, ' ').trim().slice(0, 80);
   saveDb();
   res.json({ user: pubUser(req.user) });
 });
@@ -691,6 +693,7 @@ app.get('/api/users/:username', (req, res) => {
       state: author.state,
       city: author.city,
       bio: author.bio || '',
+      note: author.note || '',
       createdAt: author.createdAt
     },
     stats: { postCount: myPosts.length, likeTotal },
@@ -826,6 +829,71 @@ app.delete('/api/comments/:id', requireAuth, (req, res) => {
   db.comments = db.comments.filter(c => c.id !== comment.id);
   saveDb();
   res.json({ ok: true, commentCount: db.comments.filter(c => c.postId === comment.postId).length });
+});
+
+/* ---- 站内私信（DM）。只有对话双方能看到自己的消息，其余人无权访问 ---- */
+function dmBetween(aId, bId) {
+  return db.messages
+    .filter(m => (m.fromId === aId && m.toId === bId) || (m.fromId === bId && m.toId === aId))
+    .sort((x, y) => x.createdAt - y.createdAt);
+}
+
+// 发私信：POST /api/messages { to: 对方用户名, text }
+app.post('/api/messages', requireAuth, messageLimit, (req, res) => {
+  const { to, text } = req.body || {};
+  const target = db.users.find(u => u.usernameLower === String(to || '').trim().toLowerCase());
+  if (!target) return res.status(404).json({ error: 'not_found' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  const clean = String(text || '').trim().slice(0, 1000);
+  if (!clean) return res.status(400).json({ error: 'missing' });
+  const msg = { id: crypto.randomUUID(), fromId: req.user.id, toId: target.id, text: clean, createdAt: Date.now(), readAt: null };
+  db.messages.push(msg);
+  saveDb();
+  res.json({ message: { id: msg.id, text: msg.text, createdAt: msg.createdAt, mine: true } });
+});
+
+// 我的对话列表（收件箱）：GET /api/conversations
+app.get('/api/conversations', requireAuth, (req, res) => {
+  const me = req.user.id;
+  const byOther = new Map();
+  for (const m of db.messages) {
+    if (m.fromId !== me && m.toId !== me) continue;
+    const otherId = m.fromId === me ? m.toId : m.fromId;
+    let c = byOther.get(otherId);
+    if (!c) { c = { last: m, unread: 0 }; byOther.set(otherId, c); }
+    else if (m.createdAt > c.last.createdAt) c.last = m;
+    if (m.toId === me && !m.readAt) c.unread++;
+  }
+  const list = [];
+  for (const [otherId, c] of byOther) {
+    const u = db.users.find(x => x.id === otherId);
+    if (!u) continue;
+    list.push({ username: u.username, avatar: u.avatar || null, lastText: c.last.text, lastAt: c.last.createdAt, lastMine: c.last.fromId === me, unread: c.unread });
+  }
+  list.sort((a, b) => b.lastAt - a.lastAt);
+  res.json({ conversations: list });
+});
+
+// 未读总数（顶栏小红点轮询用）：GET /api/me/unread
+app.get('/api/me/unread', requireAuth, (req, res) => {
+  const me = req.user.id;
+  const count = db.messages.reduce((n, m) => n + (m.toId === me && !m.readAt ? 1 : 0), 0);
+  res.json({ count });
+});
+
+// 和某人的对话：GET /api/messages/:username（顺便把对方发来的消息标记为已读）
+app.get('/api/messages/:username', requireAuth, (req, res) => {
+  const other = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!other) return res.status(404).json({ error: 'not_found' });
+  const me = req.user.id;
+  const msgs = dmBetween(me, other.id);
+  let changed = false;
+  for (const m of msgs) if (m.toId === me && !m.readAt) { m.readAt = Date.now(); changed = true; }
+  if (changed) saveDb();
+  res.json({
+    user: { username: other.username, avatar: other.avatar || null },
+    messages: msgs.map(m => ({ id: m.id, text: m.text, createdAt: m.createdAt, mine: m.fromId === me }))
+  });
 });
 
 /* ---- 静态文件 ---- */
