@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>编辑网页 · Foody</title>
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-profile">
+
+  <header class="pf-top">
+    <button class="chip icon-chip" id="backBtn"></button>
+    <span class="pf-top-name" data-i18n="siteEditTitle"></span>
+    <div class="spacer"></div>
+    <button class="chip" id="viewBtn" data-i18n="sitePreview"></button>
+  </header>
+
+  <main class="pf-wrap edit-wrap">
+    <form id="siteForm" novalidate>
+      <div class="field">
+        <label data-i18n="siteCover"></label>
+        <button type="button" class="cover-pick" id="coverPick"><span id="coverInner"></span></button>
+        <input type="file" id="coverInput" accept="image/*" hidden>
+      </div>
+      <div class="field"><label data-i18n="siteTitle"></label><input id="fTitle" maxlength="60" autocomplete="off"></div>
+      <div class="field"><label data-i18n="siteTaglineL"></label><input id="fTagline" maxlength="120" autocomplete="off"></div>
+      <div class="field"><label data-i18n="siteAbout"></label><textarea id="fIntro" rows="4" maxlength="1000"></textarea></div>
+      <div class="field"><label data-i18n="siteHours"></label><textarea id="fHours" rows="2" maxlength="300" data-i18n-ph="siteHoursPh"></textarea></div>
+      <div class="field"><label data-i18n="siteAddress"></label><input id="fAddress" maxlength="200" autocomplete="off"></div>
+      <div class="field">
+        <label data-i18n="siteLinks"></label>
+        <div id="linkList"></div>
+        <button type="button" class="btn-ghost" id="addLink" data-i18n="siteAddLink"></button>
+      </div>
+      <div class="pub-row">
+        <span class="switch"><input type="checkbox" id="fPublished"><i></i></span>
+        <span data-i18n="sitePublishLabel"></span>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn block" id="saveBtn" data-i18n="save"></button>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/shared.js"></script>
+  <script src="js/site-edit.js"></script>
+</body>
+</html>

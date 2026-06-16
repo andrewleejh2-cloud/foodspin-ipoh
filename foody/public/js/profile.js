@@ -136,11 +136,13 @@
     const actions = document.createElement('div');
     actions.className = 'pf-actions';
     if (DATA.isMe) {
+      const site = mkBtn('pf-site', ICONS.globe, t('siteMine'));
+      site.addEventListener('click', () => { location.href = 'site-edit.html'; });
       const edit = mkBtn('pf-ghost', ICONS.edit, t('pfEdit'));
       edit.addEventListener('click', openEdit);
       const out = mkBtn('pf-ghost pf-logout', null, t('logout'));
       out.addEventListener('click', logout);
-      actions.append(edit, out);
+      actions.append(site, edit, out);
     } else {
       const loginThen = (go) => DATA.waUrl ? go() : (toast(t('errAuth')), setTimeout(() => { location.href = 'index.html'; }, 900));
       const fol = mkBtn(DATA.isFollowing ? 'pf-following' : 'pf-follow', null, t(DATA.isFollowing ? 'pfFollowed' : 'pfFollow'));
@@ -149,7 +151,13 @@
       msg.addEventListener('click', () => loginThen(() => { location.href = 'messages.html?u=' + encodeURIComponent(u.username); }));
       const wa = mkBtn('pf-wa', ICONS.whatsapp, t('pfWa'));
       wa.addEventListener('click', () => loginThen(() => { location.href = DATA.waUrl; }));
-      actions.append(fol, msg, wa);
+      if (DATA.sitePublished) {
+        const site = mkBtn('pf-site', ICONS.globe, t('siteView'));
+        site.addEventListener('click', () => { location.href = 'site.html?u=' + encodeURIComponent(u.username); });
+        actions.append(fol, site, msg, wa);
+      } else {
+        actions.append(fol, msg, wa);
+      }
     }
     head.appendChild(actions);
     wrap.appendChild(head);

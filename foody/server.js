@@ -337,6 +337,17 @@ const avatarUpload = multer({
   }
 }).single('avatar');
 
+// 微站封面上传：单张图片，同样的限制
+const coverUpload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (file.mimetype.startsWith('image/') && IMAGE_EXT.has(ext)) cb(null, true);
+    else cb(new Error('bad_file'));
+  }
+}).single('cover');
+
 /* 图片压缩：自动转正方向（读 EXIF）、限制最大边长 1600px、转 JPEG、顺带去掉 EXIF
    （省空间也保护用户隐私，如拍摄地点）。美食照片常从几 MB 压到几百 KB。
    失败则保留原图，绝不因压缩出错而丢帖。GIF 跳过以保留动画。
@@ -570,6 +581,76 @@ app.post('/api/me/avatar', requireAuth, (req, res) => {
   });
 });
 
+/* ---- 个人/商业微站（一键发布的落地页）---- */
+function normLink(url) {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  if (/^https?:\/\//i.test(u)) return u.slice(0, 300);
+  if (/^[\w.-]+\.[a-z]{2,}/i.test(u)) return 'https://' + u.slice(0, 290); // 没写 http 就补 https
+  return ''; // 拒绝 javascript: 等不安全协议
+}
+
+app.get('/api/site/:username', (req, res) => {
+  const viewer = currentUser(req);
+  const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!u) return res.status(404).json({ error: 'not_found' });
+  const isMe = !!(viewer && viewer.id === u.id);
+  const s = u.site || {};
+  if (!s.published && !isMe) return res.status(404).json({ error: 'not_published' });
+  const posts = db.posts.filter(p => p.userId === u.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 12)
+    .map(p => ({ id: p.id, mediaUrl: p.mediaUrl, mediaType: p.mediaType }));
+  res.json({
+    username: u.username,
+    avatar: u.avatar || null,
+    isMe,
+    published: !!s.published,
+    cover: s.cover || null,
+    title: s.title || '',
+    tagline: s.tagline || '',
+    intro: s.intro || '',
+    hours: s.hours || '',
+    address: s.address || '',
+    links: s.links || [],
+    mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
+    waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
+    posts
+  });
+});
+
+app.patch('/api/me/site', requireAuth, (req, res) => {
+  const b = req.body || {};
+  const s = req.user.site || {};
+  if (typeof b.title === 'string') s.title = b.title.trim().slice(0, 60);
+  if (typeof b.tagline === 'string') s.tagline = b.tagline.trim().slice(0, 120);
+  if (typeof b.intro === 'string') s.intro = b.intro.replace(/\r\n/g, '\n').trim().slice(0, 1000);
+  if (typeof b.hours === 'string') s.hours = b.hours.replace(/\r\n/g, '\n').trim().slice(0, 300);
+  if (typeof b.address === 'string') s.address = b.address.trim().slice(0, 200);
+  if (Array.isArray(b.links)) {
+    s.links = b.links.slice(0, 8)
+      .map(l => ({ label: String(l.label || '').trim().slice(0, 30), url: normLink(l.url) }))
+      .filter(l => l.label && l.url);
+  }
+  if (typeof b.published === 'boolean') s.published = b.published;
+  req.user.site = s;
+  saveDb();
+  res.json({ ok: true, site: s });
+});
+
+app.post('/api/me/site/cover', requireAuth, (req, res) => {
+  coverUpload(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file' });
+    if (!req.file) return res.status(400).json({ error: 'bad_file' });
+    const name = await compressImage(req.file.filename);
+    const s = req.user.site || {};
+    const old = s.cover;
+    s.cover = '/uploads/' + name;
+    req.user.site = s;
+    if (old && old.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(old)), () => {});
+    saveDb();
+    res.json({ ok: true, cover: s.cover });
+  });
+});
+
 /* ---- 帖子 ---- */
 app.get('/api/posts', (req, res) => {
   const viewer = currentUser(req);
@@ -709,6 +790,7 @@ app.get('/api/users/:username', (req, res) => {
     stats: { postCount: myPosts.length, likeTotal, followerCount, followingCount },
     isMe: !!(viewer && viewer.id === author.id),
     isFollowing: !!(viewer && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
+    sitePublished: !!(author.site && author.site.published),
     waUrl: viewer && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null,
     posts: myPosts.map(p => postJson(p, viewer))
   });

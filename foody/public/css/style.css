@@ -1022,8 +1022,8 @@ body.lb-open { overflow: hidden; }
 .msg-chip { position: relative; }
 .msg-dot { position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--like); box-shadow: 0 0 0 2px rgba(20, 16, 12, .55); }
 /* profile 上的「发消息」按钮 */
-.pf-msg { background: var(--surface); color: var(--accent); border: 1.5px solid var(--accent); }
-.pf-msg:hover { background: var(--accent-soft); }
+.pf-msg, .pf-site { background: var(--surface); color: var(--accent); border: 1.5px solid var(--accent); }
+.pf-msg:hover, .pf-site:hover { background: var(--accent-soft); }
 
 /* 关注：按钮 + 可点统计 + 粉丝/关注列表 */
 .pf-stats { gap: 24px; }
@@ -1064,6 +1064,63 @@ body.lb-open { overflow: hidden; }
 .place-pill { display: inline-flex; align-items: center; gap: 3px; max-width: 170px; padding: 3px 9px; border-radius: 999px; background: rgba(217, 106, 59, .92); color: #fff; font-size: 12px; font-weight: 700; }
 .place-pill svg { width: 12px; height: 12px; flex: none; }
 .place-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============================================================
+   微站 site（一键发布的落地页）
+   ============================================================ */
+.page-site { background: var(--bg); min-height: 100%; }
+.site { max-width: 640px; margin: 0 auto; background: var(--surface); min-height: 100dvh; }
+.site-bar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); }
+.site-icon { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.site-icon svg { width: 19px; height: 19px; }
+.site-draft { margin: 0 14px 6px; background: var(--accent-soft); color: var(--accent-d); font-size: 13px; font-weight: 700; text-align: center; padding: 8px 12px; border-radius: 10px; }
+
+.site-hero { position: relative; }
+.site-hero.has-cover { height: 240px; }
+.site-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+.site-hero.has-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .12), rgba(0, 0, 0, .6)); }
+.site-hero-text { padding: 16px 20px 12px; }
+.site-hero.has-cover .site-hero-text { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; }
+.site-hero-text h1 { font-size: 26px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+.site-hero.has-cover .site-hero-text h1 { color: #fff; }
+.site-tagline { font-size: 15px; color: var(--ink-2); margin-top: 5px; font-weight: 600; }
+.site-hero.has-cover .site-tagline { color: rgba(255, 255, 255, .92); }
+
+.site-body { padding: 16px 20px 8px; }
+.site-acts { display: flex; flex-wrap: wrap; gap: 9px; }
+.site-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border-radius: 12px; font-size: 14.5px; font-weight: 800; }
+.site-btn svg { width: 17px; height: 17px; }
+.site-btn-wa { background: var(--wa); color: #fff; }
+.site-btn-map { background: var(--accent); color: #fff; }
+.site-btn-link { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); }
+.site-btn-link:hover { border-color: var(--accent); }
+
+.site-sec { margin-top: 22px; }
+.site-sec h2 { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 9px; }
+.site-sec h2 svg { width: 17px; height: 17px; color: var(--accent); }
+.site-text { font-size: 14.5px; color: var(--ink); line-height: 1.65; white-space: pre-line; word-break: break-word; }
+.site-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.site-cell { aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--surface-2, #F0E8DA); }
+.site-cell img, .site-cell video { width: 100%; height: 100%; object-fit: cover; }
+
+.site-foot { display: flex; align-items: center; gap: 9px; justify-content: center; margin-top: 28px; padding: 14px; color: var(--ink); font-weight: 700; font-size: 14px; }
+.site-foot .avatar-sm { width: 30px; height: 30px; font-size: 13px; }
+.site-pw { text-align: center; font-size: 12px; color: var(--ink-2); padding-bottom: 24px; }
+.site-fail { text-align: center; color: var(--ink-2); padding: 80px 24px; font-size: 15px; font-weight: 700; }
+
+/* 微站编辑器 */
+.edit-wrap { max-width: 560px; padding-bottom: 60px; }
+.cover-pick { display: block; width: 100%; height: 150px; border-radius: var(--radius-s); border: 1.5px dashed var(--line); background: var(--surface); overflow: hidden; padding: 0; }
+.cover-pick:hover { border-color: var(--accent); }
+#coverInner { display: grid; place-items: center; gap: 6px; width: 100%; height: 100%; color: var(--ink-2); font-size: 13px; font-weight: 700; }
+#coverInner svg { width: 26px; height: 26px; }
+#coverInner img { width: 100%; height: 100%; object-fit: cover; }
+.link-row { display: flex; gap: 7px; margin-bottom: 7px; align-items: center; }
+.link-row .lk-label { flex: 0 0 34%; }
+.link-row .lk-url { flex: 1; min-width: 0; }
+.link-row .lk-del { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--surface-2, #F0E8DA); color: var(--ink-2); }
+.link-row .lk-del svg { width: 14px; height: 14px; }
+.pub-row { display: flex; align-items: center; gap: 10px; margin: 18px 0; font-size: 14.5px; font-weight: 700; color: var(--ink); }
 
 /* 顶栏多了私信图标，手机端收紧：缩小间距/控件 + 用户chip 只留头像、收藏只留星星 */
 @media (max-width: 760px) {
