@@ -9,6 +9,7 @@
   const BACK = { zh: '返回', ms: 'Kembali', en: 'Back' };
 
   let DATA = null; // /api/users 返回的数据
+  let LOGGED = false; // 访客是否已登录（决定列表里要不要显示关注按钮）
 
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function fmtN(n) {
@@ -63,6 +64,7 @@
       return;
     }
     $('#topName').textContent = '@' + DATA.user.username;
+    LOGGED = DATA.isMe || !!DATA.waUrl;
     render();
   }
 
@@ -95,7 +97,12 @@
 
     const stats = document.createElement('div');
     stats.className = 'pf-stats';
-    stats.append(statBox(fmtN(st.postCount), t('pfPosts')), statBox(fmtN(st.likeTotal), t('pfLikes')));
+    stats.append(
+      statBox(fmtN(st.postCount), t('pfPosts')),
+      statBox(fmtN(st.followingCount), t('pfFollowing'), () => openUserList('following')),
+      statBox(fmtN(st.followerCount), t('pfFollowers'), () => openUserList('followers')),
+      statBox(fmtN(st.likeTotal), t('pfLikes'))
+    );
 
     // 个人留言气泡（IG Note 风格）：访客可见；自己未填时显示「+ 留言」入口
     const note = document.createElement('div');
@@ -136,11 +143,13 @@
       actions.append(edit, out);
     } else {
       const loginThen = (go) => DATA.waUrl ? go() : (toast(t('errAuth')), setTimeout(() => { location.href = 'index.html'; }, 900));
+      const fol = mkBtn(DATA.isFollowing ? 'pf-following' : 'pf-follow', null, t(DATA.isFollowing ? 'pfFollowed' : 'pfFollow'));
+      fol.addEventListener('click', () => loginThen(() => toggleFollow()));
       const msg = mkBtn('pf-msg', ICONS.send, t('pfMessage'));
       msg.addEventListener('click', () => loginThen(() => { location.href = 'messages.html?u=' + encodeURIComponent(u.username); }));
       const wa = mkBtn('pf-wa', ICONS.whatsapp, t('pfWa'));
       wa.addEventListener('click', () => loginThen(() => { location.href = DATA.waUrl; }));
-      actions.append(msg, wa);
+      actions.append(fol, msg, wa);
     }
     head.appendChild(actions);
     wrap.appendChild(head);
@@ -161,12 +170,63 @@
     setBackLabel();
   }
 
-  function statBox(num, label) {
+  function statBox(num, label, onClick) {
     const d = document.createElement('div');
-    d.className = 'pf-stat';
+    d.className = 'pf-stat' + (onClick ? ' tap' : '');
     d.innerHTML = `<b>${esc(num)}</b><span>${esc(label)}</span>`;
+    if (onClick) d.addEventListener('click', onClick);
     return d;
   }
+
+  async function toggleFollow() {
+    try {
+      const r = await api('/api/users/' + encodeURIComponent(DATA.user.username) + '/follow', { method: 'POST' });
+      DATA.isFollowing = r.following;
+      DATA.stats.followerCount = r.followerCount;
+      render();
+    } catch (e) { toast(errMsg(e.code)); }
+  }
+
+  /* 粉丝 / 关注列表（点统计数字打开） */
+  async function openUserList(type) {
+    $('#listTitle').textContent = t(type === 'followers' ? 'pfFollowers' : 'pfFollowing');
+    const wrap = $('#userList');
+    wrap.innerHTML = '';
+    $('#listOverlay').classList.add('show');
+    let data;
+    try { data = await api('/api/users/' + encodeURIComponent(DATA.user.username) + '/' + type); }
+    catch { wrap.innerHTML = `<div class="ul-empty">${esc(t('errNet'))}</div>`; return; }
+    if (!data.users.length) { wrap.innerHTML = `<div class="ul-empty">${esc(t('pfNobody'))}</div>`; return; }
+    for (const u of data.users) {
+      const row = document.createElement('div');
+      row.className = 'ul-row';
+      const av = document.createElement('span'); av.className = 'avatar-sm'; fillAvatar(av, u.username, u.avatar);
+      const body = document.createElement('a'); body.className = 'ul-body';
+      body.href = 'profile.html?u=' + encodeURIComponent(u.username);
+      const nm = document.createElement('b'); nm.textContent = '@' + u.username;
+      const bio = document.createElement('small'); bio.textContent = u.bio || '';
+      body.append(nm, bio);
+      row.append(av, body);
+      if (LOGGED && !u.isMe) {
+        const fb = document.createElement('button');
+        fb.className = 'ul-follow' + (u.isFollowing ? ' on' : '');
+        fb.textContent = t(u.isFollowing ? 'pfFollowed' : 'pfFollow');
+        fb.addEventListener('click', async () => {
+          try {
+            const r = await api('/api/users/' + encodeURIComponent(u.username) + '/follow', { method: 'POST' });
+            u.isFollowing = r.following;
+            fb.className = 'ul-follow' + (r.following ? ' on' : '');
+            fb.textContent = t(r.following ? 'pfFollowed' : 'pfFollow');
+          } catch (e) { toast(errMsg(e.code)); }
+        });
+        row.appendChild(fb);
+      }
+      wrap.appendChild(row);
+    }
+  }
+  function closeList() { $('#listOverlay').classList.remove('show'); }
+  $('#listClose').addEventListener('click', closeList);
+  $('#listOverlay').addEventListener('click', (e) => { if (e.target === $('#listOverlay')) closeList(); });
 
   function mkBtn(cls, icon, label) {
     const b = document.createElement('button');

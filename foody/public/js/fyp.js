@@ -386,7 +386,7 @@
       if (feedState.tag) q.set('tag', feedState.tag);
       if (feedState.user) q.set('user', feedState.user);
       if (feedState.q) q.set('q', feedState.q);
-      if (feedState.sort === 'new') q.set('sort', 'new');
+      if (feedState.sort === 'new' || feedState.sort === 'following') q.set('sort', feedState.sort);
       const data = await api('/api/posts?' + q);
       hideLoading();
       sentinel.remove();
@@ -409,6 +409,8 @@
     el.className = 'feed-state';
     if (isError) {
       el.innerHTML = `<div class="big">😵</div><h3>${t('loadFail')}</h3>`;
+    } else if (feedState.sort === 'following') {
+      el.innerHTML = `<div class="big">👀</div><p style="max-width:300px;margin:0 auto">${t('feedEmptyFollow')}</p>`;
     } else if (feedState.saved) {
       el.innerHTML = `<div class="big">🔖</div><h3>${t('emptySaved')}</h3><p>${t('emptySavedSub')}</p>`;
     } else {
@@ -1061,6 +1063,7 @@
     $('#searchClear').innerHTML = ICONS.close;
     $('#feedSeg button[data-sort="hot"] .sg-ic').innerHTML = ICONS.spark;
     $('#feedSeg button[data-sort="new"] .sg-ic').innerHTML = ICONS.clock;
+    $('#feedSeg button[data-sort="following"] .sg-ic').innerHTML = ICONS.users;
     paintUploadBtns();
     syncSettingsUI();
     try {
@@ -1073,6 +1076,7 @@
     paintUserChip();
     $('#savedFilter').hidden = !ME;
     $('#msgBtn').hidden = !ME;
+    $('#feedSeg button[data-sort="following"]').hidden = !ME;
     if (ME) { pollUnread(); setInterval(pollUnread, 15000); }
     $('#uploadBtnTop').style.display = '';
     // 从 profile / 分享链接进来：?user= / ?tag= / ?q=（可带 ?start=帖子ID）直接进对应 feed

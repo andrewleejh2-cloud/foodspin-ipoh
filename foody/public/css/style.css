@@ -1025,6 +1025,25 @@ body.lb-open { overflow: hidden; }
 .pf-msg { background: var(--surface); color: var(--accent); border: 1.5px solid var(--accent); }
 .pf-msg:hover { background: var(--accent-soft); }
 
+/* 关注：按钮 + 可点统计 + 粉丝/关注列表 */
+.pf-stats { gap: 24px; }
+.pf-stat.tap { cursor: pointer; }
+.pf-follow { background: var(--accent); color: #fff; border: 1.5px solid var(--accent); }
+.pf-follow:hover { background: var(--accent-d); }
+.pf-following { background: var(--surface); color: var(--ink-2); border: 1.5px solid var(--line); }
+.pf-following:hover { border-color: var(--danger); color: var(--danger); }
+.list-modal { max-width: 420px; }
+.user-list { max-height: 60vh; overflow-y: auto; margin-top: 4px; }
+.ul-row { display: flex; align-items: center; gap: 11px; padding: 8px 2px; }
+.ul-row .avatar-sm { width: 44px; height: 44px; font-size: 17px; flex: none; }
+.ul-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ul-body b { font-size: 14.5px; color: var(--ink); }
+.ul-body small { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ul-follow { flex: none; padding: 7px 15px; border-radius: 10px; font-size: 13px; font-weight: 800; background: var(--accent); color: #fff; }
+.ul-follow.on { background: var(--surface); color: var(--ink-2); border: 1.5px solid var(--line); }
+.ul-empty { text-align: center; color: var(--ink-2); padding: 34px 16px; font-size: 14px; font-weight: 700; }
+@media (max-width: 760px) { .pf-stats { gap: 15px; } }
+
 /* 顶栏多了私信图标，手机端收紧：缩小间距/控件 + 用户chip 只留头像、收藏只留星星 */
 @media (max-width: 760px) {
   .fyp-top { gap: 4px; padding-left: 8px; padding-right: 8px; }
@@ -1033,4 +1052,5 @@ body.lb-open { overflow: hidden; }
   .fyp-top #userChip span:last-child { display: none; }
   .fyp-top #userChip { padding: 0 5px; }
   .fyp-top #savedFilter span { display: none; }
+  .fyp-top #settingsBtn { display: none; }
 }

@@ -69,11 +69,11 @@ const SEED_TAGS = {
 function loadDb() {
   if (fs.existsSync(DB_FILE)) {
     db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages']) {
+    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows']) {
       if (!Array.isArray(db[k])) db[k] = [];
     }
   } else {
-    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [] };
+    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [] };
     seed();
   }
   let changed = !fs.existsSync(DB_FILE);
@@ -578,7 +578,7 @@ app.get('/api/posts', (req, res) => {
   const tag = String(req.query.tag || '').trim().toLowerCase();
   const userQ = String(req.query.user || '').trim().toLowerCase();
   const q = String(req.query.q || '').trim().toLowerCase();
-  const sort = req.query.sort === 'new' ? 'new' : 'hot'; // hot=推荐算法(默认), new=最新优先
+  const sort = ['new', 'following'].includes(req.query.sort) ? req.query.sort : 'hot'; // hot=推荐算法(默认), new=最新, following=只看关注的人
 
   if (savedOnly && !viewer) return res.status(401).json({ error: 'auth' });
 
@@ -594,9 +594,14 @@ app.get('/api/posts', (req, res) => {
     posts = u ? posts.filter(p => p.userId === u.id) : [];
   }
   if (q) posts = posts.filter(p => matchQ(p, q));
+  if (sort === 'following') {
+    if (!viewer) return res.status(401).json({ error: 'auth' });
+    const followingIds = new Set(db.follows.filter(f => f.followerId === viewer.id).map(f => f.followingId));
+    posts = posts.filter(p => followingIds.has(p.userId));
+  }
 
-  // 排序：收藏夹 / 选了「最新」→ 按时间；否则走推荐算法
-  if (savedOnly || sort === 'new') posts.sort((a, b) => b.createdAt - a.createdAt);
+  // 排序：收藏夹 / 最新 / 关注 → 按时间；否则走推荐算法
+  if (savedOnly || sort === 'new' || sort === 'following') posts.sort((a, b) => b.createdAt - a.createdAt);
   else posts = rankPosts(posts, viewer);
 
   /* start=帖子ID：从该帖子开始返回（搜索结果点进 feed 用） */
@@ -685,6 +690,8 @@ app.get('/api/users/:username', (req, res) => {
     .sort((a, b) => b.createdAt - a.createdAt);
   const postIds = new Set(myPosts.map(p => p.id));
   const likeTotal = db.likes.reduce((n, l) => n + (postIds.has(l.postId) ? 1 : 0), 0);
+  const followerCount = db.follows.reduce((n, f) => n + (f.followingId === author.id ? 1 : 0), 0);
+  const followingCount = db.follows.reduce((n, f) => n + (f.followerId === author.id ? 1 : 0), 0);
 
   res.json({
     user: {
@@ -696,11 +703,53 @@ app.get('/api/users/:username', (req, res) => {
       note: author.note || '',
       createdAt: author.createdAt
     },
-    stats: { postCount: myPosts.length, likeTotal },
+    stats: { postCount: myPosts.length, likeTotal, followerCount, followingCount },
     isMe: !!(viewer && viewer.id === author.id),
+    isFollowing: !!(viewer && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
     waUrl: viewer && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null,
     posts: myPosts.map(p => postJson(p, viewer))
   });
+});
+
+/* ---- 关注 / 粉丝 ---- */
+// 关注/取关切换：POST /api/users/:username/follow
+app.post('/api/users/:username/follow', requireAuth, (req, res) => {
+  const target = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!target) return res.status(404).json({ error: 'not_found' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  const i = db.follows.findIndex(f => f.followerId === req.user.id && f.followingId === target.id);
+  let following;
+  if (i >= 0) { db.follows.splice(i, 1); following = false; }
+  else { db.follows.push({ followerId: req.user.id, followingId: target.id, createdAt: Date.now() }); following = true; }
+  saveDb();
+  res.json({ following, followerCount: db.follows.reduce((n, f) => n + (f.followingId === target.id ? 1 : 0), 0) });
+});
+
+// 关注/粉丝列表里的用户卡（带 viewer 视角的 isFollowing）
+function userListJson(ids, viewer) {
+  return ids.map(id => db.users.find(u => u.id === id)).filter(Boolean).map(u => ({
+    username: u.username,
+    avatar: u.avatar || null,
+    bio: u.bio || '',
+    isMe: !!(viewer && viewer.id === u.id),
+    isFollowing: !!(viewer && db.follows.some(f => f.followerId === viewer.id && f.followingId === u.id))
+  }));
+}
+// 谁关注了 ta（粉丝）
+app.get('/api/users/:username/followers', (req, res) => {
+  const viewer = currentUser(req);
+  const target = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!target) return res.status(404).json({ error: 'not_found' });
+  const ids = db.follows.filter(f => f.followingId === target.id).sort((a, b) => b.createdAt - a.createdAt).map(f => f.followerId);
+  res.json({ users: userListJson(ids, viewer) });
+});
+// ta 关注了谁
+app.get('/api/users/:username/following', (req, res) => {
+  const viewer = currentUser(req);
+  const target = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!target) return res.status(404).json({ error: 'not_found' });
+  const ids = db.follows.filter(f => f.followerId === target.id).sort((a, b) => b.createdAt - a.createdAt).map(f => f.followingId);
+  res.json({ users: userListJson(ids, viewer) });
 });
 
 app.post('/api/posts', requireAuth, postLimit, (req, res) => {
