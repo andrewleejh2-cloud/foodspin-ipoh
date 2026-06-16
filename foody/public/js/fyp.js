@@ -14,7 +14,7 @@
 
   const feedState = {
     offset: 0, hasMore: true, loading: false, state: '', saved: false,
-    tag: '', user: '', q: '', startId: '', // 搜索筛选：标签 / 用户 / 关键词 / 起始帖子
+    tag: '', user: '', q: '', place: '', startId: '', // 搜索筛选：标签 / 用户 / 关键词 / 地点 / 起始帖子
     sort: 'hot' // hot=推荐算法, new=最新优先
   };
 
@@ -89,6 +89,14 @@
     node.querySelector('.region-pill').innerHTML =
       ICONS.pin + '<span></span>';
     node.querySelector('.region-pill span').textContent = p.state + (p.city ? ' · ' + p.city : '');
+    if (p.place) {
+      const pill = document.createElement('button');
+      pill.className = 'place-pill';
+      pill.innerHTML = ICONS.pin + '<span></span>';
+      pill.querySelector('span').textContent = p.place;
+      pill.addEventListener('click', (e) => { e.stopPropagation(); location.href = 'place.html?p=' + encodeURIComponent(p.place); });
+      node.querySelector('.meta-row').insertBefore(pill, node.querySelector('.ago'));
+    }
     node.querySelector('.ago').textContent = fmtAgo(p.createdAt);
     node.querySelector('.ago').dataset.ts = p.createdAt;
     const cap = node.querySelector('.caption');
@@ -386,6 +394,7 @@
       if (feedState.tag) q.set('tag', feedState.tag);
       if (feedState.user) q.set('user', feedState.user);
       if (feedState.q) q.set('q', feedState.q);
+      if (feedState.place) q.set('place', feedState.place);
       if (feedState.sort === 'new' || feedState.sort === 'following') q.set('sort', feedState.sort);
       const data = await api('/api/posts?' + q);
       hideLoading();
@@ -612,6 +621,7 @@
     chosenFiles = [];
     paintDrop();
     $('#upCaption').value = '';
+    $('#upPlace').value = '';
     fillStateSelect($('#upState'), false);
     $('#upState').value = ME.state || '';
     $('#upCity').value = ME.city || '';
@@ -688,6 +698,7 @@
     fd.append('caption', $('#upCaption').value.trim());
     fd.append('state', state);
     fd.append('city', $('#upCity').value.trim());
+    fd.append('place', $('#upPlace').value.trim());
 
     const xhr = new XMLHttpRequest();
     const progress = $('#upProgress');
@@ -788,6 +799,7 @@
     feedState.tag = (o.tag || '').toLowerCase();
     feedState.user = o.user || '';
     feedState.q = o.q || '';
+    feedState.place = o.place || '';
     feedState.startId = o.startId || '';
     paintFilterChip();
     closeSearch();
@@ -798,6 +810,7 @@
     const chip = $('#filterChip');
     const label = feedState.tag ? '#' + feedState.tag
       : feedState.user ? '@' + feedState.user
+      : feedState.place ? '📍 ' + feedState.place
       : feedState.q ? '“' + feedState.q + '”' : '';
     if (!label) { chip.hidden = true; return; }
     chip.hidden = false;
@@ -1088,10 +1101,11 @@
     $('#uploadBtnTop').style.display = '';
     // 从 profile / 分享链接进来：?user= / ?tag= / ?q=（可带 ?start=帖子ID）直接进对应 feed
     const sp = new URLSearchParams(location.search);
-    if (sp.get('user') || sp.get('tag') || sp.get('q')) {
+    if (sp.get('user') || sp.get('tag') || sp.get('q') || sp.get('place')) {
       feedState.user = sp.get('user') || '';
       feedState.tag = (sp.get('tag') || '').toLowerCase();
       feedState.q = sp.get('q') || '';
+      feedState.place = sp.get('place') || '';
       feedState.startId = sp.get('start') || '';
       paintFilterChip();
     } else if (sp.get('start')) {

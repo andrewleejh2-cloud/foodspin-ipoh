@@ -14,7 +14,7 @@ const DICT = {
     username: 'Foody 用户名', usernamePh: '如：Oscar',
     password: 'Foody 密码', passwordPh: '至少 6 位',
     phone: '电话号码（WhatsApp）', phonePh: '如：011-1901 9070',
-    state: '州属', statePh: '选择州属', city: '城市 / 地区', cityPh: '如：新山',
+    state: '州属', statePh: '选择州属', city: '城市 / 地区', cityPh: '如：新山', placePh: '📍 店名 / 地点（选填，如 金莲记）',
     loginBtn: '登录', registerBtn: '创建账号',
     welcomeBack: '欢迎回来', goFyp: '进入 FYP 刷美食 →', logout: '退出登录',
     yourRegion: '你的地区',
@@ -74,7 +74,8 @@ const DICT = {
     pfMessage: '发消息', dmTitle: '私信', dmPh: '输入消息…', dmYou: '你：',
     dmEmpty: '还没有私信。去别人主页点「发消息」就能开聊啦 💬', dmSayHi: '给 @{name} 发条消息，打个招呼吧 👋',
     pfFollow: '关注', pfFollowed: '已关注', pfFollowers: '粉丝', pfFollowing: '关注中', pfNobody: '还没有人', feedFollowing: '关注', feedEmptyFollow: '你还没关注谁。去逛逛、点别人头像关注，这里就有他们的新帖啦 👀',
-    ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntFollowed: '关注了你', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔'
+    ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntFollowed: '关注了你', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔',
+    plFoodies: '吃货', plMap: '在 Google 地图打开', plNotFound: '还没有这个地点的帖子'
   },
   ms: {
     langName: 'BM',
@@ -88,7 +89,7 @@ const DICT = {
     username: 'Nama pengguna Foody', usernamePh: 'cth: Oscar',
     password: 'Kata laluan Foody', passwordPh: 'sekurang-kurangnya 6 aksara',
     phone: 'Nombor telefon (WhatsApp)', phonePh: 'cth: 011-1901 9070',
-    state: 'Negeri', statePh: 'Pilih negeri', city: 'Bandar / kawasan', cityPh: 'cth: Skudai',
+    state: 'Negeri', statePh: 'Pilih negeri', city: 'Bandar / kawasan', cityPh: 'cth: Skudai', placePh: '📍 Nama kedai / lokasi (pilihan)',
     loginBtn: 'Log Masuk', registerBtn: 'Buat Akaun',
     welcomeBack: 'Selamat kembali', goFyp: 'Masuk FYP →', logout: 'Log keluar',
     yourRegion: 'Kawasan anda',
@@ -147,7 +148,8 @@ const DICT = {
     pfMessage: 'Mesej', dmTitle: 'Mesej', dmPh: 'Taip mesej…', dmYou: 'Anda:',
     dmEmpty: 'Belum ada mesej. Buka profil orang & tekan「Mesej」untuk mula 💬', dmSayHi: 'Hantar mesej kepada @{name} 👋',
     pfFollow: 'Ikut', pfFollowed: 'Mengikut', pfFollowers: 'Pengikut', pfFollowing: 'Mengikuti', pfNobody: 'Tiada lagi', feedFollowing: 'Ikutan', feedEmptyFollow: 'Anda belum ikut sesiapa. Tekan avatar orang untuk ikut, kiriman mereka akan muncul di sini 👀',
-    ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntFollowed: 'mula ikut anda', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔'
+    ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntFollowed: 'mula ikut anda', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔',
+    plFoodies: 'Foodie', plMap: 'Buka di Google Maps', plNotFound: 'Belum ada kiriman untuk lokasi ini'
   },
   en: {
     langName: 'EN',
@@ -161,7 +163,7 @@ const DICT = {
     username: 'Foody username', usernamePh: 'e.g. Oscar',
     password: 'Foody password', passwordPh: 'at least 6 characters',
     phone: 'Phone number (WhatsApp)', phonePh: 'e.g. 011-1901 9070',
-    state: 'State', statePh: 'Choose a state', city: 'City / area', cityPh: 'e.g. JB',
+    state: 'State', statePh: 'Choose a state', city: 'City / area', cityPh: 'e.g. JB', placePh: '📍 Shop / place name (optional)',
     loginBtn: 'Log In', registerBtn: 'Create Account',
     welcomeBack: 'Welcome back', goFyp: 'Go to FYP →', logout: 'Log out',
     yourRegion: 'Your region',
@@ -220,7 +222,8 @@ const DICT = {
     pfMessage: 'Message', dmTitle: 'Messages', dmPh: 'Type a message…', dmYou: 'You:',
     dmEmpty: 'No messages yet. Open a profile and tap "Message" to start 💬', dmSayHi: 'Say hi to @{name} 👋',
     pfFollow: 'Follow', pfFollowed: 'Following', pfFollowers: 'Followers', pfFollowing: 'Following', pfNobody: 'Nobody yet', feedFollowing: 'Following', feedEmptyFollow: 'You are not following anyone yet. Tap a profile avatar to follow, and their posts show up here 👀',
-    ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntFollowed: 'followed you', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔'
+    ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntFollowed: 'followed you', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔',
+    plFoodies: 'Foodies', plMap: 'Open in Google Maps', plNotFound: 'No posts for this place yet'
   }
 };
 

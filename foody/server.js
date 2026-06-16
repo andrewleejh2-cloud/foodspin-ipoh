@@ -291,6 +291,7 @@ function postJson(p, viewer) {
     caption: p.caption,
     state: p.state,
     city: p.city,
+    place: p.place || '',
     createdAt: p.createdAt,
     likeCount: likes.length,
     saveCount: saves.length,
@@ -578,6 +579,7 @@ app.get('/api/posts', (req, res) => {
   const tag = String(req.query.tag || '').trim().toLowerCase();
   const userQ = String(req.query.user || '').trim().toLowerCase();
   const q = String(req.query.q || '').trim().toLowerCase();
+  const placeQ = String(req.query.place || '').trim().toLowerCase();
   const sort = ['new', 'following'].includes(req.query.sort) ? req.query.sort : 'hot'; // hot=推荐算法(默认), new=最新, following=只看关注的人
 
   if (savedOnly && !viewer) return res.status(401).json({ error: 'auth' });
@@ -594,6 +596,7 @@ app.get('/api/posts', (req, res) => {
     posts = u ? posts.filter(p => p.userId === u.id) : [];
   }
   if (q) posts = posts.filter(p => matchQ(p, q));
+  if (placeQ) posts = posts.filter(p => (p.place || '').trim().toLowerCase() === placeQ);
   if (sort === 'following') {
     if (!viewer) return res.status(401).json({ error: 'auth' });
     const followingIds = new Set(db.follows.filter(f => f.followerId === viewer.id).map(f => f.followingId));
@@ -762,7 +765,7 @@ app.post('/api/posts', requireAuth, postLimit, (req, res) => {
     const cleanup = () => { for (const f of files) fs.unlink(f.path, () => {}); };
 
     if (!files.length) return res.status(400).json({ error: 'bad_file' });
-    const { caption, state, city } = req.body || {};
+    const { caption, state, city, place } = req.body || {};
     if (!state || !STATES.includes(state)) { cleanup(); return res.status(400).json({ error: 'bad_state' }); }
 
     // 逐个处理：图片压缩（省空间、去 EXIF），视频原样；组装 media 数组（保持选择顺序）
@@ -785,6 +788,7 @@ app.post('/api/posts', requireAuth, postLimit, (req, res) => {
       tags: extractTags(cleanCaption),
       state,
       city: String(city || '').trim().slice(0, 30),
+      place: String(place || '').trim().slice(0, 40),
       createdAt: Date.now()
     };
     db.posts.push(post);
@@ -942,6 +946,37 @@ app.get('/api/messages/:username', requireAuth, (req, res) => {
   res.json({
     user: { username: other.username, avatar: other.avatar || null },
     messages: msgs.map(m => ({ id: m.id, text: m.text, createdAt: m.createdAt, mine: m.fromId === me }))
+  });
+});
+
+/* ---- 地点聚合页：把标了同一店名的帖子聚到一起（不是餐厅账号，是用户 UGC 聚合）---- */
+app.get('/api/places/:place', (req, res) => {
+  const viewer = currentUser(req);
+  const key = String(req.params.place || '').trim().toLowerCase();
+  if (!key) return res.status(404).json({ error: 'not_found' });
+  const posts = db.posts
+    .filter(p => (p.place || '').trim().toLowerCase() === key)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  if (!posts.length) return res.status(404).json({ error: 'not_found' });
+  const name = posts[0].place;
+  const userIds = new Set(posts.map(p => p.userId));
+  const postIds = new Set(posts.map(p => p.id));
+  const likeTotal = db.likes.reduce((n, l) => n + (postIds.has(l.postId) ? 1 : 0), 0);
+  // 地区 = 帖子里最常见的「城市, 州」
+  const regionCount = new Map();
+  for (const p of posts) {
+    const r = [p.city, p.state].filter(Boolean).join(', ');
+    if (r) regionCount.set(r, (regionCount.get(r) || 0) + 1);
+  }
+  let region = '', best = 0;
+  for (const [r, c] of regionCount) if (c > best) { best = c; region = r; }
+  const mapQuery = [name, region].filter(Boolean).join(' ');
+  res.json({
+    place: name,
+    region,
+    mapUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mapQuery),
+    stats: { postCount: posts.length, foodieCount: userIds.size, likeTotal },
+    posts: posts.map(p => postJson(p, viewer))
   });
 });
 
