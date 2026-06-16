@@ -945,6 +945,48 @@ app.get('/api/messages/:username', requireAuth, (req, res) => {
   });
 });
 
+/* ---- 通知中心（动态聚合：别人赞/评论我的帖、关注我；不单独存通知表）---- */
+function notifItemsFor(me) {
+  const myPostIds = new Set(db.posts.filter(p => p.userId === me).map(p => p.id));
+  const items = [];
+  for (const l of db.likes) if (l.userId !== me && myPostIds.has(l.postId)) items.push({ type: 'like', actorId: l.userId, postId: l.postId, createdAt: l.createdAt || 0 });
+  for (const c of db.comments) if (c.userId !== me && myPostIds.has(c.postId)) items.push({ type: 'comment', actorId: c.userId, postId: c.postId, text: c.text, createdAt: c.createdAt || 0 });
+  for (const f of db.follows) if (f.followingId === me) items.push({ type: 'follow', actorId: f.followerId, createdAt: f.createdAt || 0 });
+  items.sort((a, b) => b.createdAt - a.createdAt);
+  return items;
+}
+
+app.get('/api/notifications', requireAuth, (req, res) => {
+  const seenAt = req.user.notifSeenAt || 0;
+  const items = notifItemsFor(req.user.id).slice(0, 60).map(it => {
+    const actor = db.users.find(u => u.id === it.actorId);
+    const post = it.postId ? db.posts.find(p => p.id === it.postId) : null;
+    return {
+      type: it.type,
+      username: actor ? actor.username : '???',
+      avatar: actor ? (actor.avatar || null) : null,
+      text: it.text || '',
+      thumb: post ? post.mediaUrl : null,
+      postId: it.postId || null,
+      createdAt: it.createdAt,
+      unread: it.createdAt > seenAt
+    };
+  });
+  res.json({ notifications: items });
+});
+
+app.get('/api/notifications/unread', requireAuth, (req, res) => {
+  const seenAt = req.user.notifSeenAt || 0;
+  const count = notifItemsFor(req.user.id).reduce((n, it) => n + (it.createdAt > seenAt ? 1 : 0), 0);
+  res.json({ count });
+});
+
+app.post('/api/notifications/seen', requireAuth, (req, res) => {
+  req.user.notifSeenAt = Date.now();
+  saveDb();
+  res.json({ ok: true });
+});
+
 /* ---- 静态文件 ---- */
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
 app.use(express.static(path.join(ROOT, 'public'), { extensions: ['html'] }));

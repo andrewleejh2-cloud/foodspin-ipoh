@@ -1016,6 +1016,10 @@
     if (!ME) return;
     try { const d = await api('/api/me/unread'); $('#msgDot').hidden = !(d.count > 0); } catch {}
   }
+  async function pollNotif() {
+    if (!ME) return;
+    try { const d = await api('/api/notifications/unread'); $('#notifDot').hidden = !(d.count > 0); } catch {}
+  }
 
   function paintUserChip() {
     const chip = $('#userChip');
@@ -1059,6 +1063,8 @@
     $('#searchBtn').innerHTML = ICONS.search;
     $('#msgBtn').insertAdjacentHTML('afterbegin', ICONS.bubble);
     $('#msgBtn').addEventListener('click', () => { location.href = 'messages.html'; });
+    $('#notifBtn').insertAdjacentHTML('afterbegin', ICONS.bell);
+    $('#notifBtn').addEventListener('click', () => { location.href = 'notifications.html'; });
     document.querySelector('.s-ic').innerHTML = ICONS.search;
     $('#searchClear').innerHTML = ICONS.close;
     $('#feedSeg button[data-sort="hot"] .sg-ic').innerHTML = ICONS.spark;
@@ -1076,8 +1082,9 @@
     paintUserChip();
     $('#savedFilter').hidden = !ME;
     $('#msgBtn').hidden = !ME;
+    $('#notifBtn').hidden = !ME;
     $('#feedSeg button[data-sort="following"]').hidden = !ME;
-    if (ME) { pollUnread(); setInterval(pollUnread, 15000); }
+    if (ME) { pollUnread(); pollNotif(); setInterval(pollUnread, 15000); setInterval(pollNotif, 20000); }
     $('#uploadBtnTop').style.display = '';
     // 从 profile / 分享链接进来：?user= / ?tag= / ?q=（可带 ?start=帖子ID）直接进对应 feed
     const sp = new URLSearchParams(location.search);
@@ -1087,6 +1094,8 @@
       feedState.q = sp.get('q') || '';
       feedState.startId = sp.get('start') || '';
       paintFilterChip();
+    } else if (sp.get('start')) {
+      feedState.startId = sp.get('start');   // 从通知点进来：在完整 feed 里定位到该帖
     }
     loadMore();
   });

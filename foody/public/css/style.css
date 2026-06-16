@@ -1044,6 +1044,17 @@ body.lb-open { overflow: hidden; }
 .ul-empty { text-align: center; color: var(--ink-2); padding: 34px 16px; font-size: 14px; font-weight: 700; }
 @media (max-width: 760px) { .pf-stats { gap: 15px; } }
 
+/* 通知中心：每条通知 */
+.nt-row { display: flex; align-items: center; gap: 11px; padding: 11px 16px; cursor: pointer; }
+.nt-row:hover { background: var(--surface-2, #F0E8DA); }
+.nt-row.unread { background: var(--accent-soft); }
+.nt-row .avatar-sm { width: 46px; height: 46px; font-size: 18px; flex: none; }
+.nt-body { flex: 1; min-width: 0; }
+.nt-text { font-size: 14px; color: var(--ink); line-height: 1.4; margin: 0 0 2px; word-break: break-word; }
+.nt-text b { font-weight: 800; }
+.nt-time { font-size: 12px; color: var(--ink-2); }
+.nt-thumb { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; flex: none; }
+
 /* 顶栏多了私信图标，手机端收紧：缩小间距/控件 + 用户chip 只留头像、收藏只留星星 */
 @media (max-width: 760px) {
   .fyp-top { gap: 4px; padding-left: 8px; padding-right: 8px; }
@@ -1051,6 +1062,6 @@ body.lb-open { overflow: hidden; }
   .fyp-top select.chip { max-width: 60px; }
   .fyp-top #userChip span:last-child { display: none; }
   .fyp-top #userChip { padding: 0 5px; }
-  .fyp-top #savedFilter span { display: none; }
+  .fyp-top #savedFilter { display: none; }
   .fyp-top #settingsBtn { display: none; }
 }

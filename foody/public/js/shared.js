@@ -73,7 +73,8 @@ const DICT = {
     pfNote: '留言', pfNotePh: '发条留言…（如：今天招牌菜半价 🦐）',
     pfMessage: '发消息', dmTitle: '私信', dmPh: '输入消息…', dmYou: '你：',
     dmEmpty: '还没有私信。去别人主页点「发消息」就能开聊啦 💬', dmSayHi: '给 @{name} 发条消息，打个招呼吧 👋',
-    pfFollow: '关注', pfFollowed: '已关注', pfFollowers: '粉丝', pfFollowing: '关注中', pfNobody: '还没有人', feedFollowing: '关注', feedEmptyFollow: '你还没关注谁。去逛逛、点别人头像关注，这里就有他们的新帖啦 👀'
+    pfFollow: '关注', pfFollowed: '已关注', pfFollowers: '粉丝', pfFollowing: '关注中', pfNobody: '还没有人', feedFollowing: '关注', feedEmptyFollow: '你还没关注谁。去逛逛、点别人头像关注，这里就有他们的新帖啦 👀',
+    ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntFollowed: '关注了你', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔'
   },
   ms: {
     langName: 'BM',
@@ -145,7 +146,8 @@ const DICT = {
     pfNote: 'Nota', pfNotePh: 'Tulis nota… (cth: spesial separuh harga 🦐)',
     pfMessage: 'Mesej', dmTitle: 'Mesej', dmPh: 'Taip mesej…', dmYou: 'Anda:',
     dmEmpty: 'Belum ada mesej. Buka profil orang & tekan「Mesej」untuk mula 💬', dmSayHi: 'Hantar mesej kepada @{name} 👋',
-    pfFollow: 'Ikut', pfFollowed: 'Mengikut', pfFollowers: 'Pengikut', pfFollowing: 'Mengikuti', pfNobody: 'Tiada lagi', feedFollowing: 'Ikutan', feedEmptyFollow: 'Anda belum ikut sesiapa. Tekan avatar orang untuk ikut, kiriman mereka akan muncul di sini 👀'
+    pfFollow: 'Ikut', pfFollowed: 'Mengikut', pfFollowers: 'Pengikut', pfFollowing: 'Mengikuti', pfNobody: 'Tiada lagi', feedFollowing: 'Ikutan', feedEmptyFollow: 'Anda belum ikut sesiapa. Tekan avatar orang untuk ikut, kiriman mereka akan muncul di sini 👀',
+    ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntFollowed: 'mula ikut anda', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔'
   },
   en: {
     langName: 'EN',
@@ -217,7 +219,8 @@ const DICT = {
     pfNote: 'Note', pfNotePh: 'Leave a note… (e.g. half-price special 🦐)',
     pfMessage: 'Message', dmTitle: 'Messages', dmPh: 'Type a message…', dmYou: 'You:',
     dmEmpty: 'No messages yet. Open a profile and tap "Message" to start 💬', dmSayHi: 'Say hi to @{name} 👋',
-    pfFollow: 'Follow', pfFollowed: 'Following', pfFollowers: 'Followers', pfFollowing: 'Following', pfNobody: 'Nobody yet', feedFollowing: 'Following', feedEmptyFollow: 'You are not following anyone yet. Tap a profile avatar to follow, and their posts show up here 👀'
+    pfFollow: 'Follow', pfFollowed: 'Following', pfFollowers: 'Followers', pfFollowing: 'Following', pfNobody: 'Nobody yet', feedFollowing: 'Following', feedEmptyFollow: 'You are not following anyone yet. Tap a profile avatar to follow, and their posts show up here 👀',
+    ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntFollowed: 'followed you', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔'
   }
 };
 
@@ -353,7 +356,8 @@ const ICONS = {
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.8-2.8L5 17.2V20Z"/><path d="M14 7l3 3"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.4"/><circle cx="17" cy="6" r="2.4"/><circle cx="17" cy="18" r="2.4"/><path d="M8.1 11 14.9 7.2M8.1 13l6.8 3.8"/></svg>',
-  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16.5 5.4a3.2 3.2 0 0 1 0 6.1M17.5 19a5.5 5.5 0 0 0-2.4-4.5"/></svg>'
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16.5 5.4a3.2 3.2 0 0 1 0 6.1M17.5 19a5.5 5.5 0 0 0-2.4-4.5"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 0 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5Z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>'
 };
 
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
