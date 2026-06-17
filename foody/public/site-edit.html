@@ -21,6 +21,11 @@
 
   <main class="pf-wrap edit-wrap">
     <form id="siteForm" novalidate>
+      <div class="ai-box">
+        <label data-i18n="aiTitle"></label>
+        <textarea id="aiPrompt" rows="3" maxlength="600" data-i18n-ph="aiPromptPh"></textarea>
+        <button type="button" class="btn ai-gen" id="aiGen" data-i18n="aiGenerate"></button>
+      </div>
       <div class="field">
         <label data-i18n="siteCover"></label>
         <button type="button" class="cover-pick" id="coverPick"><span id="coverInner"></span></button>
