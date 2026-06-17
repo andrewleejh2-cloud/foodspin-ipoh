@@ -35,24 +35,6 @@
     $('#coverInput').value = '';
   });
   $('#addLink').addEventListener('click', () => addLinkRow('', ''));
-  $('#aiGen').addEventListener('click', async () => {
-    const prompt = $('#aiPrompt').value.trim();
-    if (!prompt) { $('#aiPrompt').focus(); return; }
-    const btn = $('#aiGen'); const label = btn.textContent; btn.disabled = true; btn.textContent = t('aiGenerating');
-    try {
-      const r = await api('/api/me/site/generate', { method: 'POST', body: { prompt } });
-      const g = r.generated || {};
-      if (g.title) $('#fTitle').value = g.title;
-      if (g.tagline) $('#fTagline').value = g.tagline;
-      if (g.intro) $('#fIntro').value = g.intro;
-      if (g.hours) $('#fHours').value = g.hours;
-      if (g.address) $('#fAddress').value = g.address;
-      if (g.links && g.links.length) { $('#linkList').innerHTML = ''; g.links.forEach(l => addLinkRow(l.label, l.url)); }
-      toast(t('aiDone'));
-    } catch (e) {
-      toast(e.code === 'ai_off' ? t('aiOff') : t('aiFail'));
-    } finally { btn.disabled = false; btn.textContent = label; }
-  });
 
   $('#siteForm').addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -1121,10 +1121,6 @@ body.lb-open { overflow: hidden; }
 .link-row .lk-del { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--surface-2, #F0E8DA); color: var(--ink-2); }
 .link-row .lk-del svg { width: 14px; height: 14px; }
 .pub-row { display: flex; align-items: center; gap: 10px; margin: 18px 0; font-size: 14.5px; font-weight: 700; color: var(--ink); }
-.ai-box { background: var(--accent-soft); border-radius: var(--radius-s); padding: 13px; margin-bottom: 16px; }
-.ai-box > label { display: block; font-size: 14.5px; font-weight: 800; color: var(--accent-d); margin-bottom: 8px; }
-.ai-box textarea { margin-bottom: 9px; }
-.ai-gen { width: 100%; }
 
 /* 顶栏多了私信图标，手机端收紧：缩小间距/控件 + 用户chip 只留头像、收藏只留星星 */
 @media (max-width: 760px) {

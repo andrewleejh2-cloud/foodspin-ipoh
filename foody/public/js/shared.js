@@ -77,8 +77,7 @@ const DICT = {
     ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntFollowed: '关注了你', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔',
     plFoodies: '吃货', plMap: '在 Google 地图打开', plNotFound: '还没有这个地点的帖子',
     siteAbout: '关于', siteHours: '营业时间', siteAddress: '地址', siteGallery: '我们的出品', siteMap: '地图', siteDraft: '草稿 · 未发布，只有你看得到', siteUnpub: '这个网页还没发布',
-    siteEditTitle: '编辑我的网页', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网页', siteView: '查看网页',
-    aiTitle: '✨ AI 一键生成', aiPromptPh: '一句话描述你想要的网页，例如：我开了家 30 年的福建炒面大牌档，在茨厂街，想要热闹、有食欲的店铺页', aiGenerate: '✨ 帮我生成', aiGenerating: '生成中…', aiDone: '生成好啦！看看、改改就能发布 🎉', aiOff: '还没接 AI（需要一个免费 key，见说明）', aiFail: 'AI 生成失败了，再试一次'
+    siteEditTitle: '编辑我的网页', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网页', siteView: '查看网页'
   },
   ms: {
     langName: 'BM',
@@ -154,8 +153,7 @@ const DICT = {
     ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntFollowed: 'mula ikut anda', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔',
     plFoodies: 'Foodie', plMap: 'Buka di Google Maps', plNotFound: 'Belum ada kiriman untuk lokasi ini',
     siteAbout: 'Tentang', siteHours: 'Waktu operasi', siteAddress: 'Alamat', siteGallery: 'Hasil kami', siteMap: 'Peta', siteDraft: 'Draf · belum terbit, hanya anda nampak', siteUnpub: 'Laman ini belum diterbitkan',
-    siteEditTitle: 'Edit laman saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Laman saya', siteView: 'Lihat laman',
-    aiTitle: '✨ Jana dengan AI', aiPromptPh: 'Terangkan laman yang anda mahu dalam satu ayat…', aiGenerate: '✨ Jana untuk saya', aiGenerating: 'Menjana…', aiDone: 'Siap! Semak & ubah, kemudian terbit 🎉', aiOff: 'AI belum disambung (perlu key percuma)', aiFail: 'AI gagal menjana, cuba lagi'
+    siteEditTitle: 'Edit laman saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Laman saya', siteView: 'Lihat laman'
   },
   en: {
     langName: 'EN',
@@ -231,8 +229,7 @@ const DICT = {
     ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntFollowed: 'followed you', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔',
     plFoodies: 'Foodies', plMap: 'Open in Google Maps', plNotFound: 'No posts for this place yet',
     siteAbout: 'About', siteHours: 'Opening hours', siteAddress: 'Address', siteGallery: 'Our dishes', siteMap: 'Map', siteDraft: 'Draft · not published, only you can see this', siteUnpub: 'This page is not published yet',
-    siteEditTitle: 'Edit my page', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My page', siteView: 'View page',
-    aiTitle: '✨ Generate with AI', aiPromptPh: 'Describe the page you want in one line, e.g. I run a 30-year Hokkien mee stall in Petaling Street…', aiGenerate: '✨ Generate for me', aiGenerating: 'Generating…', aiDone: 'Done! Review, tweak, then publish 🎉', aiOff: 'AI not connected yet (needs a free key)', aiFail: 'AI generation failed, try again'
+    siteEditTitle: 'Edit my page', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My page', siteView: 'View page'
   }
 };
 
