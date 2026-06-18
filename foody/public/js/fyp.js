@@ -33,6 +33,19 @@
 
   function needLogin() { $('#loginOverlay').classList.add('show'); }
 
+  /* 分享帖子：手机用系统原生分享（含 WhatsApp、复制等）；桌面回退为复制深链。
+     链接用 ?start=帖子ID，点开后正好定位到这条帖子。 */
+  async function sharePost(p) {
+    const url = location.origin + '/fyp.html?start=' + encodeURIComponent(p.id);
+    const text = t('shareText', { user: p.username });
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Foody 🍜', text, url }); } catch {}
+      return;
+    }
+    try { await navigator.clipboard.writeText(url); toast(t('shareCopied')); }
+    catch { window.prompt(t('share'), url); }
+  }
+
   /* ================= 渲染帖子 ================= */
   function renderPost(p) {
     POSTS.set(p.id, p);
@@ -126,6 +139,11 @@
     savBtn.querySelector('.cnt').textContent = fmtCount(p.saveCount);
     savBtn.addEventListener('click', () => toggleSave(p.id, node));
 
+    const shrBtn = node.querySelector('.shr');
+    shrBtn.querySelector('.ic').innerHTML = ICONS.share;
+    shrBtn.querySelector('.cnt').textContent = t('share');
+    shrBtn.addEventListener('click', () => sharePost(p));
+
     const waBtn = node.querySelector('.wa');
     waBtn.querySelector('.ic').innerHTML = ICONS.whatsapp;
     waBtn.addEventListener('click', () => {
@@ -148,12 +166,30 @@
     node.paintMute = paintMute;
 
     if (p.mine) {
+      const edtBtn = node.querySelector('.edt');
+      edtBtn.hidden = false;
+      edtBtn.querySelector('.ic').innerHTML = ICONS.edit;
+      edtBtn.querySelector('.cnt').textContent = t('pfEdit');
+      edtBtn.addEventListener('click', () => openEditPost(p, node));
       const delBtn = node.querySelector('.del');
       delBtn.hidden = false;
       delBtn.querySelector('.ic').innerHTML = ICONS.trash;
       delBtn.querySelector('.cnt').textContent = t('confirm');
       delBtn.addEventListener('click', () => confirmDelete(p.id, node));
+    } else {
+      // 别人的帖子 → 举报入口（登录后才能举报）
+      const repBtn = node.querySelector('.rep');
+      repBtn.hidden = false;
+      repBtn.querySelector('.ic').innerHTML = ICONS.flag;
+      repBtn.querySelector('.cnt').textContent = t('reportTitle');
+      repBtn.addEventListener('click', () => { if (!ME) return needLogin(); openReport({ type: 'post', targetId: p.id }); });
     }
+
+    // 手机端：次要按钮（收藏/分享/静音/举报/编辑/删除）默认收进「⋯ 更多」，点一下展开/收起
+    const moreBtn = node.querySelector('.more');
+    moreBtn.querySelector('.ic').innerHTML = ICONS.more;
+    moreBtn.querySelector('.cnt').textContent = t('more');
+    moreBtn.addEventListener('click', () => node.querySelector('.rail').classList.toggle('expanded'));
 
     // 点按播放/暂停 + 双击点赞
     let tapTimer = null;
@@ -281,6 +317,24 @@
     if (Math.abs(dx) > 45) lbGo(dx < 0 ? 1 : -1);
     lbTouchX = null;
   });
+
+  /* 评论文案里的 @用户名 渲染成可点链接 → 进对方主页 */
+  function renderMentions(el, text) {
+    el.innerHTML = '';
+    const re = /@([\p{L}\p{N}_]{2,20})/gu;
+    let last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const a = document.createElement('button');
+      a.className = 'mention-link';
+      a.textContent = m[0];
+      const uname = m[1];
+      a.addEventListener('click', (e) => { e.stopPropagation(); location.href = 'profile.html?u=' + encodeURIComponent(uname); });
+      el.appendChild(a);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+  }
 
   /* 文案里的 #标签 渲染成可点击按钮 → 筛选该标签 */
   function renderCaption(el, text) {
@@ -512,6 +566,38 @@
   $('#confirmCancel').addEventListener('click', () => { pendingDelete = null; $('#confirmOverlay').classList.remove('show'); });
   $('#confirmClose').addEventListener('click', () => { pendingDelete = null; $('#confirmOverlay').classList.remove('show'); });
 
+  /* ===== 编辑帖子（只改文案/地点/地区，不动图片）===== */
+  let editingPost = null, editingNode = null;
+  function openEditPost(p, node) {
+    editingPost = p; editingNode = node;
+    $('#epCaption').value = p.caption || '';
+    $('#epPlace').value = p.place || '';
+    fillStateSelect($('#epState'), false);
+    $('#epState').value = p.state || '';
+    $('#epCity').value = p.city || '';
+    $('#editPostSave').disabled = false;
+    $('#editPostOverlay').classList.add('show');
+  }
+  function closeEditPost() { $('#editPostOverlay').classList.remove('show'); editingPost = null; editingNode = null; }
+  $('#editPostClose').addEventListener('click', closeEditPost);
+  $('#editPostCancel').addEventListener('click', closeEditPost);
+  $('#editPostOverlay').addEventListener('click', (e) => { if (e.target === $('#editPostOverlay')) closeEditPost(); });
+  $('#editPostForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!editingPost) return;
+    const save = $('#editPostSave'); save.disabled = true;
+    try {
+      const data = await api('/api/posts/' + editingPost.id, { method: 'PATCH', body: {
+        caption: $('#epCaption').value.trim(), place: $('#epPlace').value.trim(),
+        state: $('#epState').value, city: $('#epCity').value.trim()
+      } });
+      POSTS.set(data.post.id, data.post);
+      if (editingNode) { observer.unobserve(editingNode); const fresh = renderPost(data.post); editingNode.replaceWith(fresh); }
+      closeEditPost();
+      toast(t('pfSaved'));
+    } catch (err) { toast(errMsg(err.code)); save.disabled = false; }
+  });
+
   /* ================= 留言抽屉 ================= */
   let drawerPostId = null, drawerNode = null;
   const drawerWrap = $('#drawerWrap');
@@ -555,8 +641,16 @@
     ago.textContent = fmtAgo(c.createdAt);
     who.append(name, ago);
     const p = document.createElement('p');
-    p.textContent = c.text;
+    renderMentions(p, c.text);
     body.append(who, p);
+    if (ME) {
+      // 回复 = 在输入框预填 @对方，发出去后对方收到提及通知（平铺，不嵌套）
+      const reply = document.createElement('button');
+      reply.className = 'c-reply';
+      reply.textContent = t('reply');
+      reply.addEventListener('click', () => { const inp = $('#cInput'); inp.value = '@' + c.username + ' '; inp.focus(); });
+      body.appendChild(reply);
+    }
     el.append(av, body);
     if (c.mine) {
       const del = document.createElement('button');
@@ -571,6 +665,14 @@
         } catch (err) { toast(errMsg(err.code)); }
       });
       el.appendChild(del);
+    } else if (ME) {
+      // 别人的留言 → 小举报按钮
+      const rep = document.createElement('button');
+      rep.className = 'report-c';
+      rep.innerHTML = ICONS.flag;
+      rep.title = t('reportTitle');
+      rep.addEventListener('click', () => openReport({ type: 'comment', targetId: c.id }));
+      el.appendChild(rep);
     }
     return el;
   }
@@ -895,6 +997,11 @@
 
     /* 空关键词 → 热门标签 + 提示 */
     if (!data.q) {
+      const exBtn = document.createElement('button');
+      exBtn.className = 's-explore';
+      exBtn.innerHTML = '<b>' + t('exploreTitle') + '</b><span>' + t('exploreSub') + '</span>';
+      exBtn.addEventListener('click', () => { location.href = 'explore.html'; });
+      frag.appendChild(exBtn);
       if (data.tags.length) {
         addSection('trendingTags');
         frag.appendChild(tagChips(data.tags));
@@ -1101,6 +1208,10 @@
     $('#uploadBtnTop').style.display = '';
     // 从 profile / 分享链接进来：?user= / ?tag= / ?q=（可带 ?start=帖子ID）直接进对应 feed
     const sp = new URLSearchParams(location.search);
+    if (sp.get('state') && STATES.includes(sp.get('state'))) {
+      feedState.state = sp.get('state');           // 从探索页「按地区逛」进来
+      $('#stateFilter').value = sp.get('state');
+    }
     if (sp.get('user') || sp.get('tag') || sp.get('q') || sp.get('place')) {
       feedState.user = sp.get('user') || '';
       feedState.tag = (sp.get('tag') || '').toLowerCase();

@@ -89,6 +89,15 @@
     const name = document.createElement('h1');
     name.className = 'pf-name';
     name.textContent = '@' + u.username;
+    // 管理员本人主页：用户名旁显示醒目的 ADMIN 徽章，点击直接进审核后台（仅本人可见，不暴露给访客）
+    if (DATA.isAdmin) {
+      const badge = document.createElement('button');
+      badge.className = 'pf-admin-badge';
+      badge.innerHTML = ICONS.shield + '<span>ADMIN</span>';
+      badge.title = t('admEntry');
+      badge.addEventListener('click', () => { location.href = 'admin.html'; });
+      name.appendChild(badge);
+    }
 
     const region = document.createElement('div');
     region.className = 'pf-region';
@@ -143,6 +152,11 @@
       const out = mkBtn('pf-ghost pf-logout', null, t('logout'));
       out.addEventListener('click', logout);
       actions.append(site, edit, out);
+      if (DATA.isAdmin) {
+        const adm = mkBtn('pf-ghost pf-admin', ICONS.shield, t('admEntry'));
+        adm.addEventListener('click', () => { location.href = 'admin.html'; });
+        actions.append(adm);
+      }
     } else {
       const loginThen = (go) => DATA.waUrl ? go() : (toast(t('errAuth')), setTimeout(() => { location.href = 'index.html'; }, 900));
       const fol = mkBtn(DATA.isFollowing ? 'pf-following' : 'pf-follow', null, t(DATA.isFollowing ? 'pfFollowed' : 'pfFollow'));
@@ -173,6 +187,15 @@
       grid.className = 'pf-grid';
       for (const p of DATA.posts) grid.appendChild(cell(p));
       wrap.appendChild(grid);
+    }
+
+    // 顶栏「举报用户」：看别人主页且自己已登录时显示
+    const rb = $('#reportBtn');
+    if (!DATA.isMe && DATA.viewerLoggedIn) {
+      rb.hidden = false;
+      rb.onclick = () => openReport({ type: 'user', targetId: DATA.user.username, name: DATA.user.username });
+    } else {
+      rb.hidden = true;
     }
 
     setBackLabel();
@@ -340,6 +363,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     applyLang();
     document.querySelectorAll('.x').forEach(b => { b.innerHTML = ICONS.close; });
+    $('#reportBtn').innerHTML = ICONS.flag;
     setBackLabel();
     load();
   });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>微站 · Foody</title>
+  <title>探索 · Foody</title>
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,9 +13,18 @@
   <meta name="theme-color" content="#D96A3B">
   <link rel="apple-touch-icon" href="/img/icon-192.png">
 </head>
-<body class="page-site">
-  <main class="site" id="siteRoot"></main>
+<body class="page-explore">
+
+  <header class="pf-top">
+    <button class="chip icon-chip" id="backBtn"></button>
+    <span class="pf-top-name" id="exTitle"></span>
+    <div class="spacer"></div>
+    <button class="chip icon-chip" id="langBtn" title="Language"></button>
+  </header>
+
+  <main class="ex-wrap" id="exWrap"></main>
+
   <script src="js/shared.js"></script>
-  <script src="js/site.js"></script>
+  <script src="js/explore.js"></script>
 </body>
 </html>

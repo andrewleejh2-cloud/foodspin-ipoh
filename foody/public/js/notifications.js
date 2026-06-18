@@ -8,7 +8,7 @@
 
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function setBackLabel() { const l = BACK[LANG] || BACK.en; $('#backBtn').title = l; $('#backBtn').setAttribute('aria-label', l); }
-  function actionText(type) { return type === 'like' ? t('ntLiked') : type === 'comment' ? t('ntCommented') : t('ntFollowed'); }
+  function actionText(type) { return type === 'like' ? t('ntLiked') : type === 'comment' ? t('ntCommented') : type === 'mention' ? t('ntMention') : type === 'newpost' ? t('ntNewPost') : t('ntFollowed'); }
 
   $('#backBtn').innerHTML = ICONS.back;
   $('#langBtn').innerHTML = ICONS.globe;
@@ -40,7 +40,7 @@
       const body = document.createElement('div'); body.className = 'nt-body';
       const line = document.createElement('p'); line.className = 'nt-text';
       const b = document.createElement('b'); b.textContent = '@' + n.username;
-      const tail = ' ' + actionText(n.type) + (n.type === 'comment' && n.text ? ' 「' + n.text + '」' : '');
+      const tail = ' ' + actionText(n.type) + ((n.type === 'comment' || n.type === 'mention' || n.type === 'newpost') && n.text ? ' 「' + n.text + '」' : '');
       line.append(b, document.createTextNode(tail));
       const time = document.createElement('span'); time.className = 'nt-time'; time.textContent = fmtAgo(n.createdAt);
       body.append(line, time);

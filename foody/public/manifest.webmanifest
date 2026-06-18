@@ -1,0 +1,17 @@
+{
+  "name": "Foody — 大马美食分享",
+  "short_name": "Foody",
+  "description": "给大马人分享 & 发现美食的小天地 🍜",
+  "lang": "zh-CN",
+  "start_url": "/fyp.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF4EA",
+  "theme_color": "#D96A3B",
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

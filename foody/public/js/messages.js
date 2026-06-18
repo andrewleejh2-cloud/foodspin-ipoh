@@ -15,9 +15,8 @@
   $('#langBtn').innerHTML = ICONS.globe;
   $('#msgSend').innerHTML = ICONS.send;
   $('#backBtn').addEventListener('click', () => {
-    if (CHAT_WITH) location.href = 'messages.html';        // 聊天 → 收件箱
-    else if (history.length > 1) history.back();
-    else location.href = 'fyp.html';
+    // 聊天视图 → 回收件箱；收件箱 → 明确回 FYP（不用 history.back，否则会被送回刚才的聊天页，在私信里打转出不去）
+    location.href = CHAT_WITH ? 'messages.html' : 'fyp.html';
   });
   $('#langBtn').addEventListener('click', () => {
     const next = LANGS[(LANGS.indexOf(LANG) + 1) % LANGS.length];

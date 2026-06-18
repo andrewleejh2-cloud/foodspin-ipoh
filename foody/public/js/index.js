@@ -93,6 +93,7 @@
       username: $('#rgName').value.trim(),
       password: $('#rgPass').value,
       phone: $('#rgPhone').value.trim(),
+      email: $('#rgEmail').value.trim(),
       state: $('#rgState').value,
       city: $('#rgCity').value.trim()
     };

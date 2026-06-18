@@ -14,6 +14,7 @@ const DICT = {
     username: 'Foody 用户名', usernamePh: '如：Oscar',
     password: 'Foody 密码', passwordPh: '至少 6 位',
     phone: '电话号码（WhatsApp）', phonePh: '如：011-1901 9070',
+    email: 'Email（选填）', emailPh: '如：you@email.com',
     state: '州属', statePh: '选择州属', city: '城市 / 地区', cityPh: '如：新山', placePh: '📍 店名 / 地点（选填，如 金莲记）',
     loginBtn: '登录', registerBtn: '创建账号',
     welcomeBack: '欢迎回来', goFyp: '进入 FYP 刷美食 →', logout: '退出登录',
@@ -52,12 +53,14 @@ const DICT = {
     deleted: '已删除', savedToast: '已收藏 ⭐', unsavedToast: '已取消收藏',
     likeHint: '双击也可以点赞 ❤️',
     waMsg: 'Hi {name}！我在 Foody 看到你分享的美食，想了解一下 😋',
+    share: '分享', shareText: '在 Foody 看到 @{user} 分享的美食，快来看 🍜', shareCopied: '链接已复制 ✅', more: '更多',
     soundHint: '点击开启声音 🔊',
     justNow: '刚刚', minAgo: '{n} 分钟前', hrAgo: '{n} 小时前', dayAgo: '{n} 天前',
     loadFail: '加载失败了，下拉重试',
     tapToPost: '发布你的美食',
     search: '搜索', searchPh: '搜美食、用户、#标签…',
     trendingTags: '热门标签 🔥', secTags: '标签', secUsers: '用户', secPosts: '美食',
+    exploreTitle: '探索美食 🧭', exploreSub: '按地区、热门地点、标签发现', exByState: '按地区逛', exHotPlaces: '热门地点', exEmpty: '还没有内容可探索，先去发帖吧 🍜',
     noResults: '什么都没找到…换个词试试？',
     nPosts: '{n} 个帖子',
     searchTip: '试试搜 “nasi lemak”、地区，或 @用户名',
@@ -74,10 +77,23 @@ const DICT = {
     pfMessage: '发消息', dmTitle: '私信', dmPh: '输入消息…', dmYou: '你：',
     dmEmpty: '还没有私信。去别人主页点「发消息」就能开聊啦 💬', dmSayHi: '给 @{name} 发条消息，打个招呼吧 👋',
     pfFollow: '关注', pfFollowed: '已关注', pfFollowers: '粉丝', pfFollowing: '关注中', pfNobody: '还没有人', feedFollowing: '关注', feedEmptyFollow: '你还没关注谁。去逛逛、点别人头像关注，这里就有他们的新帖啦 👀',
-    ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntFollowed: '关注了你', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔',
+    ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntMention: '在评论里提到你', ntFollowed: '关注了你', ntNewPost: '发布了新帖子', editPost: '编辑帖子', reply: '回复', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔',
     plFoodies: '吃货', plMap: '在 Google 地图打开', plNotFound: '还没有这个地点的帖子',
     siteAbout: '关于', siteHours: '营业时间', siteAddress: '地址', siteGallery: '我们的出品', siteMap: '地图', siteDraft: '草稿 · 未发布，只有你看得到', siteUnpub: '这个网页还没发布',
-    siteEditTitle: '编辑我的网页', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网页', siteView: '查看网页'
+    siteEditTitle: '编辑我的网页', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网页', siteView: '查看网页',
+    /* 举报 & 审核 */
+    reportTitle: '举报', reportUser: '举报用户',
+    reportReasonLabel: '选择原因', reportNotePh: '补充说明（选填）…', reportSubmit: '提交举报',
+    reportNeedReason: '请先选一个原因', reportSent: '已收到你的举报，谢谢 🙏', reportSelf: '不能举报自己的内容',
+    reason_spam: '垃圾广告', reason_inappropriate: '不当内容', reason_harassment: '骚扰辱骂', reason_misinfo: '虚假误导', reason_other: '其他', reason_auto: '系统自动标记',
+    admEntry: '审核后台', admTitle: '审核后台 🛡️', admNoAccess: '你不是管理员，无法进入审核后台', admBack: '返回 FYP',
+    admStatOpen: '待处理举报', admStatUsers: '用户', admStatPosts: '帖子', admStatComments: '留言', admStatBanned: '已封禁',
+    admTabOpen: '待处理', admTabResolved: '已处理', admTabDismissed: '已驳回', admTabAll: '全部',
+    admEmpty: '太好了，这里没有待处理的举报 🎉', admLoadFail: '加载失败，刷新重试',
+    admReporter: '举报人', admAuto: '系统自动', admGone: '（内容已不存在）', admViewPost: '查看帖子',
+    admDoDelete: '删除内容', admDoBan: '封禁作者', admDoDismiss: '驳回', admDoUnban: '解封作者',
+    admConfirmDelete: '确定删除这条内容？不可恢复。', admConfirmBan: '确定封禁 @{name}？对方将无法登录或发帖（之后可解封）。',
+    admDoneDelete: '内容已删除', admDoneBan: '已封禁', admDoneDismiss: '已驳回', admDoneUnban: '已解封', admBannedTag: '已封禁'
   },
   ms: {
     langName: 'BM',
@@ -91,6 +107,7 @@ const DICT = {
     username: 'Nama pengguna Foody', usernamePh: 'cth: Oscar',
     password: 'Kata laluan Foody', passwordPh: 'sekurang-kurangnya 6 aksara',
     phone: 'Nombor telefon (WhatsApp)', phonePh: 'cth: 011-1901 9070',
+    email: 'Email (pilihan)', emailPh: 'cth: you@email.com',
     state: 'Negeri', statePh: 'Pilih negeri', city: 'Bandar / kawasan', cityPh: 'cth: Skudai', placePh: '📍 Nama kedai / lokasi (pilihan)',
     loginBtn: 'Log Masuk', registerBtn: 'Buat Akaun',
     welcomeBack: 'Selamat kembali', goFyp: 'Masuk FYP →', logout: 'Log keluar',
@@ -128,12 +145,14 @@ const DICT = {
     deleted: 'Dah dipadam', savedToast: 'Disimpan ⭐', unsavedToast: 'Simpanan dibuang',
     likeHint: 'Double tap pun boleh like ❤️',
     waMsg: 'Hi {name}! Nampak post makanan awak kat Foody, nak tanya sikit 😋',
+    share: 'Kongsi', shareText: 'Tengok makanan @{user} kongsi kat Foody 🍜', shareCopied: 'Pautan disalin ✅', more: 'Lagi',
     soundHint: 'Tekan untuk bunyi 🔊',
     justNow: 'baru tadi', minAgo: '{n} minit lalu', hrAgo: '{n} jam lalu', dayAgo: '{n} hari lalu',
     loadFail: 'Gagal dimuat, cuba lagi',
     tapToPost: 'Post makanan anda',
     search: 'Cari', searchPh: 'Cari makanan, pengguna, #tag…',
     trendingTags: 'Tag hangat 🔥', secTags: 'Tag', secUsers: 'Pengguna', secPosts: 'Makanan',
+    exploreTitle: 'Terokai 🧭', exploreSub: 'Cari ikut kawasan, lokasi, tag', exByState: 'Ikut negeri', exHotPlaces: 'Lokasi popular', exEmpty: 'Belum ada apa-apa, post dulu 🍜',
     noResults: 'Tiada hasil… cuba kata lain?',
     nPosts: '{n} post',
     searchTip: 'Cuba cari "nasi lemak", kawasan, atau @nama',
@@ -150,10 +169,22 @@ const DICT = {
     pfMessage: 'Mesej', dmTitle: 'Mesej', dmPh: 'Taip mesej…', dmYou: 'Anda:',
     dmEmpty: 'Belum ada mesej. Buka profil orang & tekan「Mesej」untuk mula 💬', dmSayHi: 'Hantar mesej kepada @{name} 👋',
     pfFollow: 'Ikut', pfFollowed: 'Mengikut', pfFollowers: 'Pengikut', pfFollowing: 'Mengikuti', pfNobody: 'Tiada lagi', feedFollowing: 'Ikutan', feedEmptyFollow: 'Anda belum ikut sesiapa. Tekan avatar orang untuk ikut, kiriman mereka akan muncul di sini 👀',
-    ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntFollowed: 'mula ikut anda', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔',
+    ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntMention: 'sebut anda dalam komen', ntFollowed: 'mula ikut anda', ntNewPost: 'siar kiriman baru', editPost: 'Edit kiriman', reply: 'Balas', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔',
     plFoodies: 'Foodie', plMap: 'Buka di Google Maps', plNotFound: 'Belum ada kiriman untuk lokasi ini',
     siteAbout: 'Tentang', siteHours: 'Waktu operasi', siteAddress: 'Alamat', siteGallery: 'Hasil kami', siteMap: 'Peta', siteDraft: 'Draf · belum terbit, hanya anda nampak', siteUnpub: 'Laman ini belum diterbitkan',
-    siteEditTitle: 'Edit laman saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Laman saya', siteView: 'Lihat laman'
+    siteEditTitle: 'Edit laman saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Laman saya', siteView: 'Lihat laman',
+    reportTitle: 'Lapor', reportUser: 'Lapor pengguna',
+    reportReasonLabel: 'Pilih sebab', reportNotePh: 'Maklumat tambahan (pilihan)…', reportSubmit: 'Hantar laporan',
+    reportNeedReason: 'Pilih sebab dulu', reportSent: 'Laporan diterima, terima kasih 🙏', reportSelf: 'Tak boleh lapor kandungan sendiri',
+    reason_spam: 'Spam / iklan', reason_inappropriate: 'Kandungan tak sesuai', reason_harassment: 'Gangguan / buli', reason_misinfo: 'Maklumat palsu', reason_other: 'Lain-lain', reason_auto: 'Tanda automatik',
+    admEntry: 'Panel moderasi', admTitle: 'Panel moderasi 🛡️', admNoAccess: 'Anda bukan admin', admBack: 'Kembali ke FYP',
+    admStatOpen: 'Laporan baru', admStatUsers: 'Pengguna', admStatPosts: 'Kiriman', admStatComments: 'Komen', admStatBanned: 'Disekat',
+    admTabOpen: 'Belum selesai', admTabResolved: 'Selesai', admTabDismissed: 'Ditolak', admTabAll: 'Semua',
+    admEmpty: 'Tiada laporan tertunggak 🎉', admLoadFail: 'Gagal dimuat, cuba lagi',
+    admReporter: 'Pelapor', admAuto: 'Automatik', admGone: '(Kandungan tiada)', admViewPost: 'Lihat kiriman',
+    admDoDelete: 'Padam kandungan', admDoBan: 'Sekat penyiar', admDoDismiss: 'Tolak', admDoUnban: 'Nyahsekat',
+    admConfirmDelete: 'Padam kandungan ini? Tak boleh undo.', admConfirmBan: 'Sekat @{name}? Mereka tak boleh log masuk / post (boleh nyahsekat kemudian).',
+    admDoneDelete: 'Kandungan dipadam', admDoneBan: 'Telah disekat', admDoneDismiss: 'Ditolak', admDoneUnban: 'Dinyahsekat', admBannedTag: 'Disekat'
   },
   en: {
     langName: 'EN',
@@ -167,6 +198,7 @@ const DICT = {
     username: 'Foody username', usernamePh: 'e.g. Oscar',
     password: 'Foody password', passwordPh: 'at least 6 characters',
     phone: 'Phone number (WhatsApp)', phonePh: 'e.g. 011-1901 9070',
+    email: 'Email (optional)', emailPh: 'e.g. you@email.com',
     state: 'State', statePh: 'Choose a state', city: 'City / area', cityPh: 'e.g. JB', placePh: '📍 Shop / place name (optional)',
     loginBtn: 'Log In', registerBtn: 'Create Account',
     welcomeBack: 'Welcome back', goFyp: 'Go to FYP →', logout: 'Log out',
@@ -204,12 +236,14 @@ const DICT = {
     deleted: 'Deleted', savedToast: 'Saved ⭐', unsavedToast: 'Removed from saves',
     likeHint: 'Double-tap to like ❤️',
     waMsg: 'Hi {name}! Saw your food post on Foody — would love to know more 😋',
+    share: 'Share', shareText: "Check out @{user}'s food on Foody 🍜", shareCopied: 'Link copied ✅', more: 'More',
     soundHint: 'Tap for sound 🔊',
     justNow: 'just now', minAgo: '{n}m ago', hrAgo: '{n}h ago', dayAgo: '{n}d ago',
     loadFail: 'Failed to load — try again',
     tapToPost: 'Post your food',
     search: 'Search', searchPh: 'Search food, users, #tags…',
     trendingTags: 'Trending tags 🔥', secTags: 'Tags', secUsers: 'Users', secPosts: 'Food',
+    exploreTitle: 'Explore 🧭', exploreSub: 'Discover by region, place, tags', exByState: 'By region', exHotPlaces: 'Hot places', exEmpty: 'Nothing to explore yet — post something 🍜',
     noResults: 'Nothing found — try another word?',
     nPosts: '{n} posts',
     searchTip: 'Try "nasi lemak", a region, or @username',
@@ -226,10 +260,22 @@ const DICT = {
     pfMessage: 'Message', dmTitle: 'Messages', dmPh: 'Type a message…', dmYou: 'You:',
     dmEmpty: 'No messages yet. Open a profile and tap "Message" to start 💬', dmSayHi: 'Say hi to @{name} 👋',
     pfFollow: 'Follow', pfFollowed: 'Following', pfFollowers: 'Followers', pfFollowing: 'Following', pfNobody: 'Nobody yet', feedFollowing: 'Following', feedEmptyFollow: 'You are not following anyone yet. Tap a profile avatar to follow, and their posts show up here 👀',
-    ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntFollowed: 'followed you', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔',
+    ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntMention: 'mentioned you in a comment', ntFollowed: 'followed you', ntNewPost: 'posted something new', editPost: 'Edit post', reply: 'Reply', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔',
     plFoodies: 'Foodies', plMap: 'Open in Google Maps', plNotFound: 'No posts for this place yet',
     siteAbout: 'About', siteHours: 'Opening hours', siteAddress: 'Address', siteGallery: 'Our dishes', siteMap: 'Map', siteDraft: 'Draft · not published, only you can see this', siteUnpub: 'This page is not published yet',
-    siteEditTitle: 'Edit my page', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My page', siteView: 'View page'
+    siteEditTitle: 'Edit my page', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My page', siteView: 'View page',
+    reportTitle: 'Report', reportUser: 'Report user',
+    reportReasonLabel: 'Choose a reason', reportNotePh: 'Add details (optional)…', reportSubmit: 'Submit report',
+    reportNeedReason: 'Pick a reason first', reportSent: 'Report received, thank you 🙏', reportSelf: "You can't report your own content",
+    reason_spam: 'Spam / ads', reason_inappropriate: 'Inappropriate', reason_harassment: 'Harassment', reason_misinfo: 'Misleading info', reason_other: 'Other', reason_auto: 'Auto-flagged',
+    admEntry: 'Moderation', admTitle: 'Moderation 🛡️', admNoAccess: 'You are not an admin', admBack: 'Back to FYP',
+    admStatOpen: 'Open reports', admStatUsers: 'Users', admStatPosts: 'Posts', admStatComments: 'Comments', admStatBanned: 'Banned',
+    admTabOpen: 'Open', admTabResolved: 'Resolved', admTabDismissed: 'Dismissed', admTabAll: 'All',
+    admEmpty: 'All clear — no open reports 🎉', admLoadFail: 'Failed to load, try again',
+    admReporter: 'Reporter', admAuto: 'Auto', admGone: '(Content no longer exists)', admViewPost: 'View post',
+    admDoDelete: 'Delete content', admDoBan: 'Ban author', admDoDismiss: 'Dismiss', admDoUnban: 'Unban author',
+    admConfirmDelete: 'Delete this content? Cannot be undone.', admConfirmBan: 'Ban @{name}? They cannot log in or post (you can unban later).',
+    admDoneDelete: 'Content deleted', admDoneBan: 'Banned', admDoneDismiss: 'Dismissed', admDoneUnban: 'Unbanned', admBannedTag: 'Banned'
   }
 };
 
@@ -279,6 +325,9 @@ function errMsg(code) {
     bad_login: 'errBadLogin', too_many: 'errTooMany', auth: 'errAuth',
     file_too_big: 'errNet', bad_file: 'errNet', net: 'errNet'
   };
+  if (code === 'banned') return LANG === 'zh' ? '你的账号已被限制，暂时无法操作' : LANG === 'ms' ? 'Akaun anda disekat buat masa ini' : 'Your account is restricted';
+  if (code === 'bad_email') return LANG === 'zh' ? '邮箱格式不对' : LANG === 'ms' ? 'Format email tak betul' : 'Invalid email address';
+  if (code === 'email_taken') return LANG === 'zh' ? '这个邮箱已经注册过账号了' : LANG === 'ms' ? 'Email ini sudah ada akaun' : 'This email already has an account';
   if (code === 'file_too_big') return LANG === 'zh' ? '文件太大了（最多 150MB）' : LANG === 'ms' ? 'Fail terlalu besar (max 150MB)' : 'File too large (max 150MB)';
   if (code === 'bad_file') return LANG === 'zh' ? '只支持照片和视频哦' : LANG === 'ms' ? 'Gambar & video sahaja' : 'Photos & videos only';
   return t(map[code] || 'errNet');
@@ -366,8 +415,101 @@ const ICONS = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.8-2.8L5 17.2V20Z"/><path d="M14 7l3 3"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.4"/><circle cx="17" cy="6" r="2.4"/><circle cx="17" cy="18" r="2.4"/><path d="M8.1 11 14.9 7.2M8.1 13l6.8 3.8"/></svg>',
   users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16.5 5.4a3.2 3.2 0 0 1 0 6.1M17.5 19a5.5 5.5 0 0 0-2.4-4.5"/></svg>',
-  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 0 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5Z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>'
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 0 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5Z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-1.6 3.6L16 11H5"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 9-4-1.1-7-4.4-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>'
 };
+
+/* ---------------- 举报弹窗（通用：任意页面引入 shared.js 即可调用 openReport）---------------- */
+let _reportTarget = null;
+function ensureReportDom() {
+  if (document.getElementById('reportOverlay')) return;
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.id = 'reportOverlay';
+  ov.innerHTML =
+    '<div class="modal report-modal">' +
+    '  <h3><span id="reportTitle"></span><button class="x" id="reportClose"></button></h3>' +
+    '  <div class="report-reasons" id="reportReasons"></div>' +
+    '  <div class="field"><textarea id="reportNote" rows="2" maxlength="200"></textarea></div>' +
+    '  <div class="modal-actions">' +
+    '    <button class="btn-ghost" id="reportCancel"></button>' +
+    '    <button class="btn" id="reportSubmit"></button>' +
+    '  </div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#reportClose').innerHTML = ICONS.close;
+  ov.querySelector('#reportClose').addEventListener('click', closeReport);
+  ov.querySelector('#reportCancel').addEventListener('click', closeReport);
+  ov.querySelector('#reportSubmit').addEventListener('click', submitReport);
+  ov.addEventListener('click', (e) => { if (e.target === ov) closeReport(); });
+}
+
+/* target = { type:'post'|'comment'|'user', targetId, name? } */
+function openReport(target) {
+  ensureReportDom();
+  _reportTarget = Object.assign({ reason: null }, target);
+  const ov = document.getElementById('reportOverlay');
+  ov.querySelector('#reportTitle').textContent =
+    target.type === 'user' ? t('reportUser') + (target.name ? ' @' + target.name : '') : t('reportTitle');
+  ov.querySelector('#reportCancel').textContent = t('cancel');
+  ov.querySelector('#reportSubmit').textContent = t('reportSubmit');
+  const note = ov.querySelector('#reportNote');
+  note.value = '';
+  note.placeholder = t('reportNotePh');
+  const box = ov.querySelector('#reportReasons');
+  box.innerHTML = '';
+  for (const r of ['spam', 'inappropriate', 'harassment', 'misinfo', 'other']) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'reason-chip';
+    b.textContent = t('reason_' + r);
+    b.addEventListener('click', () => {
+      _reportTarget.reason = r;
+      box.querySelectorAll('.reason-chip').forEach(x => x.classList.toggle('on', x === b));
+    });
+    box.appendChild(b);
+  }
+  ov.classList.add('show');
+}
+
+function closeReport() {
+  const ov = document.getElementById('reportOverlay');
+  if (ov) ov.classList.remove('show');
+  _reportTarget = null;
+}
+
+async function submitReport() {
+  if (!_reportTarget) return;
+  if (!_reportTarget.reason) { toast(t('reportNeedReason')); return; }
+  const ov = document.getElementById('reportOverlay');
+  const btn = ov.querySelector('#reportSubmit');
+  btn.disabled = true;
+  try {
+    await api('/api/reports', {
+      method: 'POST',
+      body: {
+        type: _reportTarget.type,
+        targetId: _reportTarget.targetId,
+        reason: _reportTarget.reason,
+        note: ov.querySelector('#reportNote').value.trim()
+      }
+    });
+    closeReport();
+    toast(t('reportSent'));
+  } catch (e) {
+    if (e.code === 'self') toast(t('reportSelf'));
+    else toast(errMsg(e.code));
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
 document.addEventListener('DOMContentLoaded', applyLang);
+
+/* PWA：注册 service worker（让 Foody 可加到主屏、离线兜底）。失败静默，不影响正常使用。 */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}

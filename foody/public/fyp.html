@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#D96A3B">
+  <link rel="apple-touch-icon" href="/img/icon-192.png">
 </head>
 <body class="page-fyp">
 
@@ -61,9 +64,13 @@
         <button class="rail-btn like"><span class="ic"></span><span class="cnt"></span></button>
         <button class="rail-btn cmt"><span class="ic"></span><span class="cnt"></span></button>
         <button class="rail-btn sav"><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn shr"><span class="ic"></span><span class="cnt"></span></button>
         <button class="rail-btn wa"><span class="ic"></span><span class="cnt">WhatsApp</span></button>
         <button class="rail-btn mut"><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn edt" hidden><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn rep" hidden><span class="ic"></span><span class="cnt"></span></button>
         <button class="rail-btn del" hidden><span class="ic"></span><span class="cnt"></span></button>
+        <button class="rail-btn more"><span class="ic"></span><span class="cnt"></span></button>
       </aside>
     </section>
   </template>
@@ -136,6 +143,28 @@
         <button class="btn-ghost" id="confirmCancel" data-i18n="cancel"></button>
         <button class="btn btn-danger" id="confirmOk" data-i18n="confirm"></button>
       </div>
+    </div>
+  </div>
+
+  <!-- 编辑帖子（只改文案/地点/地区，不换图片） -->
+  <div class="overlay" id="editPostOverlay">
+    <div class="modal">
+      <h3><span data-i18n="editPost"></span><button class="x" id="editPostClose"></button></h3>
+      <form id="editPostForm" novalidate>
+        <div class="field"><textarea id="epCaption" rows="3" maxlength="500" data-i18n-ph="captionPh"></textarea></div>
+        <div class="field"><input id="epPlace" maxlength="40" data-i18n-ph="placePh"></div>
+        <div class="field">
+          <label data-i18n="regionLabel"></label>
+          <div class="field-row" style="margin-bottom:0">
+            <div class="field" style="margin-bottom:0"><select id="epState" required></select></div>
+            <div class="field" style="margin-bottom:0"><input id="epCity" maxlength="30" data-i18n-ph="cityPh"></div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="editPostCancel" data-i18n="cancel"></button>
+          <button type="submit" class="btn" id="editPostSave" data-i18n="pfSave"></button>
+        </div>
+      </form>
     </div>
   </div>
 
