@@ -75,6 +75,19 @@
       }
       media.className = 'media';
       wrap.insertBefore(media, node.querySelector('.play-badge'));
+      // 按比例决定填满(cover)还是留全(contain)：裁切少就填满更沉浸，多就保留+模糊补底
+      if (media.tagName === 'IMG') {
+        if (media.complete && media.naturalWidth) fitMedia(media, wrap);
+        else media.addEventListener('load', () => fitMedia(media, wrap), { once: true });
+      } else {
+        media.addEventListener('loadedmetadata', () => fitMedia(media, wrap), { once: true });
+        const prog = node.querySelector('.vid-progress');
+        prog.hidden = false;
+        const bar = prog.querySelector('i');
+        media.addEventListener('timeupdate', () => {
+          if (media.duration) bar.style.width = (media.currentTime / media.duration * 100) + '%';
+        });
+      }
     } else {
       node.classList.add('multi');   // 让自动播放 observer 跳过这帖
       node.querySelector('.media-bg').style.backgroundImage = `url("${encodeURI(list[0].url)}")`;
@@ -207,6 +220,8 @@
           if (media && media.tagName === 'VIDEO') {
             if (media.paused) { media.play().catch(() => {}); node.classList.remove('paused'); }
             else { media.pause(); node.classList.add('paused'); }
+          } else if (media && media.tagName === 'IMG' && media.classList.contains('fill')) {
+            openLightbox(list, 0);   // 被填满裁切的图：点一下看完整原图
           }
         }, 240);
       }
@@ -214,6 +229,19 @@
 
     observer.observe(node);
     return node;
+  }
+
+  /* 按「裁切量」决定单媒体填满还是留全：
+     裁切 ≤ 28% → cover 填满（更沉浸，消灭浅色海报的发灰边）；否则 contain + 模糊补底。
+     上限随屏幕比例自适应——窄高的手机会少填一点以保护内容，绝不乱切。 */
+  function fitMedia(mediaEl, wrapEl) {
+    const w = mediaEl.tagName === 'VIDEO' ? mediaEl.videoWidth : mediaEl.naturalWidth;
+    const h = mediaEl.tagName === 'VIDEO' ? mediaEl.videoHeight : mediaEl.naturalHeight;
+    const rect = wrapEl.getBoundingClientRect();
+    if (!w || !h || !rect.width || !rect.height) return;
+    const ri = w / h, rw = rect.width / rect.height;
+    const cropFrac = 1 - Math.min(ri, rw) / Math.max(ri, rw);
+    mediaEl.classList.toggle('fill', cropFrac <= 0.28);
   }
 
   /* 多媒体帖：Facebook 式网格拼图（最多展示 4 格，第 4 格盖 +N）。点任意格开全屏查看器 */
@@ -848,8 +876,8 @@
   $('#uploadCancel').addEventListener('click', closeUpload);
   uploadOverlay.addEventListener('click', (e) => { if (e.target === uploadOverlay) closeUpload(); });
 
-  $('#uploadBtnTop').addEventListener('click', openUpload);
-  $('#uploadBtnFab').addEventListener('click', openUpload);
+  // 发帖入口统一到底部导航栏的 ➕（手机/桌面一致）：它派发 foody:compose
+  document.addEventListener('foody:compose', openUpload);
 
   /* ================= 登录提示弹窗 ================= */
   $('#loginClose').addEventListener('click', () => $('#loginOverlay').classList.remove('show'));
@@ -1122,8 +1150,6 @@
   document.addEventListener('foody:lang', () => {
     fillStateSelect($('#stateFilter'), true);
     fillStateSelect($('#upState'), false);
-    paintUserChip();
-    paintUploadBtns();
     syncSettingsUI();
     if (searchPanel.classList.contains('show')) runSearch(searchInput.value.trim());
     // 更新动态文本
@@ -1132,34 +1158,10 @@
     feed.querySelectorAll('.sound-hint').forEach(el => { el.textContent = t('soundHint'); });
   });
 
-  async function pollUnread() {
-    if (!ME) return;
-    try { const d = await api('/api/me/unread'); $('#msgDot').hidden = !(d.count > 0); } catch {}
-  }
+  // 私信未读由底部导航栏统一接管（合并 DM + 通知小红点）；此处只管顶栏通知铃铛
   async function pollNotif() {
     if (!ME) return;
     try { const d = await api('/api/notifications/unread'); $('#notifDot').hidden = !(d.count > 0); } catch {}
-  }
-
-  function paintUserChip() {
-    const chip = $('#userChip');
-    if (ME) {
-      chip.innerHTML = `<span class="avatar-sm"></span><span>@${ME.username}</span>`;
-      fillAvatar(chip.querySelector('.avatar-sm'), ME.username, ME.avatar);
-      chip.onclick = () => { location.href = 'profile.html?u=' + encodeURIComponent(ME.username); };
-      chip.title = t('pfMine');
-    } else {
-      chip.textContent = t('login');
-      chip.onclick = () => { location.href = 'index.html'; };
-    }
-  }
-
-  function paintUploadBtns() {
-    const top = $('#uploadBtnTop');
-    top.innerHTML = ICONS.plus + '<span>' + t('upload') + '</span>';
-    top.querySelector('svg').style.width = '18px';
-    top.querySelector('svg').style.height = '18px';
-    $('#uploadBtnFab').innerHTML = ICONS.plus;
   }
 
   /* ================= 键盘上下滑 ================= */
@@ -1175,14 +1177,41 @@
     slides[next].scrollIntoView({ behavior: 'smooth' });
   });
 
+  /* ================= 回退键：先关弹层，feed 上「按两次离开」 =================
+     给 feed 立一个历史守卫。按回退键时：①优先关掉打开的照片/评论/搜索/发帖弹窗，停在 feed；
+     ②feed 上什么都没开时，第一次回退被吸收（提示「再按一次离开」），2 秒内再按才真的离开。
+     这样看照片/评论时回退=关闭回 feed，也不会在 feed 上误触退出。 */
+  function closeTopOverlay() {
+    if (!lb.hidden) { closeLightbox(); return true; }
+    if (uploadOverlay.classList.contains('show')) { closeUpload(); return true; }
+    if ($('#editPostOverlay').classList.contains('show')) { $('#editPostOverlay').classList.remove('show'); return true; }
+    if ($('#confirmOverlay').classList.contains('show')) { $('#confirmOverlay').classList.remove('show'); return true; }
+    if ($('#loginOverlay').classList.contains('show')) { $('#loginOverlay').classList.remove('show'); return true; }
+    if (drawerWrap.classList.contains('show')) { closeDrawer(); return true; }
+    if (searchPanel.classList.contains('show')) { closeSearch(); return true; }
+    return false;
+  }
+  let backExitArmed = false;
+  function pushBackGuard() { history.pushState({ foodyGuard: true }, ''); }
+  window.addEventListener('popstate', () => {
+    if (closeTopOverlay()) { pushBackGuard(); return; }   // 关掉一个弹层 → 留在 feed
+    if (!backExitArmed) {                                  // feed 上第一次回退：吸收 + 提示
+      backExitArmed = true;
+      pushBackGuard();
+      toast(t('backAgainExit'));
+      setTimeout(() => { backExitArmed = false; }, 2000);
+      return;
+    }
+    history.back();                                        // 2 秒内再按：真的离开 feed
+  });
+  pushBackGuard();   // 进入 feed 即立守卫
+
   /* ================= 初始化 ================= */
   document.addEventListener('DOMContentLoaded', async () => {
     applyLang();
     document.querySelectorAll('.x').forEach(b => { b.innerHTML = ICONS.close; });
     $('#cSend').innerHTML = ICONS.send;
     $('#searchBtn').innerHTML = ICONS.search;
-    $('#msgBtn').insertAdjacentHTML('afterbegin', ICONS.bubble);
-    $('#msgBtn').addEventListener('click', () => { location.href = 'messages.html'; });
     $('#notifBtn').insertAdjacentHTML('afterbegin', ICONS.bell);
     $('#notifBtn').addEventListener('click', () => { location.href = 'notifications.html'; });
     document.querySelector('.s-ic').innerHTML = ICONS.search;
@@ -1190,22 +1219,18 @@
     $('#feedSeg button[data-sort="hot"] .sg-ic').innerHTML = ICONS.spark;
     $('#feedSeg button[data-sort="new"] .sg-ic').innerHTML = ICONS.clock;
     $('#feedSeg button[data-sort="following"] .sg-ic').innerHTML = ICONS.users;
-    paintUploadBtns();
     syncSettingsUI();
     try {
-      const data = await api('/api/me');
+      const data = await getMe();        // 缓存：底部导航栏也复用同一份 /api/me
       ME = data.user;
       STATES = data.states || [];
     } catch {}
     fillStateSelect($('#stateFilter'), true);
     fillStateSelect($('#upState'), false);
-    paintUserChip();
     $('#savedFilter').hidden = !ME;
-    $('#msgBtn').hidden = !ME;
     $('#notifBtn').hidden = !ME;
     $('#feedSeg button[data-sort="following"]').hidden = !ME;
-    if (ME) { pollUnread(); pollNotif(); setInterval(pollUnread, 15000); setInterval(pollNotif, 20000); }
-    $('#uploadBtnTop').style.display = '';
+    if (ME) { pollNotif(); setInterval(pollNotif, 20000); }
     // 从 profile / 分享链接进来：?user= / ?tag= / ?q=（可带 ?start=帖子ID）直接进对应 feed
     const sp = new URLSearchParams(location.search);
     if (sp.get('state') && STATES.includes(sp.get('state'))) {
@@ -1222,6 +1247,7 @@
     } else if (sp.get('start')) {
       feedState.startId = sp.get('start');   // 从通知点进来：在完整 feed 里定位到该帖
     }
+    if (sp.get('compose')) openUpload();   // 从其他页底部栏 ➕ 跳来：直接打开发帖（未登录会提示登录）
     loadMore();
   });
 })();

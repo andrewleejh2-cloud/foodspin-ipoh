@@ -29,15 +29,9 @@
     <div class="spacer"></div>
     <button class="chip icon-chip" id="searchBtn" data-i18n-title="search"></button>
     <button class="chip icon-chip msg-chip" id="notifBtn" data-i18n-title="ntTitle"><span class="msg-dot" id="notifDot" hidden></span></button>
-    <button class="chip icon-chip msg-chip" id="msgBtn" data-i18n-title="dmTitle"><span class="msg-dot" id="msgDot" hidden></span></button>
     <button class="chip icon-chip" id="settingsBtn" data-i18n-title="playerSettings"></button>
     <button class="chip icon-chip" id="langBtn" title="Language"></button>
-    <button class="chip" id="userChip"></button>
   </header>
-
-  <!-- 桌面版发布按钮（顶部）；手机版圆形按钮（底部） -->
-  <button class="btn fab fab-desktop" id="uploadBtnTop" style="display:none"></button>
-  <button class="fab fab-mobile" id="uploadBtnFab" data-i18n-title="tapToPost"></button>
 
   <!-- Feed -->
   <main class="feed" id="feed"></main>
@@ -50,6 +44,7 @@
         <!-- media (img/video) 由 JS 插入 -->
         <div class="play-badge"></div>
         <button class="sound-hint"></button>
+        <div class="vid-progress" hidden><i></i></div>
         <div class="slide-info">
           <div class="author"></div>
           <div class="meta-row">

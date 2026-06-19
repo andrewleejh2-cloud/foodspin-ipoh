@@ -269,12 +269,13 @@ input, select, textarea { font-family: inherit; font-size: 15px; color: inherit;
 .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .chip svg { width: 17px; height: 17px; }
 
-/* 推荐 / 最新 切换 */
+/* 推荐 / 最新 切换 —— TikTok 式居中（绝对定位，不挤占两侧、不改 HTML） */
 .feed-seg {
   display: inline-flex; align-items: center; flex: none;
   background: rgba(255, 246, 230, .1);
   border: 1px solid rgba(255, 246, 230, .16);
   border-radius: 999px; padding: 3px;
+  position: absolute; left: 50%; transform: translateX(-50%); top: 12px;
 }
 .feed-seg button {
   display: inline-flex; align-items: center; gap: 5px;
@@ -329,11 +330,36 @@ select.chip option { background: #241E18; color: #F4EDE2; }
 .media-bg {
   position: absolute; inset: -34px;
   background-size: cover; background-position: center;
-  filter: blur(42px) brightness(.45) saturate(1.15);
+  filter: blur(46px) brightness(.36) saturate(1.25);
 }
 .media {
   position: relative; width: 100%; height: 100%;
   object-fit: contain; z-index: 1;
+}
+/* 接近竖屏比例的图/视频：填满裁切，更沉浸（由 fyp.js fitMedia 按裁切量决定加不加 .fill） */
+.media.fill { object-fit: cover; }
+img.media.fill { cursor: zoom-in; }
+
+/* 媒体不可长按菜单/选中/拖拽 —— 更像原生 App。
+   只作用于图与视频本身；文案、WhatsApp 号、输入框照常可选可复制。 */
+.media, .media-bg, .media-grid, .mg-cell img, .mg-cell video, .lb-media {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 视频底部进度条 */
+.vid-progress {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  height: 3px; background: rgba(255, 246, 230, .16);
+}
+.vid-progress > i {
+  display: block; height: 100%; width: 0;
+  background: var(--accent); border-radius: 0 2px 2px 0;
+  transition: width .25s linear;
+}
+@media (max-width: 760px) {
+  .vid-progress { bottom: calc(58px + env(safe-area-inset-bottom)); }
 }
 
 /* 媒体上的提示/动画 */
@@ -724,13 +750,14 @@ select.chip option { background: #241E18; color: #F4EDE2; }
   .rail {
     position: absolute; right: 9px; bottom: 104px;
   }
-  .slide-info { padding-right: 76px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .slide-info { padding-right: 76px; padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
   .fab-desktop { display: none; }
   .fab-mobile { display: grid; }
   #savedFilter span { display: none; }
   #userChip > span + span { display: none; }
   .fyp-top { padding-top: calc(10px + env(safe-area-inset-top)); gap: 6px; }
   .fyp-top .brand { display: none; }
+  .feed-seg { top: calc(10px + env(safe-area-inset-top)); }
   .feed-seg button { padding: 6px 9px; }
   .feed-seg .sg-ic { display: inline-flex; }
   .feed-seg button span { display: none; }
@@ -1298,4 +1325,85 @@ body.lb-open { overflow: hidden; }
   .rail:not(.expanded) .edt,
   .rail:not(.expanded) .rep,
   .rail:not(.expanded) .del { display: none; }
+}
+
+/* ============================================================
+   底部导航栏（Phase 1 · TikTok 式 5 格）
+   暖奶油色基础；.page-fyp 深色磨砂变体
+   手机：满宽贴底条　桌面：居中浮动胶囊
+   ============================================================ */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: flex; align-items: stretch;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -6px 20px -14px rgba(96, 64, 32, .4);
+}
+.bn-item {
+  flex: 1; min-width: 0; position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 7px 0 6px;
+  color: var(--ink-2); font-size: 10.5px; font-weight: 800; letter-spacing: .2px;
+  transition: color .15s, transform .12s;
+}
+.bn-item:active { transform: scale(.93); }
+.bn-item.on { color: var(--accent-d); }
+.bn-tx { line-height: 1; }
+.bn-ic { position: relative; width: 27px; height: 27px; display: grid; place-items: center; }
+.bn-ic svg { width: 26px; height: 26px; }
+
+/* 中间发帖：强调胶囊 */
+.bn-create .bn-ic {
+  width: 46px; height: 30px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--accent), #E8894B); color: #fff;
+  box-shadow: 0 6px 15px -5px rgba(217, 106, 59, .6);
+  transition: transform .12s, box-shadow .15s;
+}
+.bn-create .bn-ic svg { width: 23px; height: 23px; }
+.bn-create:active .bn-ic { transform: scale(.9); }
+
+/* 头像格 */
+.bn-av {
+  border-radius: 50%; overflow: hidden;
+  background: linear-gradient(135deg, var(--accent), #E89B52);
+  color: #fff; font-weight: 800; font-size: 13px;
+}
+.bn-av svg { width: 17px; height: 17px; }
+.bn-me.on .bn-av { box-shadow: 0 0 0 2.5px var(--accent-d); }
+
+/* 未读小红点 */
+.bn-dot {
+  position: absolute; top: -2px; right: -3px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--like); border: 1.5px solid var(--surface);
+}
+
+/* FYP 深色磨砂变体 */
+.page-fyp .bottom-nav {
+  background: rgba(14, 10, 7, .88);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 246, 230, .1); box-shadow: none;
+}
+.page-fyp .bn-item { color: rgba(255, 246, 230, .62); }
+.page-fyp .bn-item.on { color: #FFF6EA; }
+.page-fyp .bn-dot { border-color: #0E0A07; }
+
+/* 内容补底：仅在底部栏真正挂载时（has-bnav）才加，避免无栏页面留空 */
+.has-bnav.page-explore .ex-wrap { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
+.has-bnav.page-profile .pf-wrap { padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
+
+/* 桌面：底部栏收成居中浮动胶囊 */
+@media (min-width: 761px) {
+  .bottom-nav {
+    left: 50%; right: auto; transform: translateX(-50%);
+    bottom: 16px; width: min(440px, calc(100vw - 32px));
+    border: 1px solid var(--line); border-radius: 20px;
+    box-shadow: var(--shadow); padding-bottom: 0; overflow: hidden;
+  }
+  .page-fyp .bottom-nav { border: 1px solid rgba(255, 246, 230, .12); }
+  .bn-item { padding: 9px 0 8px; }
+  .has-bnav.page-explore .ex-wrap,
+  .has-bnav.page-profile .pf-wrap { padding-bottom: 96px; }
+  /* 桌面 FYP：文案上抬，避开居中浮动胶囊 */
+  .has-bnav .slide-info { padding-bottom: 80px; }
 }

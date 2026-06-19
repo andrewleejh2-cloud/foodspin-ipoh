@@ -65,6 +65,8 @@ const DICT = {
     nPosts: '{n} 个帖子',
     searchTip: '试试搜 “nasi lemak”、地区，或 @用户名',
     feedForYou: '推荐', feedLatest: '最新',
+    navHome: '首页', navExplore: '探索', navPost: '发帖', navInbox: '消息', navMe: '我',
+    backAgainExit: '再按一次离开 Foody',
     /* Profile 主页 */
     pfPosts: '作品', pfLikes: '获赞',
     pfEdit: '编辑资料', pfSave: '保存', pfBioPh: '介绍一下你的美食 / 店…',
@@ -157,6 +159,8 @@ const DICT = {
     nPosts: '{n} post',
     searchTip: 'Cuba cari "nasi lemak", kawasan, atau @nama',
     feedForYou: 'Cadangan', feedLatest: 'Terbaru',
+    navHome: 'Utama', navExplore: 'Terokai', navPost: 'Kirim', navInbox: 'Mesej', navMe: 'Saya',
+    backAgainExit: 'Tekan sekali lagi untuk keluar',
     /* Profile */
     pfPosts: 'Kiriman', pfLikes: 'Suka',
     pfEdit: 'Edit profil', pfSave: 'Simpan', pfBioPh: 'Cerita pasal makanan / kedai anda…',
@@ -248,6 +252,8 @@ const DICT = {
     nPosts: '{n} posts',
     searchTip: 'Try "nasi lemak", a region, or @username',
     feedForYou: 'For You', feedLatest: 'Latest',
+    navHome: 'Home', navExplore: 'Explore', navPost: 'Post', navInbox: 'Inbox', navMe: 'Me',
+    backAgainExit: 'Press back again to exit',
     /* Profile */
     pfPosts: 'Posts', pfLikes: 'Likes',
     pfEdit: 'Edit profile', pfSave: 'Save', pfBioPh: 'Tell people about your food / shop…',
@@ -418,7 +424,9 @@ const ICONS = {
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 0 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5Z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>',
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-1.6 3.6L16 11H5"/></svg>',
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 9-4-1.1-7-4.4-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>',
-  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>'
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.34 3.27a1 1 0 0 1 1.32 0l8 7a1 1 0 0 1 .34.75V20a1 1 0 0 1-1 1h-4.5a1 1 0 0 1-1-1v-4.4a1 1 0 0 0-1-1h-2.6a1 1 0 0 0-1 1V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8.98a1 1 0 0 1 .34-.75l8-7Z"/></svg>',
+  compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M15.4 8.6 13.5 13.5 8.6 15.4 10.5 10.5 15.4 8.6Z" fill="currentColor" stroke="none"/></svg>'
 };
 
 /* ---------------- 举报弹窗（通用：任意页面引入 shared.js 即可调用 openReport）---------------- */
@@ -506,10 +514,83 @@ async function submitReport() {
   }
 }
 
+/* ---------------- 当前用户（缓存：整页只请求一次 /api/me，多处复用）---------------- */
+let _mePromise = null;
+function getMe() {
+  if (!_mePromise) _mePromise = api('/api/me').catch(() => ({ user: null }));
+  return _mePromise;
+}
+
+/* ---------------- 底部导航栏（共享组件，TikTok 式 5 格）----------------
+   只在主要 app 页挂载：首页(fyp) / 探索(explore) / 主页(profile)。
+   落地页、后台、微站、消息子页不挂（消息/通知是带返回键的子视图）。
+   样式跟随页面主题：FYP 深色磨砂，其余暖奶油色。 */
+function mountBottomNav() {
+  const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  const MOUNT = { 'fyp.html': 'home', 'explore.html': 'explore', 'profile.html': 'me' };
+  if (!(path in MOUNT) || document.querySelector('.bottom-nav')) return;
+  const activeKey = MOUNT[path];
+
+  const nav = document.createElement('nav');
+  nav.className = 'bottom-nav';
+  nav.setAttribute('aria-label', 'Foody');
+  nav.innerHTML =
+    `<a class="bn-item bn-home" href="fyp.html"><span class="bn-ic">${ICONS.home}</span><span class="bn-tx" data-i18n="navHome">${t('navHome')}</span></a>` +
+    `<a class="bn-item bn-explore" href="explore.html"><span class="bn-ic">${ICONS.compass}</span><span class="bn-tx" data-i18n="navExplore">${t('navExplore')}</span></a>` +
+    `<button class="bn-item bn-create" type="button"><span class="bn-ic">${ICONS.plus}</span><span class="bn-tx" data-i18n="navPost">${t('navPost')}</span></button>` +
+    `<a class="bn-item bn-inbox" href="messages.html"><span class="bn-ic">${ICONS.bubble}<span class="bn-dot" hidden></span></span><span class="bn-tx" data-i18n="navInbox">${t('navInbox')}</span></a>` +
+    `<a class="bn-item bn-me" href="index.html"><span class="bn-ic bn-av"></span><span class="bn-tx" data-i18n="navMe">${t('navMe')}</span></a>`;
+  document.body.appendChild(nav);
+  document.body.classList.add('has-bnav');
+
+  if (activeKey === 'home') nav.querySelector('.bn-home').classList.add('on');
+  if (activeKey === 'explore') nav.querySelector('.bn-explore').classList.add('on');
+
+  nav.querySelector('.bn-create').addEventListener('click', () => {
+    if (path === 'fyp.html') document.dispatchEvent(new Event('foody:compose'));
+    else location.href = 'fyp.html?compose=1';
+  });
+
+  getMe().then(({ user }) => {
+    const meLink = nav.querySelector('.bn-me');
+    const av = nav.querySelector('.bn-av');
+    if (user) {
+      fillAvatar(av, user.username, user.avatar);
+      meLink.setAttribute('href', 'profile.html?u=' + encodeURIComponent(user.username));
+      if (activeKey === 'me') {
+        const uParam = new URLSearchParams(location.search).get('u');
+        if (!uParam || uParam.toLowerCase() === user.username.toLowerCase()) meLink.classList.add('on');
+      }
+      pollNavUnread(nav);
+      setInterval(() => pollNavUnread(nav), 20000);
+    } else {
+      av.innerHTML = ICONS.users;
+    }
+  });
+}
+
+/* 合并未读：私信 + 通知 任一有未读，消息格就亮小红点 */
+async function pollNavUnread(nav) {
+  const [a, b] = await Promise.all([
+    api('/api/me/unread').catch(() => ({ count: 0 })),
+    api('/api/notifications/unread').catch(() => ({ count: 0 }))
+  ]);
+  const dot = nav.querySelector('.bn-inbox .bn-dot');
+  if (dot) dot.hidden = !(((a.count || 0) + (b.count || 0)) > 0);
+}
+
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
-document.addEventListener('DOMContentLoaded', applyLang);
+document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); });
 
 /* PWA：注册 service worker（让 Foody 可加到主屏、离线兜底）。失败静默，不影响正常使用。 */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
 }
+
+/* feed/lightbox 里的图与视频：禁右键菜单 + 禁拖拽（CSS 已禁 iOS 长按 callout，这里补桌面右键、
+   安卓长按、跨浏览器拖拽）。只拦媒体本身，文案/号码/输入框不受影响。 */
+function _isFeedMedia(t) {
+  return t && (t.tagName === 'IMG' || t.tagName === 'VIDEO') && t.closest && t.closest('#feed, #lightbox');
+}
+document.addEventListener('contextmenu', (e) => { if (_isFeedMedia(e.target)) e.preventDefault(); });
+document.addEventListener('dragstart', (e) => { if (_isFeedMedia(e.target)) e.preventDefault(); });
