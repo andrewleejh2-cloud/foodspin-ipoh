@@ -336,9 +336,6 @@ select.chip option { background: #241E18; color: #F4EDE2; }
   position: relative; width: 100%; height: 100%;
   object-fit: contain; z-index: 1;
 }
-/* 接近竖屏比例的图/视频：填满裁切，更沉浸（由 fyp.js fitMedia 按裁切量决定加不加 .fill） */
-.media.fill { object-fit: cover; }
-img.media.fill { cursor: zoom-in; }
 
 /* 媒体不可长按菜单/选中/拖拽 —— 更像原生 App。
    只作用于图与视频本身；文案、WhatsApp 号、输入框照常可选可复制。 */
@@ -348,16 +345,37 @@ img.media.fill { cursor: zoom-in; }
   -webkit-user-drag: none;
 }
 
-/* 视频底部进度条 */
+/* 视频底部进度条（可拖动快进慢退） */
 .vid-progress {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
   height: 3px; background: rgba(255, 246, 230, .16);
+  cursor: pointer; touch-action: none;
+}
+.vid-progress::before {   /* 加大触摸区，细条也好抓 */
+  content: ''; position: absolute; left: 0; right: 0; top: -14px; height: 18px;
 }
 .vid-progress > i {
-  display: block; height: 100%; width: 0;
+  position: relative; display: block; height: 100%; width: 0;
   background: var(--accent); border-radius: 0 2px 2px 0;
   transition: width .25s linear;
 }
+.vid-progress.scrubbing { height: 5px; }
+.vid-progress.scrubbing > i { transition: none; }   /* 拖动时即时跟随 */
+.vid-progress.scrubbing > i::after {                 /* 拖动时的圆点手柄 */
+  content: ''; position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .45);
+}
+
+/* 拖动进度条时居中显示「当前 / 总时长」 */
+.vid-time {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 5; pointer-events: none; white-space: nowrap;
+  padding: 8px 18px; border-radius: 999px;
+  background: rgba(0, 0, 0, .58); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  color: rgba(255, 255, 255, .6); font-size: 17px; font-weight: 800; letter-spacing: .5px;
+}
+.vid-time b { color: #fff; }
 @media (max-width: 760px) {
   .vid-progress { bottom: calc(58px + env(safe-area-inset-bottom)); }
 }
@@ -1407,3 +1425,45 @@ body.lb-open { overflow: hidden; }
   /* 桌面 FYP：文案上抬，避开居中浮动胶囊 */
   .has-bnav .slide-info { padding-bottom: 80px; }
 }
+
+/* ============================================================
+   Phase 3 · 动效打磨
+   ============================================================ */
+/* 页面内容淡入，消除导航时的白屏/黑屏闪烁 */
+main { animation: pageFade .3s ease both; }
+@keyframes pageFade { from { opacity: 0; } }
+body:not(.page-fyp) main { animation: pageRise .32s ease both; }
+@keyframes pageRise { from { opacity: 0; transform: translateY(6px); } }
+
+/* feed 骨架屏（首批帖到达前的占位） */
+.skeleton-slide {
+  height: 100dvh; scroll-snap-align: start; position: relative; overflow: hidden;
+  background: #15110D;
+}
+.skeleton-slide .sk-shimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 18%, rgba(255, 246, 230, .05) 38%, rgba(255, 246, 230, .11) 50%, rgba(255, 246, 230, .05) 62%, transparent 82%);
+  background-size: 220% 100%;
+  animation: skShimmer 1.4s ease-in-out infinite;
+}
+@keyframes skShimmer { from { background-position: 180% 0; } to { background-position: -80% 0; } }
+.skeleton-slide .sk-rail { position: absolute; right: 12px; bottom: 110px; display: flex; flex-direction: column; gap: 18px; }
+.skeleton-slide .sk-rail span { width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 246, 230, .08); }
+.skeleton-slide .sk-info { position: absolute; left: 16px; bottom: 92px; display: flex; flex-direction: column; gap: 10px; }
+.skeleton-slide .sk-line { height: 13px; border-radius: 7px; background: rgba(255, 246, 230, .08); width: 190px; }
+.skeleton-slide .sk-line.short { width: 110px; }
+
+/* 首屏「上滑看更多」引导 */
+.swipe-hint {
+  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  z-index: 30; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: rgba(255, 246, 230, .94); font-size: 13px; font-weight: 800;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .6); animation: swipeHintIn .4s ease both;
+}
+.swipe-hint.out { animation: swipeHintOut .4s ease forwards; }
+.swipe-hint .sh-arrow { display: block; animation: swipeBob 1.3s ease-in-out infinite; }
+.swipe-hint .sh-arrow svg { width: 30px; height: 30px; }
+@keyframes swipeBob { 0%, 100% { transform: translateY(5px); } 50% { transform: translateY(-6px); } }
+@keyframes swipeHintIn { from { opacity: 0; transform: translate(-50%, 12px); } }
+@keyframes swipeHintOut { to { opacity: 0; transform: translate(-50%, 12px); } }

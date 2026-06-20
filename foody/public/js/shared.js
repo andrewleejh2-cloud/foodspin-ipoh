@@ -67,6 +67,7 @@ const DICT = {
     feedForYou: '推荐', feedLatest: '最新',
     navHome: '首页', navExplore: '探索', navPost: '发帖', navInbox: '消息', navMe: '我',
     backAgainExit: '再按一次离开 Foody',
+    swipeHint: '上滑看更多',
     /* Profile 主页 */
     pfPosts: '作品', pfLikes: '获赞',
     pfEdit: '编辑资料', pfSave: '保存', pfBioPh: '介绍一下你的美食 / 店…',
@@ -161,6 +162,7 @@ const DICT = {
     feedForYou: 'Cadangan', feedLatest: 'Terbaru',
     navHome: 'Utama', navExplore: 'Terokai', navPost: 'Kirim', navInbox: 'Mesej', navMe: 'Saya',
     backAgainExit: 'Tekan sekali lagi untuk keluar',
+    swipeHint: 'Leret ke atas untuk lagi',
     /* Profile */
     pfPosts: 'Kiriman', pfLikes: 'Suka',
     pfEdit: 'Edit profil', pfSave: 'Simpan', pfBioPh: 'Cerita pasal makanan / kedai anda…',
@@ -254,6 +256,7 @@ const DICT = {
     feedForYou: 'For You', feedLatest: 'Latest',
     navHome: 'Home', navExplore: 'Explore', navPost: 'Post', navInbox: 'Inbox', navMe: 'Me',
     backAgainExit: 'Press back again to exit',
+    swipeHint: 'Swipe up for more',
     /* Profile */
     pfPosts: 'Posts', pfLikes: 'Likes',
     pfEdit: 'Edit profile', pfSave: 'Save', pfBioPh: 'Tell people about your food / shop…',
@@ -426,7 +429,8 @@ const ICONS = {
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 9-4-1.1-7-4.4-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>',
   more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.34 3.27a1 1 0 0 1 1.32 0l8 7a1 1 0 0 1 .34.75V20a1 1 0 0 1-1 1h-4.5a1 1 0 0 1-1-1v-4.4a1 1 0 0 0-1-1h-2.6a1 1 0 0 0-1 1V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8.98a1 1 0 0 1 .34-.75l8-7Z"/></svg>',
-  compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M15.4 8.6 13.5 13.5 8.6 15.4 10.5 10.5 15.4 8.6Z" fill="currentColor" stroke="none"/></svg>'
+  compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M15.4 8.6 13.5 13.5 8.6 15.4 10.5 10.5 15.4 8.6Z" fill="currentColor" stroke="none"/></svg>',
+  chevronUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13l6-6 6 6M6 18l6-6 6 6"/></svg>'
 };
 
 /* ---------------- 举报弹窗（通用：任意页面引入 shared.js 即可调用 openReport）---------------- */

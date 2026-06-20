@@ -75,18 +75,50 @@
       }
       media.className = 'media';
       wrap.insertBefore(media, node.querySelector('.play-badge'));
-      // 按比例决定填满(cover)还是留全(contain)：裁切少就填满更沉浸，多就保留+模糊补底
-      if (media.tagName === 'IMG') {
-        if (media.complete && media.naturalWidth) fitMedia(media, wrap);
-        else media.addEventListener('load', () => fitMedia(media, wrap), { once: true });
-      } else {
-        media.addEventListener('loadedmetadata', () => fitMedia(media, wrap), { once: true });
+      if (media.tagName === 'VIDEO') {
         const prog = node.querySelector('.vid-progress');
         prog.hidden = false;
         const bar = prog.querySelector('i');
+        const timeLabel = document.createElement('div');   // 拖动时居中显示「当前 / 总时长」
+        timeLabel.className = 'vid-time';
+        timeLabel.hidden = true;
+        wrap.appendChild(timeLabel);
+        const fmtT = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
         media.addEventListener('timeupdate', () => {
-          if (media.duration) bar.style.width = (media.currentTime / media.duration * 100) + '%';
+          if (!prog.classList.contains('scrubbing') && media.duration)
+            bar.style.width = (media.currentTime / media.duration * 100) + '%';
         });
+        // 拖动 / 点按进度条 → 快进慢退
+        let resumeAfter = false;
+        const seekToX = (clientX) => {
+          const r = prog.getBoundingClientRect();
+          const ratio = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+          bar.style.width = (ratio * 100) + '%';
+          if (media.duration) {
+            media.currentTime = ratio * media.duration;
+            timeLabel.innerHTML = '<b>' + fmtT(ratio * media.duration) + '</b> / ' + fmtT(media.duration);
+          }
+        };
+        prog.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();                 // 不触发暂停/点赞
+          try { prog.setPointerCapture(e.pointerId); } catch {}
+          prog.classList.add('scrubbing');
+          timeLabel.hidden = false;
+          resumeAfter = !media.paused;
+          media.pause();
+          seekToX(e.clientX);
+        });
+        prog.addEventListener('pointermove', (e) => {
+          if (prog.classList.contains('scrubbing')) seekToX(e.clientX);
+        });
+        const endScrub = () => {
+          if (!prog.classList.contains('scrubbing')) return;
+          prog.classList.remove('scrubbing');
+          timeLabel.hidden = true;
+          if (resumeAfter) media.play().catch(() => {});
+        };
+        prog.addEventListener('pointerup', endScrub);
+        prog.addEventListener('pointercancel', endScrub);
       }
     } else {
       node.classList.add('multi');   // 让自动播放 observer 跳过这帖
@@ -207,7 +239,7 @@
     // 点按播放/暂停 + 双击点赞
     let tapTimer = null;
     wrap.addEventListener('click', (e) => {
-      if (e.target.closest('.sound-hint') || e.target.closest('.caption')) return;
+      if (e.target.closest('.sound-hint') || e.target.closest('.caption') || e.target.closest('.vid-progress')) return;
       if (tapTimer) { // 双击 → 点赞
         clearTimeout(tapTimer); tapTimer = null;
         heartBurst(wrap, e);
@@ -220,8 +252,6 @@
           if (media && media.tagName === 'VIDEO') {
             if (media.paused) { media.play().catch(() => {}); node.classList.remove('paused'); }
             else { media.pause(); node.classList.add('paused'); }
-          } else if (media && media.tagName === 'IMG' && media.classList.contains('fill')) {
-            openLightbox(list, 0);   // 被填满裁切的图：点一下看完整原图
           }
         }, 240);
       }
@@ -229,19 +259,6 @@
 
     observer.observe(node);
     return node;
-  }
-
-  /* 按「裁切量」决定单媒体填满还是留全：
-     裁切 ≤ 28% → cover 填满（更沉浸，消灭浅色海报的发灰边）；否则 contain + 模糊补底。
-     上限随屏幕比例自适应——窄高的手机会少填一点以保护内容，绝不乱切。 */
-  function fitMedia(mediaEl, wrapEl) {
-    const w = mediaEl.tagName === 'VIDEO' ? mediaEl.videoWidth : mediaEl.naturalWidth;
-    const h = mediaEl.tagName === 'VIDEO' ? mediaEl.videoHeight : mediaEl.naturalHeight;
-    const rect = wrapEl.getBoundingClientRect();
-    if (!w || !h || !rect.width || !rect.height) return;
-    const ri = w / h, rw = rect.width / rect.height;
-    const cropFrac = 1 - Math.min(ri, rw) / Math.max(ri, rw);
-    mediaEl.classList.toggle('fill', cropFrac <= 0.28);
   }
 
   /* 多媒体帖：Facebook 式网格拼图（最多展示 4 格，第 4 格盖 +N）。点任意格开全屏查看器 */
@@ -455,11 +472,34 @@
   function showLoading() {
     if (loadingEl) return;
     loadingEl = document.createElement('div');
-    loadingEl.className = 'feed-state';
-    loadingEl.innerHTML = '<div class="spinner"></div>';
+    loadingEl.className = 'skeleton-slide';
+    loadingEl.innerHTML =
+      '<div class="sk-shimmer"></div>' +
+      '<aside class="sk-rail"><span></span><span></span><span></span><span></span></aside>' +
+      '<div class="sk-info"><span class="sk-line"></span><span class="sk-line short"></span></div>';
     feed.appendChild(loadingEl);
   }
   function hideLoading() { if (loadingEl) { loadingEl.remove(); loadingEl = null; } }
+
+  /* 首屏「上滑看更多」引导：只在首次进 feed 且有多于一条帖时显示，看过即不再出现 */
+  function maybeShowSwipeHint() {
+    if (localStorage.getItem('foody_swipe_seen')) return;
+    if (feed.querySelectorAll('.slide').length < 2) return;
+    localStorage.setItem('foody_swipe_seen', '1');
+    const hint = document.createElement('div');
+    hint.className = 'swipe-hint';
+    hint.innerHTML = '<span class="sh-arrow">' + ICONS.chevronUp + '</span><span>' + t('swipeHint') + '</span>';
+    document.body.appendChild(hint);
+    const dismiss = () => {
+      if (!hint.parentNode || hint.classList.contains('out')) return;
+      hint.classList.add('out');
+      setTimeout(() => hint.remove(), 420);
+      feed.removeEventListener('scroll', dismiss);
+    };
+    // 延迟挂载 scroll 监听：避开 feed 首次渲染/追加内容时的「假滚动」，否则提示会被立刻关掉
+    setTimeout(() => feed.addEventListener('scroll', dismiss, { passive: true }), 700);
+    setTimeout(dismiss, 4500);
+  }
 
   async function loadMore() {
     if (feedState.loading || !feedState.hasMore) return;
@@ -487,6 +527,7 @@
       feedState.startId = '';
       if (first && data.posts.length === 0) showEmpty();
       else if (feedState.hasMore) { feed.appendChild(sentinel); moreObserver.observe(sentinel); }
+      if (first && data.posts.length) maybeShowSwipeHint();
     } catch (err) {
       hideLoading();
       if (first) showEmpty(true);
