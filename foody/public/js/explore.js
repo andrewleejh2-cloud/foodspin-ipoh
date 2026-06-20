@@ -26,9 +26,40 @@
     const w = $('#exWrap');
     w.innerHTML = '';
 
-    if (!d.states.length && !d.places.length && !d.tags.length) {
+    if (!d.states.length && !d.places.length && !d.tags.length && !(d.posts && d.posts.length)) {
       w.innerHTML = `<div class="ex-empty"><div class="big">🧭</div>${esc(t('exEmpty'))}</div>`;
       return;
+    }
+
+    // 热门美食缩略图网格（TikTok Discover 式）
+    if (d.posts && d.posts.length) {
+      w.appendChild(section(t('exTrending')));
+      const grid = document.createElement('div');
+      grid.className = 'ex-grid';
+      for (const p of d.posts) {
+        const cell = document.createElement('a');
+        cell.className = 'ex-cell';
+        cell.href = 'fyp.html?start=' + encodeURIComponent(p.id);
+        if (p.type === 'video') {
+          // 不加载视频文件（几 MB/个会拖垮网格）——深色占位 + 居中播放标；点进去再播
+          cell.classList.add('is-video');
+          const play = document.createElement('span');
+          play.className = 'ex-play'; play.innerHTML = ICONS.play;
+          cell.appendChild(play);
+        } else {
+          const img = document.createElement('img');
+          img.src = p.cover; img.loading = 'lazy'; img.alt = '';
+          cell.appendChild(img);
+        }
+        if (p.likeCount > 0) {
+          const like = document.createElement('span');
+          like.className = 'ex-like';
+          like.innerHTML = ICONS.heart + '<b>' + p.likeCount + '</b>';
+          cell.appendChild(like);
+        }
+        grid.appendChild(cell);
+      }
+      w.appendChild(grid);
     }
 
     // 按州浏览

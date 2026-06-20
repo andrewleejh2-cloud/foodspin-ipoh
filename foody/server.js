@@ -309,6 +309,8 @@ function postJson(p, viewer) {
     commentCount,
     likedByMe: !!(viewer && likes.some(l => l.userId === viewer.id)),
     savedByMe: !!(viewer && saves.some(s => s.userId === viewer.id)),
+    // 是否已关注作者（给 feed 里的「+关注」按钮用；未登录或自己的帖都为 false）
+    isFollowing: !!(viewer && author && viewer.id !== p.userId && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
     // 电话/WhatsApp 只给已登入的用户（保护隐私 + 符合“注册后才能用 WhatsApp 按钮”）
     waUrl: viewer && author && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null
   };
@@ -896,7 +898,19 @@ app.get('/api/explore', (req, res) => {
   const states = STATES.filter(s => stateCount.has(s)).map(s => ({ state: s, count: stateCount.get(s) })).sort((a, b) => b.count - a.count);
   const places = [...placeCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24).map(([place, count]) => ({ place, count }));
   const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24).map(([tag, count]) => ({ tag, count }));
-  res.json({ totalPosts: total, states, places, tags });
+  // 热门帖（探索页缩略图网格用）：按点赞数排、新鲜度做次序，排除封号作者
+  const likeCountByPost = new Map();
+  for (const l of db.likes) likeCountByPost.set(l.postId, (likeCountByPost.get(l.postId) || 0) + 1);
+  const posts = db.posts
+    .filter(p => !bannedIds.has(p.userId))
+    .map(p => ({ p, likes: likeCountByPost.get(p.id) || 0 }))
+    .sort((a, b) => b.likes - a.likes || b.p.createdAt - a.p.createdAt)
+    .slice(0, 30)
+    .map(({ p, likes }) => {
+      const m = (p.media && p.media.length) ? p.media[0] : { url: p.mediaUrl, type: p.mediaType };
+      return { id: p.id, cover: m.url, type: m.type, likeCount: likes };
+    });
+  res.json({ totalPosts: total, states, places, tags, posts });
 });
 
 /* 用户主页（profile）：公开资料 + 统计 + 该用户的作品。

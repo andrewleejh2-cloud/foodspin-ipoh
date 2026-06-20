@@ -167,6 +167,30 @@
     avEl.style.cursor = 'pointer';
     avEl.addEventListener('click', () => { location.href = 'profile.html?u=' + encodeURIComponent(p.username); });
 
+    // Feed 内「+关注」：登录 + 非自己 + 未关注 才显示
+    const followBtn = node.querySelector('.rail-follow');
+    if (ME && !p.mine && !p.isFollowing) {
+      followBtn.hidden = false;
+      followBtn.innerHTML = ICONS.plus;
+      followBtn.dataset.user = p.username;
+      followBtn.setAttribute('aria-label', t('followBtn'));
+      followBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (followBtn.disabled) return;
+        followBtn.disabled = true;
+        try {
+          await api('/api/users/' + encodeURIComponent(p.username) + '/follow', { method: 'POST' });
+          // 同一作者在 feed 里的所有关注按钮：+ 变 ✓，稍后淡出
+          feed.querySelectorAll('.rail-follow').forEach(b => {
+            if (b.dataset.user !== p.username) return;
+            b.classList.add('done'); b.innerHTML = ICONS.check;
+            setTimeout(() => b.classList.add('gone'), 700);
+            setTimeout(() => { b.hidden = true; b.classList.remove('done', 'gone'); b.innerHTML = ICONS.plus; }, 1100);
+          });
+        } catch { followBtn.disabled = false; }
+      });
+    }
+
     const likeBtn = node.querySelector('.like');
     likeBtn.querySelector('.ic').innerHTML = ICONS.heart;
     likeBtn.classList.toggle('liked', p.likedByMe);
