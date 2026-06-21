@@ -69,6 +69,10 @@ const DICT = {
     backAgainExit: '再按一次离开 Foody',
     swipeHint: '上滑看更多',
     exTrending: '热门美食', followBtn: '关注',
+    siteTabHome: '首页', siteTabMenu: '菜单', siteTabContact: '联系',
+    siteThemeL: '配色主题', siteMenuL: '菜单', siteAddCat: '+ 添加分类', siteAddItem: '+ 添加菜品',
+    siteCatNamePh: '分类名（如 招牌）', siteItemNamePh: '菜名', siteItemPricePh: '价格 (如 RM 8)', siteItemDescPh: '描述（选填）',
+    pfSales: '销量', salesDaily: '每日', salesWeekly: '每周', salesMonthly: '每月', salesNoData: '暂无数据',
     /* Profile 主页 */
     pfPosts: '作品', pfLikes: '获赞',
     pfEdit: '编辑资料', pfSave: '保存', pfBioPh: '介绍一下你的美食 / 店…',
@@ -83,8 +87,8 @@ const DICT = {
     pfFollow: '关注', pfFollowed: '已关注', pfFollowers: '粉丝', pfFollowing: '关注中', pfNobody: '还没有人', feedFollowing: '关注', feedEmptyFollow: '你还没关注谁。去逛逛、点别人头像关注，这里就有他们的新帖啦 👀',
     ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntMention: '在评论里提到你', ntFollowed: '关注了你', ntNewPost: '发布了新帖子', editPost: '编辑帖子', reply: '回复', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔',
     plFoodies: '吃货', plMap: '在 Google 地图打开', plNotFound: '还没有这个地点的帖子',
-    siteAbout: '关于', siteHours: '营业时间', siteAddress: '地址', siteGallery: '我们的出品', siteMap: '地图', siteDraft: '草稿 · 未发布，只有你看得到', siteUnpub: '这个网页还没发布',
-    siteEditTitle: '编辑我的网页', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网页', siteView: '查看网页',
+    siteAbout: '关于', siteHours: '营业时间', siteAddress: '地址', siteGallery: '我们的出品', siteMap: '地图', siteDraft: '草稿 · 未发布，只有你看得到', siteUnpub: '这个网站还没发布',
+    siteEditTitle: '编辑我的网站', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网站', siteView: '查看网站',
     /* 举报 & 审核 */
     reportTitle: '举报', reportUser: '举报用户',
     reportReasonLabel: '选择原因', reportNotePh: '补充说明（选填）…', reportSubmit: '提交举报',
@@ -165,6 +169,10 @@ const DICT = {
     backAgainExit: 'Tekan sekali lagi untuk keluar',
     swipeHint: 'Leret ke atas untuk lagi',
     exTrending: 'Popular', followBtn: 'Ikut',
+    siteTabHome: 'Utama', siteTabMenu: 'Menu', siteTabContact: 'Hubungi',
+    siteThemeL: 'Tema', siteMenuL: 'Menu', siteAddCat: '+ Tambah kategori', siteAddItem: '+ Tambah item',
+    siteCatNamePh: 'Nama kategori', siteItemNamePh: 'Nama hidangan', siteItemPricePh: 'Harga (cth RM 8)', siteItemDescPh: 'Penerangan (pilihan)',
+    pfSales: 'Jualan', salesDaily: 'Harian', salesWeekly: 'Mingguan', salesMonthly: 'Bulanan', salesNoData: 'Belum ada data',
     /* Profile */
     pfPosts: 'Kiriman', pfLikes: 'Suka',
     pfEdit: 'Edit profil', pfSave: 'Simpan', pfBioPh: 'Cerita pasal makanan / kedai anda…',
@@ -179,8 +187,8 @@ const DICT = {
     pfFollow: 'Ikut', pfFollowed: 'Mengikut', pfFollowers: 'Pengikut', pfFollowing: 'Mengikuti', pfNobody: 'Tiada lagi', feedFollowing: 'Ikutan', feedEmptyFollow: 'Anda belum ikut sesiapa. Tekan avatar orang untuk ikut, kiriman mereka akan muncul di sini 👀',
     ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntMention: 'sebut anda dalam komen', ntFollowed: 'mula ikut anda', ntNewPost: 'siar kiriman baru', editPost: 'Edit kiriman', reply: 'Balas', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔',
     plFoodies: 'Foodie', plMap: 'Buka di Google Maps', plNotFound: 'Belum ada kiriman untuk lokasi ini',
-    siteAbout: 'Tentang', siteHours: 'Waktu operasi', siteAddress: 'Alamat', siteGallery: 'Hasil kami', siteMap: 'Peta', siteDraft: 'Draf · belum terbit, hanya anda nampak', siteUnpub: 'Laman ini belum diterbitkan',
-    siteEditTitle: 'Edit laman saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Laman saya', siteView: 'Lihat laman',
+    siteAbout: 'Tentang', siteHours: 'Waktu operasi', siteAddress: 'Alamat', siteGallery: 'Hasil kami', siteMap: 'Peta', siteDraft: 'Draf · belum terbit, hanya anda nampak', siteUnpub: 'Tapak web ini belum diterbitkan',
+    siteEditTitle: 'Edit tapak web saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Tapak web saya', siteView: 'Lihat tapak web',
     reportTitle: 'Lapor', reportUser: 'Lapor pengguna',
     reportReasonLabel: 'Pilih sebab', reportNotePh: 'Maklumat tambahan (pilihan)…', reportSubmit: 'Hantar laporan',
     reportNeedReason: 'Pilih sebab dulu', reportSent: 'Laporan diterima, terima kasih 🙏', reportSelf: 'Tak boleh lapor kandungan sendiri',
@@ -260,6 +268,10 @@ const DICT = {
     backAgainExit: 'Press back again to exit',
     swipeHint: 'Swipe up for more',
     exTrending: 'Trending', followBtn: 'Follow',
+    siteTabHome: 'Home', siteTabMenu: 'Menu', siteTabContact: 'Contact',
+    siteThemeL: 'Theme', siteMenuL: 'Menu', siteAddCat: '+ Add category', siteAddItem: '+ Add item',
+    siteCatNamePh: 'Category name', siteItemNamePh: 'Dish name', siteItemPricePh: 'Price (e.g. RM 8)', siteItemDescPh: 'Description (optional)',
+    pfSales: 'Sales', salesDaily: 'Daily', salesWeekly: 'Weekly', salesMonthly: 'Monthly', salesNoData: 'No data yet',
     /* Profile */
     pfPosts: 'Posts', pfLikes: 'Likes',
     pfEdit: 'Edit profile', pfSave: 'Save', pfBioPh: 'Tell people about your food / shop…',
@@ -274,8 +286,8 @@ const DICT = {
     pfFollow: 'Follow', pfFollowed: 'Following', pfFollowers: 'Followers', pfFollowing: 'Following', pfNobody: 'Nobody yet', feedFollowing: 'Following', feedEmptyFollow: 'You are not following anyone yet. Tap a profile avatar to follow, and their posts show up here 👀',
     ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntMention: 'mentioned you in a comment', ntFollowed: 'followed you', ntNewPost: 'posted something new', editPost: 'Edit post', reply: 'Reply', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔',
     plFoodies: 'Foodies', plMap: 'Open in Google Maps', plNotFound: 'No posts for this place yet',
-    siteAbout: 'About', siteHours: 'Opening hours', siteAddress: 'Address', siteGallery: 'Our dishes', siteMap: 'Map', siteDraft: 'Draft · not published, only you can see this', siteUnpub: 'This page is not published yet',
-    siteEditTitle: 'Edit my page', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My page', siteView: 'View page',
+    siteAbout: 'About', siteHours: 'Opening hours', siteAddress: 'Address', siteGallery: 'Our dishes', siteMap: 'Map', siteDraft: 'Draft · not published, only you can see this', siteUnpub: 'This website is not published yet',
+    siteEditTitle: 'Edit my website', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My website', siteView: 'View website',
     reportTitle: 'Report', reportUser: 'Report user',
     reportReasonLabel: 'Choose a reason', reportNotePh: 'Add details (optional)…', reportSubmit: 'Submit report',
     reportNeedReason: 'Pick a reason first', reportSent: 'Report received, thank you 🙏', reportSelf: "You can't report your own content",
@@ -434,7 +446,8 @@ const ICONS = {
   home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.34 3.27a1 1 0 0 1 1.32 0l8 7a1 1 0 0 1 .34.75V20a1 1 0 0 1-1 1h-4.5a1 1 0 0 1-1-1v-4.4a1 1 0 0 0-1-1h-2.6a1 1 0 0 0-1 1V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8.98a1 1 0 0 1 .34-.75l8-7Z"/></svg>',
   compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M15.4 8.6 13.5 13.5 8.6 15.4 10.5 10.5 15.4 8.6Z" fill="currentColor" stroke="none"/></svg>',
   chevronUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13l6-6 6 6M6 18l6-6 6 6"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>'
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="16" y="9" width="4" height="11" rx="1"/></svg>'
 };
 
 /* ---------------- 举报弹窗（通用：任意页面引入 shared.js 即可调用 openReport）---------------- */

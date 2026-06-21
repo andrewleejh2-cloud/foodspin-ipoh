@@ -176,6 +176,31 @@
     head.appendChild(actions);
     wrap.appendChild(head);
 
+    // 销量（每日 / 每周 / 每月）—— 暂时只加按钮，未接实际数据
+    const sales = document.createElement('section');
+    sales.className = 'pf-sales';
+    const sh = document.createElement('div');
+    sh.className = 'pf-sales-h';
+    sh.innerHTML = ICONS.chart + '<span>' + esc(t('pfSales')) + '</span>';
+    const seg = document.createElement('div');
+    seg.className = 'pf-sales-seg';
+    [['daily', t('salesDaily')], ['weekly', t('salesWeekly')], ['monthly', t('salesMonthly')]].forEach((p, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pf-sales-btn' + (i === 0 ? ' on' : '');
+      b.textContent = p[1];
+      b.addEventListener('click', () => {
+        seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+      });
+      seg.appendChild(b);
+    });
+    const sv = document.createElement('div');
+    sv.className = 'pf-sales-val';
+    sv.textContent = t('salesNoData');
+    sales.append(sh, seg, sv);
+    wrap.appendChild(sales);
+
     // 作品网格
     if (!DATA.posts.length) {
       const empty = document.createElement('div');

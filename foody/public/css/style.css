@@ -863,6 +863,16 @@ select.chip option { background: #241E18; color: #F4EDE2; }
 .pf-stat b { display: block; font-size: 22px; font-weight: 800; color: var(--ink); line-height: 1.1; }
 .pf-stat span { font-size: 13px; color: var(--ink-2); font-weight: 700; }
 
+/* 销量（每日/每周/每月）切换按钮 —— 暂只 UI，无数据 */
+.pf-sales { max-width: 460px; margin: 20px auto 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.pf-sales-h { display: flex; align-items: center; gap: 7px; font-weight: 800; font-size: 14.5px; color: var(--ink); margin-bottom: 11px; }
+.pf-sales-h svg { width: 17px; height: 17px; color: var(--accent); }
+.pf-sales-seg { display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.pf-sales-btn { flex: 1; padding: 8px 10px; border-radius: 999px; font-size: 13.5px; font-weight: 800; color: var(--ink-2); transition: background .15s, color .15s; }
+.pf-sales-btn.on { background: var(--accent); color: #fff; }
+.pf-sales-btn:active { transform: scale(.96); }
+.pf-sales-val { text-align: center; font-size: 14px; color: var(--ink-2); font-weight: 700; margin-top: 12px; }
+
 .pf-bio {
   max-width: 460px; margin: 14px auto 0;
   font-size: 14.5px; color: var(--ink); line-height: 1.55;
@@ -1165,6 +1175,65 @@ body.lb-open { overflow: hidden; }
 .site-foot .avatar-sm { width: 30px; height: 30px; font-size: 13px; }
 .site-pw { text-align: center; font-size: 12px; color: var(--ink-2); padding-bottom: 24px; }
 .site-fail { text-align: center; color: var(--ink-2); padding: 80px 24px; font-size: 15px; font-weight: 700; }
+
+/* ---------------- 「我的网站」升级：配色主题 + 站内导航 + 菜单 ---------------- */
+/* 5 套主题：套在 body 上覆盖全局色变量，只影响 site 页（--wa 保持绿色不变） */
+.site-theme-warm  { --bg: #FAF4EA; --surface: #FFFDF8; --ink: #2E2A24; --ink-2: #7A7166; --line: #ECE2D2; --accent: #D96A3B; --accent-d: #BC5026; --accent-soft: #F9E8DC; --surface-2: #F0E8DA; }
+.site-theme-dark  { --bg: #17130F; --surface: #241D17; --ink: #F4ECE0; --ink-2: #B3A797; --line: #3A2F26; --accent: #E8894B; --accent-d: #F0A064; --accent-soft: #2E241B; --surface-2: #2E241B; }
+.site-theme-fresh { --bg: #EEF6EF; --surface: #FFFFFF; --ink: #1F2A22; --ink-2: #5E7065; --line: #DCEADF; --accent: #3E9C6B; --accent-d: #2F7E54; --accent-soft: #DDF0E4; --surface-2: #EAF3EC; }
+.site-theme-berry { --bg: #FBF0F3; --surface: #FFFFFF; --ink: #2E2230; --ink-2: #7C6B75; --line: #F1DEE5; --accent: #C84E78; --accent-d: #A93B61; --accent-soft: #FBE2EA; --surface-2: #F6E6EC; }
+.site-theme-mono  { --bg: #F4F4F3; --surface: #FFFFFF; --ink: #1A1A1A; --ink-2: #6B6B6B; --line: #E2E2E0; --accent: #2B2B2B; --accent-d: #000000; --accent-soft: #ECECEA; --surface-2: #ECECEA; }
+
+/* 站内导航（首页/菜单/联系 切换） */
+.site-nav { display: flex; gap: 4px; padding: 4px; margin: 14px 20px 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 13px; position: sticky; top: 58px; z-index: 9; }
+.site-nav button { flex: 1; padding: 9px 6px; border-radius: 9px; font-size: 14px; font-weight: 800; color: var(--ink-2); transition: background .15s, color .15s; }
+.site-nav button.on { background: var(--accent); color: #fff; }
+.site-panel { display: none; }
+.site-panel.on { display: block; animation: pageFade .25s ease; }
+
+/* 菜单板块 */
+.menu-cat { margin-top: 18px; }
+.menu-cat:first-child { margin-top: 6px; }
+.menu-cat-name { font-size: 16.5px; font-weight: 800; color: var(--ink); margin-bottom: 8px; padding-bottom: 7px; border-bottom: 2px solid var(--accent-soft); }
+.menu-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.menu-item:last-child { border-bottom: none; }
+.menu-item-photo { width: 66px; height: 66px; border-radius: 11px; object-fit: cover; flex: none; background: var(--surface-2); }
+.menu-item-body { flex: 1; min-width: 0; }
+.menu-item-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.menu-item-name { font-size: 15px; font-weight: 800; color: var(--ink); }
+.menu-item-price { font-size: 14.5px; font-weight: 800; color: var(--accent-d); flex: none; white-space: nowrap; }
+.menu-item-desc { font-size: 13px; color: var(--ink-2); margin-top: 3px; line-height: 1.5; white-space: pre-line; word-break: break-word; }
+.menu-empty { color: var(--ink-2); font-size: 14px; padding: 20px 0; text-align: center; }
+/* 画廊里的视频格：占位 + 居中播放标（不加载视频文件） */
+.site-cell.is-video { display: grid; place-items: center; background: linear-gradient(160deg, #2c2219, #17120d); }
+.site-cell.is-video .site-play { color: #fff; opacity: .92; line-height: 0; }
+.site-cell.is-video .site-play svg { width: 26px; height: 26px; }
+
+/* 编辑器：配色主题选择器 */
+.theme-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.theme-sw { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface); font-weight: 800; font-size: 13px; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+.theme-sw .ts-dot { width: 19px; height: 19px; border-radius: 50%; flex: none; border: 3px solid; }
+.theme-sw.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* 编辑器：菜单（分类 ▸ 菜品） */
+.menu-cat-edit { border: 1.5px solid var(--line); border-radius: var(--radius-s); padding: 12px; margin-bottom: 12px; background: var(--surface); }
+.mce-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.mce-name { flex: 1; min-width: 0; font-weight: 800; padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; }
+.mce-del { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--surface-2, #F0E8DA); color: var(--ink-2); }
+.mce-del:hover { color: var(--danger); }
+.mce-del svg { width: 18px; height: 18px; }
+.mce-items { display: flex; flex-direction: column; gap: 8px; }
+.menu-item-edit { display: flex; gap: 8px; align-items: flex-start; }
+.mie-photo { width: 56px; height: 56px; flex: none; border-radius: 10px; border: 1.5px dashed var(--line); background: var(--surface-2, #F0E8DA); display: grid; place-items: center; color: var(--ink-2); overflow: hidden; }
+.mie-photo svg { width: 20px; height: 20px; }
+.mie-photo img { width: 100%; height: 100%; object-fit: cover; }
+.mie-photo.loading { opacity: .5; }
+.mie-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.mie-fields input { padding: 8px 11px; border: 1.5px solid var(--line); border-radius: 9px; background: #fff; font-size: 14px; }
+.mie-del { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 8px; color: var(--ink-2); }
+.mie-del:hover { color: var(--danger); background: var(--surface-2, #F0E8DA); }
+.mie-del svg { width: 15px; height: 15px; }
+.mce-additem { margin-top: 9px; font-size: 13px; font-weight: 800; color: var(--accent-d); padding: 5px 2px; }
 
 /* 微站编辑器 */
 .edit-wrap { max-width: 560px; padding-bottom: 60px; }

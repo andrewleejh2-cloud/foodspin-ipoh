@@ -41,6 +41,7 @@
   function render() {
     const root = $('#siteRoot');
     root.innerHTML = '';
+    document.body.className = 'page-site site-theme-' + (D.theme || 'warm');   // 套配色主题
 
     const bar = document.createElement('div');
     bar.className = 'site-bar';
@@ -80,20 +81,13 @@
     hero.appendChild(ht);
     root.appendChild(hero);
 
-    const body = document.createElement('div');
-    body.className = 'site-body';
+    // ---- 三板块：首页 / 菜单 / 联系 ----
+    const home = document.createElement('div'); home.className = 'site-panel';
+    const menuPanel = document.createElement('div'); menuPanel.className = 'site-panel';
+    const contact = document.createElement('div'); contact.className = 'site-panel';
 
-    const acts = document.createElement('div');
-    acts.className = 'site-acts';
-    if (D.waUrl) acts.appendChild(linkBtn('wa', ICONS.whatsapp, 'WhatsApp', D.waUrl));
-    if (D.mapUrl) acts.appendChild(linkBtn('map', ICONS.pin, t('siteMap'), D.mapUrl));
-    for (const l of (D.links || [])) acts.appendChild(linkBtn('link', ICONS.share, l.label, l.url));
-    if (acts.children.length) body.appendChild(acts);
-
-    if (D.intro) body.appendChild(section(t('siteAbout'), textBlock(D.intro)));
-    if (D.hours) body.appendChild(section(t('siteHours'), textBlock(D.hours), ICONS.clock));
-    if (D.address) body.appendChild(section(t('siteAddress'), textBlock(D.address), ICONS.pin));
-
+    // 首页：介绍 + 帖子画廊（视频格只放占位+播放标，不加载视频文件）
+    if (D.intro) home.appendChild(section(t('siteAbout'), textBlock(D.intro)));
     if (D.posts && D.posts.length) {
       const grid = document.createElement('div');
       grid.className = 'site-grid';
@@ -101,15 +95,64 @@
         const c = document.createElement('a');
         c.className = 'site-cell';
         c.href = 'fyp.html?user=' + encodeURIComponent(D.username) + '&start=' + encodeURIComponent(p.id);
-        let th;
-        if (p.mediaType === 'video') { th = document.createElement('video'); th.src = p.mediaUrl; th.muted = true; th.preload = 'metadata'; th.playsInline = true; }
-        else { th = document.createElement('img'); th.src = p.mediaUrl; th.loading = 'lazy'; th.alt = ''; }
-        c.appendChild(th);
+        if (p.mediaType === 'video') { c.classList.add('is-video'); c.innerHTML = '<span class="site-play">' + ICONS.play + '</span>'; }
+        else { const img = document.createElement('img'); img.src = p.mediaUrl; img.loading = 'lazy'; img.alt = ''; c.appendChild(img); }
         grid.appendChild(c);
       }
-      body.appendChild(section(t('siteGallery'), grid));
+      home.appendChild(section(t('siteGallery'), grid));
     }
 
+    // 菜单：分类 ▸ 菜品（图/名/价/描述）
+    let hasMenu = false;
+    for (const cat of (D.menu || [])) {
+      if (!cat.items || !cat.items.length) continue;
+      hasMenu = true;
+      const c = document.createElement('div'); c.className = 'menu-cat';
+      if (cat.name) { const h = document.createElement('div'); h.className = 'menu-cat-name'; h.textContent = cat.name; c.appendChild(h); }
+      for (const it of cat.items) {
+        const row = document.createElement('div'); row.className = 'menu-item';
+        if (it.photo) { const img = document.createElement('img'); img.className = 'menu-item-photo'; img.src = it.photo; img.loading = 'lazy'; img.alt = ''; row.appendChild(img); }
+        const b = document.createElement('div'); b.className = 'menu-item-body';
+        const top = document.createElement('div'); top.className = 'menu-item-top';
+        const nm = document.createElement('span'); nm.className = 'menu-item-name'; nm.textContent = it.name; top.appendChild(nm);
+        if (it.price) { const pr = document.createElement('span'); pr.className = 'menu-item-price'; pr.textContent = it.price; top.appendChild(pr); }
+        b.appendChild(top);
+        if (it.desc) { const d = document.createElement('p'); d.className = 'menu-item-desc'; d.textContent = it.desc; b.appendChild(d); }
+        row.appendChild(b);
+        c.appendChild(row);
+      }
+      menuPanel.appendChild(c);
+    }
+
+    // 联系：行动按钮 + 营业时间 + 地址
+    const acts = document.createElement('div');
+    acts.className = 'site-acts';
+    if (D.waUrl) acts.appendChild(linkBtn('wa', ICONS.whatsapp, 'WhatsApp', D.waUrl));
+    if (D.mapUrl) acts.appendChild(linkBtn('map', ICONS.pin, t('siteMap'), D.mapUrl));
+    for (const l of (D.links || [])) acts.appendChild(linkBtn('link', ICONS.share, l.label, l.url));
+    if (acts.children.length) contact.appendChild(acts);
+    if (D.hours) contact.appendChild(section(t('siteHours'), textBlock(D.hours), ICONS.clock));
+    if (D.address) contact.appendChild(section(t('siteAddress'), textBlock(D.address), ICONS.pin));
+
+    // 只显示有内容的板块；只有一个就不显示导航
+    const tabs = [{ label: t('siteTabHome'), panel: home }];
+    if (hasMenu) tabs.push({ label: t('siteTabMenu'), panel: menuPanel });
+    if (contact.children.length) tabs.push({ label: t('siteTabContact'), panel: contact });
+
+    const nav = document.createElement('div'); nav.className = 'site-nav';
+    const body = document.createElement('div'); body.className = 'site-body';
+    tabs.forEach((tb, i) => {
+      const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = tb.label;
+      if (i === 0) { btn.classList.add('on'); tb.panel.classList.add('on'); }
+      btn.addEventListener('click', () => {
+        nav.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+        body.querySelectorAll('.site-panel').forEach(x => x.classList.remove('on'));
+        btn.classList.add('on'); tb.panel.classList.add('on');
+      });
+      nav.appendChild(btn);
+      body.appendChild(tb.panel);
+    });
+    if (tabs.length > 1) root.appendChild(nav);
     root.appendChild(body);
 
     const foot = document.createElement('a');

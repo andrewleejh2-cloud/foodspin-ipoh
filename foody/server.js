@@ -706,6 +706,8 @@ function normLink(url) {
   return ''; // 拒绝 javascript: 等不安全协议
 }
 
+const SITE_THEMES = ['warm', 'dark', 'fresh', 'berry', 'mono'];
+
 app.get('/api/site/:username', (req, res) => {
   const viewer = currentUser(req);
   const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
@@ -727,6 +729,8 @@ app.get('/api/site/:username', (req, res) => {
     hours: s.hours || '',
     address: s.address || '',
     links: s.links || [],
+    theme: SITE_THEMES.includes(s.theme) ? s.theme : 'warm',
+    menu: Array.isArray(s.menu) ? s.menu : [],
     mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
     waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
     posts
@@ -746,6 +750,19 @@ app.patch('/api/me/site', requireAuth, (req, res) => {
       .map(l => ({ label: String(l.label || '').trim().slice(0, 30), url: normLink(l.url) }))
       .filter(l => l.label && l.url);
   }
+  if (typeof b.theme === 'string' && SITE_THEMES.includes(b.theme)) s.theme = b.theme;
+  if (Array.isArray(b.menu)) {
+    s.menu = b.menu.slice(0, 12).map(cat => ({
+      name: String(cat.name || '').trim().slice(0, 40),
+      items: (Array.isArray(cat.items) ? cat.items : []).slice(0, 40).map(it => ({
+        name: String(it.name || '').trim().slice(0, 60),
+        price: String(it.price || '').trim().slice(0, 20),
+        desc: String(it.desc || '').replace(/\r\n/g, '\n').trim().slice(0, 200),
+        // 菜品图只接受自己上传到 /uploads/ 的路径，杜绝注入外链
+        photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : ''
+      })).filter(it => it.name)
+    })).filter(cat => cat.name || cat.items.length);
+  }
   if (typeof b.published === 'boolean') s.published = b.published;
   req.user.site = s;
   saveDb();
@@ -764,6 +781,16 @@ app.post('/api/me/site/cover', requireAuth, (req, res) => {
     if (old && old.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(old)), () => {});
     saveDb();
     res.json({ ok: true, cover: s.cover });
+  });
+});
+
+// 菜单菜品图：单独上传压缩后返回 url，前端把它放进 menu[].items[].photo 再随 PATCH 保存
+app.post('/api/me/site/menu-photo', requireAuth, (req, res) => {
+  coverUpload(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file' });
+    if (!req.file) return res.status(400).json({ error: 'bad_file' });
+    const name = await compressImage(req.file.filename);
+    res.json({ ok: true, url: '/uploads/' + name });
   });
 });
 
