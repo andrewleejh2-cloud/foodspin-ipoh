@@ -125,7 +125,15 @@
     } else {
       note.hidden = true;
     }
-    head.append(av, name, region, note, stats);
+    head.append(av, name, region);
+    if (DATA.shopOpen) {   // 店铺标识：已发布且有菜品 → 显示「🛍 店铺」徽章，点进店铺页
+      const shopTag = document.createElement('div');
+      shopTag.className = 'pf-shoptag';
+      shopTag.innerHTML = ICONS.bag + '<span>' + t('shopBadge') + '</span>';
+      shopTag.addEventListener('click', () => { location.href = 'site.html?u=' + encodeURIComponent(u.username); });
+      head.appendChild(shopTag);
+    }
+    head.append(note, stats);
 
     // 简介
     const bio = document.createElement('p');
@@ -145,7 +153,7 @@
     const actions = document.createElement('div');
     actions.className = 'pf-actions';
     if (DATA.isMe) {
-      const site = mkBtn('pf-site', ICONS.globe, t('siteMine'));
+      const site = mkBtn('pf-site', DATA.shopOpen ? ICONS.bag : ICONS.globe, t(DATA.shopOpen ? 'shopMine' : 'siteMine'));
       site.addEventListener('click', () => { location.href = 'site-edit.html'; });
       const edit = mkBtn('pf-ghost', ICONS.edit, t('pfEdit'));
       edit.addEventListener('click', openEdit);
@@ -166,7 +174,7 @@
       const wa = mkBtn('pf-wa', ICONS.whatsapp, t('pfWa'));
       wa.addEventListener('click', () => loginThen(() => { location.href = DATA.waUrl; }));
       if (DATA.sitePublished) {
-        const site = mkBtn('pf-site', ICONS.globe, t('siteView'));
+        const site = mkBtn('pf-site', DATA.shopOpen ? ICONS.bag : ICONS.globe, t(DATA.shopOpen ? 'shopView' : 'siteView'));
         site.addEventListener('click', () => { location.href = 'site.html?u=' + encodeURIComponent(u.username); });
         actions.append(fol, site, msg, wa);
       } else {

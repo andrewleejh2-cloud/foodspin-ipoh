@@ -155,6 +155,14 @@
       pill.addEventListener('click', (e) => { e.stopPropagation(); location.href = 'place.html?p=' + encodeURIComponent(p.place); });
       node.querySelector('.meta-row').insertBefore(pill, node.querySelector('.ago'));
     }
+    // 发布者发布了「我的网站」→ 帖子上显示网站按钮，所有人可点进去
+    if (p.sitePublished) {
+      const sb = document.createElement('button');
+      sb.className = 'site-pill';
+      sb.innerHTML = ICONS.globe + '<span>' + t('webLink') + '</span>';
+      sb.addEventListener('click', (e) => { e.stopPropagation(); location.href = 'site.html?u=' + encodeURIComponent(p.username); });
+      node.querySelector('.meta-row').insertBefore(sb, node.querySelector('.ago'));
+    }
     node.querySelector('.ago').textContent = fmtAgo(p.createdAt);
     node.querySelector('.ago').dataset.ts = p.createdAt;
     const cap = node.querySelector('.caption');

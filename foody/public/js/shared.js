@@ -69,10 +69,13 @@ const DICT = {
     backAgainExit: '再按一次离开 Foody',
     swipeHint: '上滑看更多',
     exTrending: '热门美食', followBtn: '关注',
-    siteTabHome: '首页', siteTabMenu: '菜单', siteTabContact: '联系',
+    siteTabHome: '首页', siteTabMenu: '菜单', siteTabContact: '联系', siteTabShelf: '货架',
+    siteShelfL: '货架（商品）', siteAddGood: '+ 添加货物', siteShelfHint: '可带走/包装的货物：瓶装酱料、零食、周边等', siteStatusL: '营业状态', statusHide: '不显示', statusOpen: '营业中', statusClosed: '打烊',
+    shopAdd: '加入', shopOrder: '用 WhatsApp 下单', shopTotal: '合计', shopApprox: '约', shopItemsN: '{n} 样', shopOrderHi: '你好！我想订购：', shopFrom: '— 来自 Foody', shopLoginToOrder: '登录后即可下单 🍜', shopSoldOut: '售罄', shopBadge: '店铺', shopMine: '我的店铺', shopView: '看店铺',
     siteThemeL: '配色主题', siteMenuL: '菜单', siteAddCat: '+ 添加分类', siteAddItem: '+ 添加菜品',
     siteCatNamePh: '分类名（如 招牌）', siteItemNamePh: '菜名', siteItemPricePh: '价格 (如 RM 8)', siteItemDescPh: '描述（选填）',
     pfSales: '销量', salesDaily: '每日', salesWeekly: '每周', salesMonthly: '每月', salesNoData: '暂无数据',
+    webLink: '网站',
     /* Profile 主页 */
     pfPosts: '作品', pfLikes: '获赞',
     pfEdit: '编辑资料', pfSave: '保存', pfBioPh: '介绍一下你的美食 / 店…',
@@ -169,10 +172,13 @@ const DICT = {
     backAgainExit: 'Tekan sekali lagi untuk keluar',
     swipeHint: 'Leret ke atas untuk lagi',
     exTrending: 'Popular', followBtn: 'Ikut',
-    siteTabHome: 'Utama', siteTabMenu: 'Menu', siteTabContact: 'Hubungi',
+    siteTabHome: 'Utama', siteTabMenu: 'Menu', siteTabContact: 'Hubungi', siteTabShelf: 'Rak',
+    siteShelfL: 'Rak (Produk)', siteAddGood: '+ Tambah barang', siteShelfHint: 'Barang bungkus/bawa balik: sos botol, snek, dll', siteStatusL: 'Status kedai', statusHide: 'Jangan tunjuk', statusOpen: 'Buka', statusClosed: 'Tutup',
+    shopAdd: 'Tambah', shopOrder: 'Pesan via WhatsApp', shopTotal: 'Jumlah', shopApprox: '~', shopItemsN: '{n} item', shopOrderHi: 'Hai! Saya nak pesan:', shopFrom: '— dari Foody', shopLoginToOrder: 'Log masuk untuk pesan 🍜', shopSoldOut: 'Habis', shopBadge: 'Kedai', shopMine: 'Kedai saya', shopView: 'Lihat kedai',
     siteThemeL: 'Tema', siteMenuL: 'Menu', siteAddCat: '+ Tambah kategori', siteAddItem: '+ Tambah item',
     siteCatNamePh: 'Nama kategori', siteItemNamePh: 'Nama hidangan', siteItemPricePh: 'Harga (cth RM 8)', siteItemDescPh: 'Penerangan (pilihan)',
     pfSales: 'Jualan', salesDaily: 'Harian', salesWeekly: 'Mingguan', salesMonthly: 'Bulanan', salesNoData: 'Belum ada data',
+    webLink: 'Tapak web',
     /* Profile */
     pfPosts: 'Kiriman', pfLikes: 'Suka',
     pfEdit: 'Edit profil', pfSave: 'Simpan', pfBioPh: 'Cerita pasal makanan / kedai anda…',
@@ -268,10 +274,13 @@ const DICT = {
     backAgainExit: 'Press back again to exit',
     swipeHint: 'Swipe up for more',
     exTrending: 'Trending', followBtn: 'Follow',
-    siteTabHome: 'Home', siteTabMenu: 'Menu', siteTabContact: 'Contact',
+    siteTabHome: 'Home', siteTabMenu: 'Menu', siteTabContact: 'Contact', siteTabShelf: 'Shelf',
+    siteShelfL: 'Shelf (Products)', siteAddGood: '+ Add product', siteShelfHint: 'Packaged/takeaway goods: bottled sauce, snacks, merch', siteStatusL: 'Status', statusHide: 'Hide', statusOpen: 'Open', statusClosed: 'Closed',
+    shopAdd: 'Add', shopOrder: 'Order via WhatsApp', shopTotal: 'Total', shopApprox: '~', shopItemsN: '{n} item(s)', shopOrderHi: "Hi! I'd like to order:", shopFrom: '— via Foody', shopLoginToOrder: 'Log in to order 🍜', shopSoldOut: 'Sold out', shopBadge: 'Shop', shopMine: 'My shop', shopView: 'View shop',
     siteThemeL: 'Theme', siteMenuL: 'Menu', siteAddCat: '+ Add category', siteAddItem: '+ Add item',
     siteCatNamePh: 'Category name', siteItemNamePh: 'Dish name', siteItemPricePh: 'Price (e.g. RM 8)', siteItemDescPh: 'Description (optional)',
     pfSales: 'Sales', salesDaily: 'Daily', salesWeekly: 'Weekly', salesMonthly: 'Monthly', salesNoData: 'No data yet',
+    webLink: 'Website',
     /* Profile */
     pfPosts: 'Posts', pfLikes: 'Likes',
     pfEdit: 'Edit profile', pfSave: 'Save', pfBioPh: 'Tell people about your food / shop…',
@@ -443,6 +452,7 @@ const ICONS = {
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-1.6 3.6L16 11H5"/></svg>',
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 9-4-1.1-7-4.4-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>',
   more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.34 3.27a1 1 0 0 1 1.32 0l8 7a1 1 0 0 1 .34.75V20a1 1 0 0 1-1 1h-4.5a1 1 0 0 1-1-1v-4.4a1 1 0 0 0-1-1h-2.6a1 1 0 0 0-1 1V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8.98a1 1 0 0 1 .34-.75l8-7Z"/></svg>',
   compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M15.4 8.6 13.5 13.5 8.6 15.4 10.5 10.5 15.4 8.6Z" fill="currentColor" stroke="none"/></svg>',
   chevronUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13l6-6 6 6M6 18l6-6 6 6"/></svg>',
@@ -556,6 +566,7 @@ function mountBottomNav() {
   nav.className = 'bottom-nav';
   nav.setAttribute('aria-label', 'Foody');
   nav.innerHTML =
+    `<a class="bn-brand" href="fyp.html"><img src="img/logo.svg" alt=""><span>Foody</span></a>` +
     `<a class="bn-item bn-home" href="fyp.html"><span class="bn-ic">${ICONS.home}</span><span class="bn-tx" data-i18n="navHome">${t('navHome')}</span></a>` +
     `<a class="bn-item bn-explore" href="explore.html"><span class="bn-ic">${ICONS.compass}</span><span class="bn-tx" data-i18n="navExplore">${t('navExplore')}</span></a>` +
     `<button class="bn-item bn-create" type="button"><span class="bn-ic">${ICONS.plus}</span><span class="bn-tx" data-i18n="navPost">${t('navPost')}</span></button>` +

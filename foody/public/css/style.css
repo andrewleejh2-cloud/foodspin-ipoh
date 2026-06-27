@@ -1132,6 +1132,10 @@ body.lb-open { overflow: hidden; }
 .place-pill { display: inline-flex; align-items: center; gap: 3px; max-width: 170px; padding: 3px 9px; border-radius: 999px; background: rgba(217, 106, 59, .92); color: #fff; font-size: 12px; font-weight: 700; }
 .place-pill svg { width: 12px; height: 12px; flex: none; }
 .place-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 帖子上的「网站」按钮（发布者发布了我的网站时显示，所有人可见） */
+.site-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 11px 3px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; }
+.site-pill:hover { background: var(--accent-d); }
+.site-pill svg { width: 13px; height: 13px; flex: none; }
 
 /* ============================================================
    微站 site（一键发布的落地页）
@@ -1429,17 +1433,67 @@ body.lb-open { overflow: hidden; }
 .s-explore b { font-size: 15.5px; color: var(--accent-d); }
 .s-explore span { font-size: 13px; color: var(--ink-2); }
 
-/* 手机端：帖子操作栏次要按钮收进「⋯ 更多」，点击展开/收起。桌面端按钮全显示、不需要更多 */
-.rail .more { display: none; }
-@media (max-width: 760px) {
-  .rail .more { display: flex; }
-  .rail:not(.expanded) .sav,
-  .rail:not(.expanded) .shr,
-  .rail:not(.expanded) .mut,
-  .rail:not(.expanded) .edt,
-  .rail:not(.expanded) .rep,
-  .rail:not(.expanded) .del { display: none; }
-}
+/* 帖子操作栏：默认只显示 点赞 / 留言 / 收藏；联系(WhatsApp)/分享/关注 移除；
+   编辑/删除/举报/静音 收进「⋯ 更多」点开展开（所有尺寸一致） */
+.rail .wa, .rail .shr, .rail-follow { display: none !important; }
+.rail .more { display: flex; }
+.rail:not(.expanded) .mut,
+.rail:not(.expanded) .edt,
+.rail:not(.expanded) .rep,
+.rail:not(.expanded) .del { display: none; }
+
+/* ---------------- 店铺下单（菜品加购 + 底部 WhatsApp 订单条）---------------- */
+.mi-buy { margin-left: auto; align-self: center; flex: none; display: flex; align-items: center; gap: 8px; padding-left: 8px; }
+.mi-add { padding: 7px 16px; border-radius: 999px; background: var(--accent, #D96A3B); color: #fff; font-weight: 800; font-size: 13.5px; white-space: nowrap; }
+.mi-add:hover { filter: brightness(1.06); }
+.mi-buy .mi-step { width: 30px; height: 30px; border-radius: 50%; background: var(--accent, #D96A3B); color: #fff; font-size: 17px; font-weight: 800; display: grid; place-items: center; line-height: 1; }
+.mi-buy .mi-step:hover { filter: brightness(1.06); }
+.mi-buy .mi-qty { min-width: 22px; text-align: center; font-weight: 800; font-size: 15px; }
+
+.order-bar { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60;
+  width: min(560px, calc(100% - 24px)); display: flex; align-items: center; gap: 12px; padding: 9px 10px 9px 18px; border-radius: 999px;
+  background: var(--accent, #D96A3B); color: #fff; box-shadow: 0 12px 32px rgba(0,0,0,.30); animation: obUp .25s ease; }
+@keyframes obUp { from { transform: translate(-50%, 22px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.ob-info { display: flex; flex-direction: column; line-height: 1.25; flex: 1; min-width: 0; }
+.ob-cnt { font-weight: 800; font-size: 15px; }
+.ob-total { font-size: 12.5px; opacity: .92; }
+.ob-send { display: flex; align-items: center; gap: 7px; flex: none; padding: 11px 18px; border-radius: 999px; background: #fff; color: var(--accent-d, #B4502A); font-weight: 800; font-size: 14.5px; }
+.ob-send svg { width: 18px; height: 18px; }
+.ob-send:hover { filter: brightness(.97); }
+
+/* 售罄：编辑器开关 + 店铺展示 */
+.mie-sold-toggle { flex: none; align-self: center; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.mie-sold-toggle.on { background: #FBE6E0; border-color: #E0846A; color: #B4502A; }
+.menu-item.is-sold { opacity: .55; }
+.menu-item.is-sold .menu-item-photo { filter: grayscale(.7); }
+.mi-sold { margin-left: auto; align-self: center; padding: 6px 12px; border-radius: 999px; background: var(--line, #E7DFD2); color: var(--ink-2, #8a7d6a); font-weight: 800; font-size: 12.5px; white-space: nowrap; }
+
+/* profile 店铺标识徽章 */
+.pf-shoptag { display: inline-flex; align-items: center; gap: 5px; margin: 8px auto 0; padding: 4px 12px; border-radius: 999px; background: var(--accent-soft, #F7E3D6); color: var(--accent-d, #B4502A); font-weight: 800; font-size: 13px; cursor: pointer; width: fit-content; }
+.pf-shoptag svg { width: 15px; height: 15px; }
+.pf-shoptag:hover { filter: brightness(.97); }
+
+/* 货架：商品网格（店铺页）+ 编辑器提示 */
+.field-hint { font-size: 12.5px; color: var(--ink-2); margin: 2px 0 10px; line-height: 1.5; }
+.shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.good-card { display: flex; flex-direction: column; border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.good-photo { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
+.good-body { display: flex; flex-direction: column; gap: 5px; padding: 10px 11px 11px; flex: 1; }
+.good-name { font-weight: 800; font-size: 14.5px; }
+.good-desc { margin: 0; font-size: 12.5px; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.good-bottom { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 4px; }
+.good-price { font-weight: 800; font-size: 14px; color: var(--accent, #D96A3B); }
+.good-bottom .mi-buy { margin-left: 0; padding-left: 0; }
+.good-card.is-sold { opacity: .55; }
+.good-card.is-sold .good-photo { filter: grayscale(.7); }
+
+/* 店铺营业状态徽章 */
+.site-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 4px 13px; border-radius: 999px; font-weight: 800; font-size: 13px; }
+.site-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
+.site-status.open { background: #E3F5E9; color: #1E8A4C; }
+.site-status.open::before { background: #25A35A; box-shadow: 0 0 0 3px rgba(37,163,90,.18); }
+.site-status.closed { background: #EFEAE3; color: #8A7D6A; }
+.site-status.closed::before { background: #B3A690; }
 
 /* ============================================================
    底部导航栏（Phase 1 · TikTok 式 5 格）
@@ -1453,6 +1507,7 @@ body.lb-open { overflow: hidden; }
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -6px 20px -14px rgba(96, 64, 32, .4);
 }
+.bn-brand { display: none; }   /* 侧边栏 logo：仅桌面 ≥1024 显示（见下方 media query） */
 .bn-item {
   flex: 1; min-width: 0; position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -1563,3 +1618,47 @@ body:not(.page-fyp) main { animation: pageRise .32s ease both; }
 @keyframes swipeBob { 0%, 100% { transform: translateY(5px); } 50% { transform: translateY(-6px); } }
 @keyframes swipeHintIn { from { opacity: 0; transform: translate(-50%, 12px); } }
 @keyframes swipeHintOut { to { opacity: 0; transform: translate(-50%, 12px); } }
+
+/* ============================================================
+   桌面端（≥1024px）：底部标签栏 → TikTok 式左侧边栏 + 内容区
+   只在大屏生效；手机/平板保持原样。纯布局，不改配色/品牌/信息架构。
+   ============================================================ */
+@media (min-width: 1024px) {
+  /* 底部栏 → 固定左侧边栏 */
+  .bottom-nav {
+    left: 0; right: auto; top: 0; bottom: 0; transform: none;
+    width: 232px; height: 100dvh;
+    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    gap: 5px; padding: 20px 16px;
+    border: none; border-right: 1px solid var(--line); border-radius: 0;
+    box-shadow: none; overflow-y: auto;
+  }
+  .page-fyp .bottom-nav { background: rgba(14, 10, 7, .94); border-right: 1px solid rgba(255, 246, 230, .1); }
+
+  /* 侧边栏顶部 Foody logo（仅桌面显示） */
+  .bn-brand { display: flex; align-items: center; gap: 9px; padding: 4px 12px 18px; font-size: 21px; font-weight: 800; color: var(--ink); }
+  .bn-brand img { width: 30px; height: 30px; }
+  .page-fyp .bn-brand { color: #FFF4E4; }
+
+  /* 导航项：横向一行（图标 + 文字） */
+  .bn-item { flex: none; flex-direction: row; justify-content: flex-start; gap: 15px; padding: 11px 14px; border-radius: 12px; }
+  .bn-item .bn-ic { width: 26px; height: 26px; }
+  .bn-item .bn-tx { font-size: 15.5px; letter-spacing: .2px; }
+  .bn-item:hover { background: var(--accent-soft); }
+  .page-fyp .bn-item:hover { background: rgba(255, 246, 230, .08); }
+  .bn-item.on { background: var(--accent-soft); color: var(--accent-d); }
+  .page-fyp .bn-item.on { background: rgba(232, 137, 75, .18); color: #FFF6EA; }
+
+  /* 发帖 → 强调实心按钮 */
+  .bn-create { background: var(--accent); color: #fff; margin: 8px 0; }
+  .bn-create:hover, .page-fyp .bn-create:hover { background: var(--accent-d); }
+  .page-fyp .bn-create { color: #fff; }
+  .bn-create .bn-ic { width: 26px; height: 26px; background: transparent; box-shadow: none; border-radius: 8px; }
+  .bn-create .bn-ic svg { width: 23px; height: 23px; }
+
+  /* 内容区：让出左侧 232px 给侧边栏 */
+  .page-fyp .slide { padding-left: 232px; }
+  .page-fyp .fyp-top { left: 232px; }
+  .page-fyp .fyp-top .brand { display: none; }   /* logo 已在侧边栏，顶栏不重复 */
+  .has-bnav.page-explore, .has-bnav.page-profile { padding-left: 232px; }
+}

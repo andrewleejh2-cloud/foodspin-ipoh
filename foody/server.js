@@ -311,6 +311,8 @@ function postJson(p, viewer) {
     savedByMe: !!(viewer && saves.some(s => s.userId === viewer.id)),
     // 是否已关注作者（给 feed 里的「+关注」按钮用；未登录或自己的帖都为 false）
     isFollowing: !!(viewer && author && viewer.id !== p.userId && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
+    // 作者是否发布了「我的网站」——给 feed 帖子上的网站按钮用（所有人可见）
+    sitePublished: !!(author && author.site && author.site.published),
     // 电话/WhatsApp 只给已登入的用户（保护隐私 + 符合“注册后才能用 WhatsApp 按钮”）
     waUrl: viewer && author && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null
   };
@@ -707,6 +709,9 @@ function normLink(url) {
 }
 
 const SITE_THEMES = ['warm', 'dark', 'fresh', 'berry', 'mono'];
+// 货架（商品）摆货权限：暂时只允许指定账号；以后放开就往名单里加用户名（小写），或改成用户 flag
+const SHELF_SELLERS = new Set(['安德鲁']);
+function canSellGoods(u) { return !!(u && SHELF_SELLERS.has(u.usernameLower)); }
 
 app.get('/api/site/:username', (req, res) => {
   const viewer = currentUser(req);
@@ -731,6 +736,9 @@ app.get('/api/site/:username', (req, res) => {
     links: s.links || [],
     theme: SITE_THEMES.includes(s.theme) ? s.theme : 'warm',
     menu: Array.isArray(s.menu) ? s.menu : [],
+    shelf: Array.isArray(s.shelf) ? s.shelf : [],
+    canSell: isMe && canSellGoods(u),
+    status: s.status || '',   // 仅本人且在摆货白名单 → 编辑器显示「货架」摆货区
     mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
     waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
     posts
@@ -759,11 +767,23 @@ app.patch('/api/me/site', requireAuth, (req, res) => {
         price: String(it.price || '').trim().slice(0, 20),
         desc: String(it.desc || '').replace(/\r\n/g, '\n').trim().slice(0, 200),
         // 菜品图只接受自己上传到 /uploads/ 的路径，杜绝注入外链
-        photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : ''
+        photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : '',
+        soldOut: !!it.soldOut
       })).filter(it => it.name)
     })).filter(cat => cat.name || cat.items.length);
   }
+  // 货架（商品）：扁平商品列表，暂时只允许白名单账号摆货（别人传 shelf 一律忽略）
+  if (canSellGoods(req.user) && Array.isArray(b.shelf)) {
+    s.shelf = b.shelf.slice(0, 60).map(it => ({
+      name: String(it.name || '').trim().slice(0, 60),
+      price: String(it.price || '').trim().slice(0, 20),
+      desc: String(it.desc || '').replace(/\r\n/g, '\n').trim().slice(0, 200),
+      photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : '',
+      soldOut: !!it.soldOut
+    })).filter(it => it.name);
+  }
   if (typeof b.published === 'boolean') s.published = b.published;
+  if (typeof b.status === 'string' && ['', 'open', 'closed'].includes(b.status)) s.status = b.status;  // 营业状态：空=不显示
   req.user.site = s;
   saveDb();
   res.json({ ok: true, site: s });
@@ -972,6 +992,7 @@ app.get('/api/users/:username', (req, res) => {
     viewerLoggedIn: !!viewer,
     isFollowing: !!(viewer && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
     sitePublished: !!(author.site && author.site.published),
+    shopOpen: !!(author.site && author.site.published && Array.isArray(author.site.menu) && author.site.menu.some(c => Array.isArray(c.items) && c.items.length)),
     waUrl: viewer && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null,
     posts: myPosts.map(p => postJson(p, viewer))
   });
