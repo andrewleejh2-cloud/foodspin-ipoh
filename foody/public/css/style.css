@@ -1495,6 +1495,13 @@ body.lb-open { overflow: hidden; }
 .site-status.closed { background: #EFEAE3; color: #8A7D6A; }
 .site-status.closed::before { background: #B3A690; }
 
+/* profile 上的货架区（商品在主页直接展示+下单） */
+.pf-shelf { margin: 4px 0 20px; }
+.pf-shelf-h { display: flex; align-items: center; gap: 7px; font-weight: 800; font-size: 16px; margin: 0 0 12px; padding: 0 2px; }
+.pf-shelf-h svg { width: 18px; height: 18px; color: var(--accent); }
+/* profile 有底部导航栏，订单条要抬高避开它 */
+.page-profile .order-bar { bottom: calc(78px + env(safe-area-inset-bottom)); }
+
 /* ============================================================
    底部导航栏（Phase 1 · TikTok 式 5 格）
    暖奶油色基础；.page-fyp 深色磨砂变体

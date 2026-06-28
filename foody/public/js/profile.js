@@ -78,6 +78,7 @@
     const u = DATA.user, st = DATA.stats;
     const wrap = $('#pfWrap');
     wrap.innerHTML = '';
+    FoodyCart.setWaUrl(DATA.waUrl); FoodyCart.reset();   // 货架下单购物车（重渲染先清，末尾恢复）
 
     const head = document.createElement('section');
     head.className = 'pf-head';
@@ -160,6 +161,11 @@
       const out = mkBtn('pf-ghost pf-logout', null, t('logout'));
       out.addEventListener('click', logout);
       actions.append(site, edit, out);
+      if (DATA.canSell) {   // 白名单卖家：管理货架入口
+        const mg = mkBtn('pf-ghost pf-shelf-btn', ICONS.bag, t('shelfManage'));
+        mg.addEventListener('click', () => { location.href = 'shelf-edit.html'; });
+        actions.append(mg);
+      }
       if (DATA.isAdmin) {
         const adm = mkBtn('pf-ghost pf-admin', ICONS.shield, t('admEntry'));
         adm.addEventListener('click', () => { location.href = 'admin.html'; });
@@ -183,6 +189,33 @@
     }
     head.appendChild(actions);
     wrap.appendChild(head);
+
+    // 货架（商品）：访客在主页直接看商品 + 加购 + WhatsApp 下单（货物只有白名单卖家会有）
+    if (DATA.shelf && DATA.shelf.length) {
+      const shop = document.createElement('section');
+      shop.className = 'pf-shelf';
+      const sh = document.createElement('div'); sh.className = 'pf-shelf-h';
+      sh.innerHTML = ICONS.bag + '<span>' + esc(t('siteShelfL')) + '</span>';
+      shop.appendChild(sh);
+      const grid = document.createElement('div'); grid.className = 'shelf-grid';
+      let gid = 0;
+      for (const it of DATA.shelf) {
+        const key = 'g' + (gid++);
+        const card = document.createElement('div'); card.className = 'good-card' + (it.soldOut ? ' is-sold' : '');
+        if (it.photo) { const img = document.createElement('img'); img.className = 'good-photo'; img.src = it.photo; img.loading = 'lazy'; img.alt = ''; card.appendChild(img); }
+        const gb = document.createElement('div'); gb.className = 'good-body';
+        const gn = document.createElement('div'); gn.className = 'good-name'; gn.textContent = it.name; gb.appendChild(gn);
+        if (it.desc) { const gd = document.createElement('p'); gd.className = 'good-desc'; gd.textContent = it.desc; gb.appendChild(gd); }
+        const bottom = document.createElement('div'); bottom.className = 'good-bottom';
+        if (it.price) { const pr = document.createElement('span'); pr.className = 'good-price'; pr.textContent = it.price; bottom.appendChild(pr); }
+        bottom.appendChild(FoodyCart.makeBuy(key, it));
+        gb.appendChild(bottom);
+        card.appendChild(gb);
+        grid.appendChild(card);
+      }
+      shop.appendChild(grid);
+      wrap.appendChild(shop);
+    }
 
     // 销量（每日 / 每周 / 每月）—— 暂时只加按钮，未接实际数据
     const sales = document.createElement('section');
@@ -231,6 +264,7 @@
       rb.hidden = true;
     }
 
+    FoodyCart.refreshBar();   // 货架购物车：按当前选购恢复底部订单条
     setBackLabel();
   }
 

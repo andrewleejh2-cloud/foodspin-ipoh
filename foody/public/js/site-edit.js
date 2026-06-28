@@ -3,7 +3,6 @@
   const $ = (s, r = document) => r.querySelector(s);
   const BACK = { zh: '返回', ms: 'Kembali', en: 'Back' };
   let ME = null;
-  let CAN_SELL = false;   // 是否获授权摆货（货架）
 
   function setBackLabel() { const l = BACK[LANG] || BACK.en; $('#backBtn').title = l; $('#backBtn').setAttribute('aria-label', l); }
   function paintCover(url) {
@@ -109,16 +108,6 @@
       })).filter(it => it.name)
     })).filter(cat => cat.name || cat.items.length);
   }
-  function collectShelf() {
-    return [...document.querySelectorAll('#shelfList .menu-item-edit')].map(row => ({
-      name: row.querySelector('.mie-name').value.trim(),
-      price: row.querySelector('.mie-price').value.trim(),
-      desc: row.querySelector('.mie-desc').value.trim(),
-      photo: row.dataset.photo || '',
-      soldOut: row.dataset.soldout === '1'
-    })).filter(it => it.name);
-  }
-
   function fillStatusSelect() {
     const sel = $('#fStatus'); if (!sel) return;
     const cur = sel.value;
@@ -144,7 +133,6 @@
   });
   $('#addLink').addEventListener('click', () => addLinkRow('', ''));
   $('#addCat').addEventListener('click', () => addCat('', []));
-  $('#addGood').addEventListener('click', () => addItemRow($('#shelfList'), {}));
 
   $('#siteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -163,7 +151,6 @@
       status: $('#fStatus').value,
       published: $('#fPublished').checked
     };
-    if (CAN_SELL) body.shelf = collectShelf();
     const btn = $('#saveBtn'); btn.disabled = true;
     try { await api('/api/me/site', { method: 'PATCH', body }); toast(t('siteSaved')); }
     catch (err) { toast(errMsg(err.code)); }
@@ -189,11 +176,6 @@
     curTheme = d.theme || 'warm';
     paintThemePick();
     (d.menu || []).forEach(cat => addCat(cat.name, cat.items));
-    CAN_SELL = !!d.canSell;
-    if (CAN_SELL) {
-      $('#shelfField').hidden = false;
-      (d.shelf || []).forEach(it => addItemRow($('#shelfList'), it));
-    }
     fillStatusSelect();
     $('#fStatus').value = d.status || '';
     paintCover(d.cover || null);

@@ -5,76 +5,9 @@
   const U = (new URLSearchParams(location.search).get('u') || '').trim();
   const BACK = { zh: '返回', ms: 'Kembali', en: 'Back' };
   let D = null;
-  const cart = new Map();        // 购物车：key `i{n}` → { name, price, qty }
-  const buyPaint = new Map();    // key → 重绘该菜品加购按钮的函数
-  let orderBar = null;
 
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function fail(msg) { $('#siteRoot').innerHTML = `<div class="site-fail">${esc(msg)}</div>`; }
-
-  /* ---- 下单（购物车 → 一键 WhatsApp，不碰在线支付）---- */
-  function parsePrice(s) { const m = String(s || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; }
-  function money(n) { return 'RM' + (Math.round(n * 100) / 100); }
-  function cartTotals() {
-    let count = 0, total = 0, unknown = false;
-    for (const it of cart.values()) { count += it.qty; const pp = parsePrice(it.price); if (isNaN(pp)) unknown = true; else total += pp * it.qty; }
-    return { count, total, unknown };
-  }
-  function setQty(key, it, qty) {
-    qty = Math.max(0, Math.min(99, qty | 0));
-    if (qty <= 0) cart.delete(key); else cart.set(key, { name: it.name, price: it.price, qty });
-    const p = buyPaint.get(key); if (p) p();
-    refreshBar();
-  }
-  function makeBuy(key, it) {
-    const wrap = document.createElement('div'); wrap.className = 'mi-buy';
-    if (it.soldOut) { const s = document.createElement('span'); s.className = 'mi-sold'; s.textContent = t('shopSoldOut'); wrap.appendChild(s); return wrap; }
-    function paint() {
-      const qty = (cart.get(key) || {}).qty || 0;
-      wrap.innerHTML = '';
-      if (qty <= 0) {
-        const add = document.createElement('button'); add.type = 'button'; add.className = 'mi-add'; add.textContent = t('shopAdd');
-        add.addEventListener('click', () => setQty(key, it, 1));
-        wrap.appendChild(add);
-      } else {
-        const minus = document.createElement('button'); minus.type = 'button'; minus.className = 'mi-step'; minus.textContent = '−';
-        minus.addEventListener('click', () => setQty(key, it, qty - 1));
-        const n = document.createElement('span'); n.className = 'mi-qty'; n.textContent = qty;
-        const plus = document.createElement('button'); plus.type = 'button'; plus.className = 'mi-step'; plus.textContent = '＋';
-        plus.addEventListener('click', () => setQty(key, it, qty + 1));
-        wrap.append(minus, n, plus);
-      }
-    }
-    buyPaint.set(key, paint);
-    paint();
-    return wrap;
-  }
-  function refreshBar() {
-    if (orderBar) { orderBar.remove(); orderBar = null; }
-    const { count, total, unknown } = cartTotals();
-    if (count <= 0) return;
-    const bar = document.createElement('div'); bar.className = 'order-bar';
-    const info = document.createElement('div'); info.className = 'ob-info';
-    const cnt = document.createElement('span'); cnt.className = 'ob-cnt'; cnt.textContent = t('shopItemsN', { n: count });
-    info.appendChild(cnt);
-    if (total > 0) { const tt = document.createElement('span'); tt.className = 'ob-total'; tt.textContent = t('shopTotal') + ' ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : ''); info.appendChild(tt); }
-    const send = document.createElement('button'); send.type = 'button'; send.className = 'ob-send'; send.innerHTML = ICONS.whatsapp + '<span>' + t('shopOrder') + '</span>';
-    send.addEventListener('click', sendOrder);
-    bar.append(info, send);
-    document.body.appendChild(bar);
-    orderBar = bar;
-  }
-  function sendOrder() {
-    if (!cart.size) return;
-    if (!D || !D.waUrl) { toast(t('shopLoginToOrder')); setTimeout(() => { location.href = 'index.html'; }, 900); return; }
-    const { total, unknown } = cartTotals();
-    const lines = [];
-    for (const it of cart.values()) lines.push('• ' + it.name + ' ×' + it.qty + (it.price ? ' — ' + it.price : ''));
-    let msg = t('shopOrderHi') + '\n' + lines.join('\n');
-    if (total > 0) msg += '\n' + t('shopTotal') + ': ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : '');
-    msg += '\n' + t('shopFrom');
-    window.open(D.waUrl + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
-  }
 
   async function load() {
     if (!U) return fail(t('pfNotFound'));
@@ -108,8 +41,7 @@
   function render() {
     const root = $('#siteRoot');
     root.innerHTML = '';
-    buyPaint.clear();
-    if (orderBar) { orderBar.remove(); orderBar = null; }   // 重渲染先清旧订单条，末尾按购物车恢复
+    FoodyCart.setWaUrl(D.waUrl); FoodyCart.reset();   // 重渲染先清旧订单条，末尾按购物车恢复
     document.body.className = 'page-site site-theme-' + (D.theme || 'warm');   // 套配色主题
 
     const bar = document.createElement('div');
@@ -158,7 +90,6 @@
     // ---- 三板块：首页 / 菜单 / 联系 ----
     const home = document.createElement('div'); home.className = 'site-panel';
     const menuPanel = document.createElement('div'); menuPanel.className = 'site-panel';
-    const shelfPanel = document.createElement('div'); shelfPanel.className = 'site-panel';
     const contact = document.createElement('div'); contact.className = 'site-panel';
 
     // 首页：介绍 + 帖子画廊（视频格只放占位+播放标，不加载视频文件）
@@ -196,33 +127,10 @@
         b.appendChild(top);
         if (it.desc) { const d = document.createElement('p'); d.className = 'menu-item-desc'; d.textContent = it.desc; b.appendChild(d); }
         row.appendChild(b);
-        row.appendChild(makeBuy(key, it));
+        row.appendChild(FoodyCart.makeBuy(key, it));
         c.appendChild(row);
       }
       menuPanel.appendChild(c);
-    }
-
-    // 货架：商品网格（图/名/价/描述 + 加购）。暂时只有获授权账号摆的货会有内容
-    let hasShelf = false;
-    if (D.shelf && D.shelf.length) {
-      const grid = document.createElement('div'); grid.className = 'shelf-grid';
-      let gid = 0;
-      for (const it of D.shelf) {
-        hasShelf = true;
-        const key = 'g' + (gid++);
-        const card = document.createElement('div'); card.className = 'good-card' + (it.soldOut ? ' is-sold' : '');
-        if (it.photo) { const img = document.createElement('img'); img.className = 'good-photo'; img.src = it.photo; img.loading = 'lazy'; img.alt = ''; card.appendChild(img); }
-        const gb = document.createElement('div'); gb.className = 'good-body';
-        const gn = document.createElement('div'); gn.className = 'good-name'; gn.textContent = it.name; gb.appendChild(gn);
-        if (it.desc) { const gd = document.createElement('p'); gd.className = 'good-desc'; gd.textContent = it.desc; gb.appendChild(gd); }
-        const bottom = document.createElement('div'); bottom.className = 'good-bottom';
-        if (it.price) { const pr = document.createElement('span'); pr.className = 'good-price'; pr.textContent = it.price; bottom.appendChild(pr); }
-        bottom.appendChild(makeBuy(key, it));
-        gb.appendChild(bottom);
-        card.appendChild(gb);
-        grid.appendChild(card);
-      }
-      shelfPanel.appendChild(grid);
     }
 
     // 联系：行动按钮 + 营业时间 + 地址
@@ -238,7 +146,6 @@
     // 只显示有内容的板块；只有一个就不显示导航
     const tabs = [{ label: t('siteTabHome'), panel: home }];
     if (hasMenu) tabs.push({ label: t('siteTabMenu'), panel: menuPanel });
-    if (hasShelf) tabs.push({ label: t('siteTabShelf'), panel: shelfPanel });
     if (contact.children.length) tabs.push({ label: t('siteTabContact'), panel: contact });
 
     const nav = document.createElement('div'); nav.className = 'site-nav';
@@ -266,7 +173,7 @@
     root.appendChild(foot);
     const pw = document.createElement('div'); pw.className = 'site-pw'; pw.textContent = 'Powered by Foody';
     root.appendChild(pw);
-    refreshBar();   // 语言切换/重渲染后，按当前购物车恢复底部订单条
+    FoodyCart.refreshBar();   // 语言切换/重渲染后，按当前购物车恢复底部订单条
   }
 
   document.addEventListener('foody:lang', () => { if (D) render(); });

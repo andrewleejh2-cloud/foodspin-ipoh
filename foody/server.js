@@ -662,7 +662,7 @@ app.post('/api/logout', (req, res) => {
 
 app.get('/api/me', (req, res) => {
   const user = currentUser(req);
-  res.json({ user: user ? pubUser(user) : null, states: STATES });
+  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [] });
 });
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
@@ -736,8 +736,6 @@ app.get('/api/site/:username', (req, res) => {
     links: s.links || [],
     theme: SITE_THEMES.includes(s.theme) ? s.theme : 'warm',
     menu: Array.isArray(s.menu) ? s.menu : [],
-    shelf: Array.isArray(s.shelf) ? s.shelf : [],
-    canSell: isMe && canSellGoods(u),
     status: s.status || '',   // 仅本人且在摆货白名单 → 编辑器显示「货架」摆货区
     mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
     waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
@@ -772,16 +770,6 @@ app.patch('/api/me/site', requireAuth, (req, res) => {
       })).filter(it => it.name)
     })).filter(cat => cat.name || cat.items.length);
   }
-  // 货架（商品）：扁平商品列表，暂时只允许白名单账号摆货（别人传 shelf 一律忽略）
-  if (canSellGoods(req.user) && Array.isArray(b.shelf)) {
-    s.shelf = b.shelf.slice(0, 60).map(it => ({
-      name: String(it.name || '').trim().slice(0, 60),
-      price: String(it.price || '').trim().slice(0, 20),
-      desc: String(it.desc || '').replace(/\r\n/g, '\n').trim().slice(0, 200),
-      photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : '',
-      soldOut: !!it.soldOut
-    })).filter(it => it.name);
-  }
   if (typeof b.published === 'boolean') s.published = b.published;
   if (typeof b.status === 'string' && ['', 'open', 'closed'].includes(b.status)) s.status = b.status;  // 营业状态：空=不显示
   req.user.site = s;
@@ -804,7 +792,7 @@ app.post('/api/me/site/cover', requireAuth, (req, res) => {
   });
 });
 
-// 菜单菜品图：单独上传压缩后返回 url，前端把它放进 menu[].items[].photo 再随 PATCH 保存
+// 菜单菜品图 / 货架商品图：单独上传压缩后返回 url，前端放进 photo 再随 PATCH 保存
 app.post('/api/me/site/menu-photo', requireAuth, (req, res) => {
   coverUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file' });
@@ -812,6 +800,23 @@ app.post('/api/me/site/menu-photo', requireAuth, (req, res) => {
     const name = await compressImage(req.file.filename);
     res.json({ ok: true, url: '/uploads/' + name });
   });
+});
+
+// 货架（商品）：独立于「网页」，存 user.shelf。暂时只允许白名单账号（canSellGoods）摆货
+app.patch('/api/me/shelf', requireAuth, (req, res) => {
+  if (!canSellGoods(req.user)) return res.status(403).json({ error: 'forbidden' });
+  const b = req.body || {};
+  if (Array.isArray(b.shelf)) {
+    req.user.shelf = b.shelf.slice(0, 60).map(it => ({
+      name: String(it.name || '').trim().slice(0, 60),
+      price: String(it.price || '').trim().slice(0, 20),
+      desc: String(it.desc || '').replace(/\r\n/g, '\n').trim().slice(0, 200),
+      photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : '',
+      soldOut: !!it.soldOut
+    })).filter(it => it.name);
+    saveDb();
+  }
+  res.json({ ok: true, shelf: req.user.shelf || [] });
 });
 
 /* ---- 帖子 ---- */
@@ -993,6 +998,8 @@ app.get('/api/users/:username', (req, res) => {
     isFollowing: !!(viewer && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
     sitePublished: !!(author.site && author.site.published),
     shopOpen: !!(author.site && author.site.published && Array.isArray(author.site.menu) && author.site.menu.some(c => Array.isArray(c.items) && c.items.length)),
+    shelf: Array.isArray(author.shelf) ? author.shelf : [],   // 货架商品（profile 上展示，访客可见）
+    canSell: !!(viewer && viewer.id === author.id && canSellGoods(author)),   // 本人且白名单 → 显示「管理货架」
     waUrl: viewer && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null,
     posts: myPosts.map(p => postJson(p, viewer))
   });
@@ -1475,6 +1482,17 @@ app.use(express.static(path.join(ROOT, 'public'), { extensions: ['html'] }));
 /* ---------------- 启动 ---------------- */
 loadDb();
 applyAdmins();                       // 按 FOODY_ADMIN（默认 foody_demo）设定管理员
+// 一次性迁移：旧的 user.site.shelf 搬到顶层 user.shelf（货架已从「网页」独立到 profile）
+(function migrateShelf() {
+  let changed = false;
+  for (const u of db.users) {
+    if (u.site && Array.isArray(u.site.shelf)) {
+      if (u.site.shelf.length && !(Array.isArray(u.shelf) && u.shelf.length)) { u.shelf = u.site.shelf; }
+      delete u.site.shelf; changed = true;
+    }
+  }
+  if (changed) saveDb();
+})();
 backupDb();                          // 启动时先备份一份
 setInterval(backupDb, 6 * 3600000);  // 之后每 6 小时自动备份
 app.listen(PORT, '0.0.0.0', () => {

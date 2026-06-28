@@ -70,7 +70,7 @@ const DICT = {
     swipeHint: '上滑看更多',
     exTrending: '热门美食', followBtn: '关注',
     siteTabHome: '首页', siteTabMenu: '菜单', siteTabContact: '联系', siteTabShelf: '货架',
-    siteShelfL: '货架（商品）', siteAddGood: '+ 添加货物', siteShelfHint: '可带走/包装的货物：瓶装酱料、零食、周边等', siteStatusL: '营业状态', statusHide: '不显示', statusOpen: '营业中', statusClosed: '打烊',
+    siteShelfL: '货架（商品）', siteAddGood: '+ 添加货物', siteShelfHint: '可带走/包装的货物：瓶装酱料、零食、周边等', siteStatusL: '营业状态', statusHide: '不显示', statusOpen: '营业中', statusClosed: '打烊', shelfEditTitle: '管理货架', shelfManage: '管理货架', shelfView: '看主页',
     shopAdd: '加入', shopOrder: '用 WhatsApp 下单', shopTotal: '合计', shopApprox: '约', shopItemsN: '{n} 样', shopOrderHi: '你好！我想订购：', shopFrom: '— 来自 Foody', shopLoginToOrder: '登录后即可下单 🍜', shopSoldOut: '售罄', shopBadge: '店铺', shopMine: '我的店铺', shopView: '看店铺',
     siteThemeL: '配色主题', siteMenuL: '菜单', siteAddCat: '+ 添加分类', siteAddItem: '+ 添加菜品',
     siteCatNamePh: '分类名（如 招牌）', siteItemNamePh: '菜名', siteItemPricePh: '价格 (如 RM 8)', siteItemDescPh: '描述（选填）',
@@ -173,7 +173,7 @@ const DICT = {
     swipeHint: 'Leret ke atas untuk lagi',
     exTrending: 'Popular', followBtn: 'Ikut',
     siteTabHome: 'Utama', siteTabMenu: 'Menu', siteTabContact: 'Hubungi', siteTabShelf: 'Rak',
-    siteShelfL: 'Rak (Produk)', siteAddGood: '+ Tambah barang', siteShelfHint: 'Barang bungkus/bawa balik: sos botol, snek, dll', siteStatusL: 'Status kedai', statusHide: 'Jangan tunjuk', statusOpen: 'Buka', statusClosed: 'Tutup',
+    siteShelfL: 'Rak (Produk)', siteAddGood: '+ Tambah barang', siteShelfHint: 'Barang bungkus/bawa balik: sos botol, snek, dll', siteStatusL: 'Status kedai', statusHide: 'Jangan tunjuk', statusOpen: 'Buka', statusClosed: 'Tutup', shelfEditTitle: 'Urus rak', shelfManage: 'Urus rak', shelfView: 'Lihat profil',
     shopAdd: 'Tambah', shopOrder: 'Pesan via WhatsApp', shopTotal: 'Jumlah', shopApprox: '~', shopItemsN: '{n} item', shopOrderHi: 'Hai! Saya nak pesan:', shopFrom: '— dari Foody', shopLoginToOrder: 'Log masuk untuk pesan 🍜', shopSoldOut: 'Habis', shopBadge: 'Kedai', shopMine: 'Kedai saya', shopView: 'Lihat kedai',
     siteThemeL: 'Tema', siteMenuL: 'Menu', siteAddCat: '+ Tambah kategori', siteAddItem: '+ Tambah item',
     siteCatNamePh: 'Nama kategori', siteItemNamePh: 'Nama hidangan', siteItemPricePh: 'Harga (cth RM 8)', siteItemDescPh: 'Penerangan (pilihan)',
@@ -275,7 +275,7 @@ const DICT = {
     swipeHint: 'Swipe up for more',
     exTrending: 'Trending', followBtn: 'Follow',
     siteTabHome: 'Home', siteTabMenu: 'Menu', siteTabContact: 'Contact', siteTabShelf: 'Shelf',
-    siteShelfL: 'Shelf (Products)', siteAddGood: '+ Add product', siteShelfHint: 'Packaged/takeaway goods: bottled sauce, snacks, merch', siteStatusL: 'Status', statusHide: 'Hide', statusOpen: 'Open', statusClosed: 'Closed',
+    siteShelfL: 'Shelf (Products)', siteAddGood: '+ Add product', siteShelfHint: 'Packaged/takeaway goods: bottled sauce, snacks, merch', siteStatusL: 'Status', statusHide: 'Hide', statusOpen: 'Open', statusClosed: 'Closed', shelfEditTitle: 'Manage shelf', shelfManage: 'Manage shelf', shelfView: 'View profile',
     shopAdd: 'Add', shopOrder: 'Order via WhatsApp', shopTotal: 'Total', shopApprox: '~', shopItemsN: '{n} item(s)', shopOrderHi: "Hi! I'd like to order:", shopFrom: '— via Foody', shopLoginToOrder: 'Log in to order 🍜', shopSoldOut: 'Sold out', shopBadge: 'Shop', shopMine: 'My shop', shopView: 'View shop',
     siteThemeL: 'Theme', siteMenuL: 'Menu', siteAddCat: '+ Add category', siteAddItem: '+ Add item',
     siteCatNamePh: 'Category name', siteItemNamePh: 'Dish name', siteItemPricePh: 'Price (e.g. RM 8)', siteItemDescPh: 'Description (optional)',
@@ -610,6 +610,82 @@ async function pollNavUnread(nav) {
   const dot = nav.querySelector('.bn-inbox .bn-dot');
   if (dot) dot.hidden = !(((a.count || 0) + (b.count || 0)) > 0);
 }
+
+/* 通用购物车（店铺菜单 / profile 货架共用）：加购 → 底部订单条 → 一键生成 WhatsApp 清单。
+   不碰在线支付。各页面用 FoodyCart.setWaUrl(商家WhatsApp)，再用 FoodyCart.makeBuy(key,item) 渲染加购控件。 */
+const FoodyCart = (() => {
+  const cart = new Map();      // key → { name, price, qty }
+  const buyPaint = new Map();  // key → 重绘该件加购按钮
+  let orderBar = null;
+  let waUrl = null;
+  function parsePrice(s) { const m = String(s || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; }
+  function money(n) { return 'RM' + (Math.round(n * 100) / 100); }
+  function totals() {
+    let count = 0, total = 0, unknown = false;
+    for (const it of cart.values()) { count += it.qty; const pp = parsePrice(it.price); if (isNaN(pp)) unknown = true; else total += pp * it.qty; }
+    return { count, total, unknown };
+  }
+  function setQty(key, it, qty) {
+    qty = Math.max(0, Math.min(99, qty | 0));
+    if (qty <= 0) cart.delete(key); else cart.set(key, { name: it.name, price: it.price, qty });
+    const p = buyPaint.get(key); if (p) p();
+    refreshBar();
+  }
+  function makeBuy(key, it) {
+    const wrap = document.createElement('div'); wrap.className = 'mi-buy';
+    if (it.soldOut) { const s = document.createElement('span'); s.className = 'mi-sold'; s.textContent = t('shopSoldOut'); wrap.appendChild(s); return wrap; }
+    function paint() {
+      const qty = (cart.get(key) || {}).qty || 0;
+      wrap.innerHTML = '';
+      if (qty <= 0) {
+        const add = document.createElement('button'); add.type = 'button'; add.className = 'mi-add'; add.textContent = t('shopAdd');
+        add.addEventListener('click', () => setQty(key, it, 1));
+        wrap.appendChild(add);
+      } else {
+        const minus = document.createElement('button'); minus.type = 'button'; minus.className = 'mi-step'; minus.textContent = '−';
+        minus.addEventListener('click', () => setQty(key, it, qty - 1));
+        const n = document.createElement('span'); n.className = 'mi-qty'; n.textContent = qty;
+        const plus = document.createElement('button'); plus.type = 'button'; plus.className = 'mi-step'; plus.textContent = '＋';
+        plus.addEventListener('click', () => setQty(key, it, qty + 1));
+        wrap.append(minus, n, plus);
+      }
+    }
+    buyPaint.set(key, paint);
+    paint();
+    return wrap;
+  }
+  function refreshBar() {
+    if (orderBar) { orderBar.remove(); orderBar = null; }
+    const { count, total, unknown } = totals();
+    if (count <= 0) return;
+    const bar = document.createElement('div'); bar.className = 'order-bar';
+    const info = document.createElement('div'); info.className = 'ob-info';
+    const cnt = document.createElement('span'); cnt.className = 'ob-cnt'; cnt.textContent = t('shopItemsN', { n: count });
+    info.appendChild(cnt);
+    if (total > 0) { const tt = document.createElement('span'); tt.className = 'ob-total'; tt.textContent = t('shopTotal') + ' ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : ''); info.appendChild(tt); }
+    const send = document.createElement('button'); send.type = 'button'; send.className = 'ob-send'; send.innerHTML = ICONS.whatsapp + '<span>' + t('shopOrder') + '</span>';
+    send.addEventListener('click', sendOrder);
+    bar.append(info, send);
+    document.body.appendChild(bar);
+    orderBar = bar;
+  }
+  function sendOrder() {
+    if (!cart.size) return;
+    if (!waUrl) { toast(t('shopLoginToOrder')); setTimeout(() => { location.href = 'index.html'; }, 900); return; }
+    const { total, unknown } = totals();
+    const lines = [];
+    for (const it of cart.values()) lines.push('• ' + it.name + ' ×' + it.qty + (it.price ? ' — ' + it.price : ''));
+    let msg = t('shopOrderHi') + '\n' + lines.join('\n');
+    if (total > 0) msg += '\n' + t('shopTotal') + ': ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : '');
+    msg += '\n' + t('shopFrom');
+    window.open(waUrl + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  }
+  return {
+    setWaUrl(u) { waUrl = u; },
+    makeBuy, refreshBar,
+    reset() { cart.clear(); buyPaint.clear(); if (orderBar) { orderBar.remove(); orderBar = null; } }
+  };
+})();
 
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
 document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); });
