@@ -74,7 +74,7 @@ const DICT = {
     shopAdd: '加入', shopOrder: '用 WhatsApp 下单', shopTotal: '合计', shopApprox: '约', shopItemsN: '{n} 样', shopOrderHi: '你好！我想订购：', shopFrom: '— 来自 Foody', shopLoginToOrder: '登录后即可下单 🍜', shopSoldOut: '售罄', shopBadge: '店铺', shopMine: '我的店铺', shopView: '看店铺',
     siteThemeL: '配色主题', siteMenuL: '菜单', siteAddCat: '+ 添加分类', siteAddItem: '+ 添加菜品',
     siteCatNamePh: '分类名（如 招牌）', siteItemNamePh: '菜名', siteItemPricePh: '价格 (如 RM 8)', siteItemDescPh: '描述（选填）',
-    pfSales: '销量', salesDaily: '每日', salesWeekly: '每周', salesMonthly: '每月', salesNoData: '暂无数据',
+    pfSales: '销量', salesDaily: '近1天', salesWeekly: '近7天', salesMonthly: '近30天', salesNoData: '暂无数据', salesOrders: '单',
     webLink: '网站',
     /* Profile 主页 */
     pfPosts: '作品', pfLikes: '获赞',
@@ -177,7 +177,7 @@ const DICT = {
     shopAdd: 'Tambah', shopOrder: 'Pesan via WhatsApp', shopTotal: 'Jumlah', shopApprox: '~', shopItemsN: '{n} item', shopOrderHi: 'Hai! Saya nak pesan:', shopFrom: '— dari Foody', shopLoginToOrder: 'Log masuk untuk pesan 🍜', shopSoldOut: 'Habis', shopBadge: 'Kedai', shopMine: 'Kedai saya', shopView: 'Lihat kedai',
     siteThemeL: 'Tema', siteMenuL: 'Menu', siteAddCat: '+ Tambah kategori', siteAddItem: '+ Tambah item',
     siteCatNamePh: 'Nama kategori', siteItemNamePh: 'Nama hidangan', siteItemPricePh: 'Harga (cth RM 8)', siteItemDescPh: 'Penerangan (pilihan)',
-    pfSales: 'Jualan', salesDaily: 'Harian', salesWeekly: 'Mingguan', salesMonthly: 'Bulanan', salesNoData: 'Belum ada data',
+    pfSales: 'Jualan', salesDaily: '1 hari', salesWeekly: '7 hari', salesMonthly: '30 hari', salesNoData: 'Belum ada data', salesOrders: 'pesanan',
     webLink: 'Tapak web',
     /* Profile */
     pfPosts: 'Kiriman', pfLikes: 'Suka',
@@ -279,7 +279,7 @@ const DICT = {
     shopAdd: 'Add', shopOrder: 'Order via WhatsApp', shopTotal: 'Total', shopApprox: '~', shopItemsN: '{n} item(s)', shopOrderHi: "Hi! I'd like to order:", shopFrom: '— via Foody', shopLoginToOrder: 'Log in to order 🍜', shopSoldOut: 'Sold out', shopBadge: 'Shop', shopMine: 'My shop', shopView: 'View shop',
     siteThemeL: 'Theme', siteMenuL: 'Menu', siteAddCat: '+ Add category', siteAddItem: '+ Add item',
     siteCatNamePh: 'Category name', siteItemNamePh: 'Dish name', siteItemPricePh: 'Price (e.g. RM 8)', siteItemDescPh: 'Description (optional)',
-    pfSales: 'Sales', salesDaily: 'Daily', salesWeekly: 'Weekly', salesMonthly: 'Monthly', salesNoData: 'No data yet',
+    pfSales: 'Sales', salesDaily: '1 day', salesWeekly: '7 days', salesMonthly: '30 days', salesNoData: 'No data yet', salesOrders: 'orders',
     webLink: 'Website',
     /* Profile */
     pfPosts: 'Posts', pfLikes: 'Likes',
@@ -618,6 +618,7 @@ const FoodyCart = (() => {
   const buyPaint = new Map();  // key → 重绘该件加购按钮
   let orderBar = null;
   let waUrl = null;
+  let seller = null;   // 商家用户名，用于记销量
   function parsePrice(s) { const m = String(s || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; }
   function money(n) { return 'RM' + (Math.round(n * 100) / 100); }
   function totals() {
@@ -672,16 +673,17 @@ const FoodyCart = (() => {
   function sendOrder() {
     if (!cart.size) return;
     if (!waUrl) { toast(t('shopLoginToOrder')); setTimeout(() => { location.href = 'index.html'; }, 900); return; }
-    const { total, unknown } = totals();
+    const { count, total, unknown } = totals();
     const lines = [];
     for (const it of cart.values()) lines.push('• ' + it.name + ' ×' + it.qty + (it.price ? ' — ' + it.price : ''));
     let msg = t('shopOrderHi') + '\n' + lines.join('\n');
     if (total > 0) msg += '\n' + t('shopTotal') + ': ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : '');
     msg += '\n' + t('shopFrom');
+    if (seller) api('/api/orders', { method: 'POST', body: { seller, count, total } }).catch(() => {});   // 记一笔销量（下单量）
     window.open(waUrl + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
   }
   return {
-    setWaUrl(u) { waUrl = u; },
+    setWaUrl(u, s) { waUrl = u; seller = s || null; },
     makeBuy, refreshBar,
     reset() { cart.clear(); buyPaint.clear(); if (orderBar) { orderBar.remove(); orderBar = null; } }
   };

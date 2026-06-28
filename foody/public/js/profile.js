@@ -78,7 +78,7 @@
     const u = DATA.user, st = DATA.stats;
     const wrap = $('#pfWrap');
     wrap.innerHTML = '';
-    FoodyCart.setWaUrl(DATA.waUrl); FoodyCart.reset();   // 货架下单购物车（重渲染先清，末尾恢复）
+    FoodyCart.setWaUrl(DATA.waUrl, DATA.user.username); FoodyCart.reset();   // 货架下单购物车（重渲染先清，末尾恢复）
 
     const head = document.createElement('section');
     head.className = 'pf-head';
@@ -217,30 +217,39 @@
       wrap.appendChild(shop);
     }
 
-    // 销量（每日 / 每周 / 每月）—— 暂时只加按钮，未接实际数据
-    const sales = document.createElement('section');
-    sales.className = 'pf-sales';
-    const sh = document.createElement('div');
-    sh.className = 'pf-sales-h';
-    sh.innerHTML = ICONS.chart + '<span>' + esc(t('pfSales')) + '</span>';
-    const seg = document.createElement('div');
-    seg.className = 'pf-sales-seg';
-    [['daily', t('salesDaily')], ['weekly', t('salesWeekly')], ['monthly', t('salesMonthly')]].forEach((p, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'pf-sales-btn' + (i === 0 ? ' on' : '');
-      b.textContent = p[1];
-      b.addEventListener('click', () => {
-        seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
+    // 销量（近 1/7/30 天）：仅卖家本人可见，统计经 WhatsApp 的下单量 + 约总额
+    if (DATA.isMe && (DATA.canSell || DATA.sitePublished)) {
+      const sales = document.createElement('section');
+      sales.className = 'pf-sales';
+      const sh = document.createElement('div');
+      sh.className = 'pf-sales-h';
+      sh.innerHTML = ICONS.chart + '<span>' + esc(t('pfSales')) + '</span>';
+      const seg = document.createElement('div');
+      seg.className = 'pf-sales-seg';
+      const sv = document.createElement('div');
+      sv.className = 'pf-sales-val';
+      let salesData = null, cur = 'daily';
+      function paintVal() {
+        if (!salesData) { sv.textContent = '…'; return; }
+        const d = salesData[cur] || { orders: 0, total: 0 };
+        sv.innerHTML = '<b>' + fmtN(d.orders) + '</b> ' + esc(t('salesOrders')) + (d.total > 0 ? ' <span class="pf-sales-rm">≈ RM' + d.total + '</span>' : '');
+      }
+      [['daily', t('salesDaily')], ['weekly', t('salesWeekly')], ['monthly', t('salesMonthly')]].forEach((p, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pf-sales-btn' + (i === 0 ? ' on' : '');
+        b.textContent = p[1];
+        b.addEventListener('click', () => {
+          seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+          b.classList.add('on'); cur = p[0]; paintVal();
+        });
+        seg.appendChild(b);
       });
-      seg.appendChild(b);
-    });
-    const sv = document.createElement('div');
-    sv.className = 'pf-sales-val';
-    sv.textContent = t('salesNoData');
-    sales.append(sh, seg, sv);
-    wrap.appendChild(sales);
+      sales.append(sh, seg, sv);
+      wrap.appendChild(sales);
+      paintVal();
+      api('/api/me/sales').then(r => { salesData = r; paintVal(); }).catch(() => { sv.textContent = t('salesNoData'); });
+    }
 
     // 作品网格
     if (!DATA.posts.length) {

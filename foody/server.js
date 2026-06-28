@@ -75,11 +75,11 @@ const SEED_TAGS = {
 function loadDb() {
   if (fs.existsSync(DB_FILE)) {
     db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions']) {
+    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions', 'orders']) {
       if (!Array.isArray(db[k])) db[k] = [];
     }
   } else {
-    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [] };
+    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [], orders: [] };
     seed();
   }
   let changed = !fs.existsSync(DB_FILE);
@@ -817,6 +817,31 @@ app.patch('/api/me/shelf', requireAuth, (req, res) => {
     saveDb();
   }
   res.json({ ok: true, shelf: req.user.shelf || [] });
+});
+
+// 销量：顾客经 WhatsApp 下单时记一笔（不碰支付，记的是「下单量」）。需登录，自己点自己不计
+app.post('/api/orders', requireAuth, (req, res) => {
+  const b = req.body || {};
+  const seller = db.users.find(u => u.usernameLower === String(b.seller || '').trim().toLowerCase());
+  if (!seller) return res.status(404).json({ error: 'not_found' });
+  if (seller.id === req.user.id) return res.json({ ok: true });
+  const count = Math.max(1, Math.min(999, parseInt(b.count, 10) || 1));
+  const total = Math.max(0, Math.min(1e7, Number(b.total) || 0));
+  db.orders.push({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), sellerId: seller.id, buyerId: req.user.id, count, total, createdAt: Date.now() });
+  saveDb();
+  res.json({ ok: true });
+});
+
+// 销量汇总（仅本人）：按 近1天/7天/30天 统计下单数 + 约总额
+app.get('/api/me/sales', requireAuth, (req, res) => {
+  const now = Date.now(), DAY = 86400000;
+  const mine = db.orders.filter(o => o.sellerId === req.user.id);
+  const agg = (since) => {
+    let orders = 0, total = 0;
+    for (const o of mine) if ((o.createdAt || 0) >= since) { orders++; total += (o.total || 0); }
+    return { orders, total: Math.round(total * 100) / 100 };
+  };
+  res.json({ daily: agg(now - DAY), weekly: agg(now - 7 * DAY), monthly: agg(now - 30 * DAY) });
 });
 
 /* ---- 帖子 ---- */

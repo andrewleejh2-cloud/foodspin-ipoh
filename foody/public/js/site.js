@@ -41,7 +41,7 @@
   function render() {
     const root = $('#siteRoot');
     root.innerHTML = '';
-    FoodyCart.setWaUrl(D.waUrl); FoodyCart.reset();   // 重渲染先清旧订单条，末尾按购物车恢复
+    FoodyCart.setWaUrl(D.waUrl, D.username); FoodyCart.reset();   // 重渲染先清旧订单条，末尾按购物车恢复
     document.body.className = 'page-site site-theme-' + (D.theme || 'warm');   // 套配色主题
 
     const bar = document.createElement('div');
