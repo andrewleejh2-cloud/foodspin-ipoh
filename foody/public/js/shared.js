@@ -106,6 +106,10 @@ const DICT = {
     admConfirmDelete: '确定删除这条内容？不可恢复。', admConfirmBan: '确定封禁 @{name}？对方将无法登录或发帖（之后可解封）。',
     admDoneDelete: '内容已删除', admDoneBan: '已封禁', admDoneDismiss: '已驳回', admDoneUnban: '已解封', admBannedTag: '已封禁',
     admViewReports: '举报队列', admViewUsers: '用户', admViewProfile: '看主页', admUserPosts: '发帖 {n}', admUserJoined: '注册 {date}', admUserSearchPh: '搜索用户名…', admAdminTag: '管理员', admUsersEmpty: '没有用户', admReportCount: '举报 {n} 次', admAutoHidden: '已自动隐藏',
+    admDoWarn: '警告', admDoMute: '禁言', admDoUnmute: '解禁', admMutedTag: '已禁言',
+    admConfirmWarn: '给 @{name} 发一条警告？', admMuteDaysPrompt: '禁言多少天？（默认 7）',
+    admDoneWarn: '已警告', admDoneMute: '已禁言', admDoneUnmute: '已解禁',
+    warnNotice: '⚠️ 你收到一条管理员警告', warnDismiss: '知道了',
   },
   ms: {
     langName: 'BM',
@@ -209,6 +213,10 @@ const DICT = {
     admConfirmDelete: 'Padam kandungan ini? Tak boleh undo.', admConfirmBan: 'Sekat @{name}? Mereka tak boleh log masuk / post (boleh nyahsekat kemudian).',
     admDoneDelete: 'Kandungan dipadam', admDoneBan: 'Telah disekat', admDoneDismiss: 'Ditolak', admDoneUnban: 'Dinyahsekat', admBannedTag: 'Disekat',
     admViewReports: 'Laporan', admViewUsers: 'Pengguna', admViewProfile: 'Lihat profil', admUserPosts: '{n} pos', admUserJoined: 'Sertai {date}', admUserSearchPh: 'Cari nama…', admAdminTag: 'Admin', admUsersEmpty: 'Tiada pengguna', admReportCount: '{n} laporan', admAutoHidden: 'Auto-sembunyi',
+    admDoWarn: 'Beri amaran', admDoMute: 'Senyapkan', admDoUnmute: 'Nyahsenyap', admMutedTag: 'Disenyap',
+    admConfirmWarn: 'Beri amaran kepada @{name}?', admMuteDaysPrompt: 'Senyap berapa hari? (default 7)',
+    admDoneWarn: 'Amaran dihantar', admDoneMute: 'Disenyapkan', admDoneUnmute: 'Dinyahsenyap',
+    warnNotice: '⚠️ Anda menerima amaran daripada admin', warnDismiss: 'Faham',
   },
   en: {
     langName: 'EN',
@@ -312,6 +320,10 @@ const DICT = {
     admConfirmDelete: 'Delete this content? Cannot be undone.', admConfirmBan: 'Ban @{name}? They cannot log in or post (you can unban later).',
     admDoneDelete: 'Content deleted', admDoneBan: 'Banned', admDoneDismiss: 'Dismissed', admDoneUnban: 'Unbanned', admBannedTag: 'Banned',
     admViewReports: 'Reports', admViewUsers: 'Users', admViewProfile: 'View profile', admUserPosts: '{n} posts', admUserJoined: 'Joined {date}', admUserSearchPh: 'Search username…', admAdminTag: 'Admin', admUsersEmpty: 'No users', admReportCount: '{n} reports', admAutoHidden: 'Auto-hidden',
+    admDoWarn: 'Warn', admDoMute: 'Mute', admDoUnmute: 'Unmute', admMutedTag: 'Muted',
+    admConfirmWarn: 'Send a warning to @{name}?', admMuteDaysPrompt: 'Mute for how many days? (default 7)',
+    admDoneWarn: 'Warned', admDoneMute: 'Muted', admDoneUnmute: 'Unmuted',
+    warnNotice: '⚠️ You have a warning from a moderator', warnDismiss: 'Got it',
   }
 };
 
@@ -362,6 +374,7 @@ function errMsg(code) {
     file_too_big: 'errNet', bad_file: 'errNet', net: 'errNet'
   };
   if (code === 'banned') return LANG === 'zh' ? '你的账号已被限制，暂时无法操作' : LANG === 'ms' ? 'Akaun anda disekat buat masa ini' : 'Your account is restricted';
+  if (code === 'muted') return LANG === 'zh' ? '你被临时禁言了，暂时不能发帖 / 评论 / 私信' : LANG === 'ms' ? 'Anda disenyapkan sementara — tak boleh post / komen / mesej' : "You're temporarily muted — can't post, comment or message";
   if (code === 'bad_email') return LANG === 'zh' ? '邮箱格式不对' : LANG === 'ms' ? 'Format email tak betul' : 'Invalid email address';
   if (code === 'email_taken') return LANG === 'zh' ? '这个邮箱已经注册过账号了' : LANG === 'ms' ? 'Email ini sudah ada akaun' : 'This email already has an account';
   if (code === 'file_too_big') return LANG === 'zh' ? '文件太大了（最多 150MB）' : LANG === 'ms' ? 'Fail terlalu besar (max 150MB)' : 'File too large (max 150MB)';
@@ -555,6 +568,20 @@ function getMe() {
   return _mePromise;
 }
 
+/* 管理员警告提示条：登录用户若有未读警告，顶部显示一条可关闭的提示；关掉即标记已读。 */
+async function maybeShowWarning() {
+  let me; try { me = await getMe(); } catch { return; }
+  if (!me || !me.warning || document.querySelector('.warn-banner')) return;
+  const w = me.warning;
+  const bar = document.createElement('div'); bar.className = 'warn-banner';
+  const txt = document.createElement('span'); txt.className = 'wb-txt';
+  txt.textContent = t('warnNotice') + (w.note && !String(w.note).startsWith('report:') ? '：' + w.note : '');
+  const x = document.createElement('button'); x.className = 'wb-x'; x.textContent = t('warnDismiss');
+  x.addEventListener('click', () => { bar.remove(); api('/api/me/warnings/seen', { method: 'POST' }).catch(() => {}); });
+  bar.append(txt, x);
+  document.body.appendChild(bar);
+}
+
 /* ---------------- 底部导航栏（共享组件，TikTok 式 5 格）----------------
    只在主要 app 页挂载：首页(fyp) / 探索(explore) / 主页(profile)。
    落地页、后台、微站、消息子页不挂（消息/通知是带返回键的子视图）。
@@ -693,7 +720,7 @@ const FoodyCart = (() => {
 })();
 
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
-document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); });
+document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); maybeShowWarning(); });
 
 /* PWA：注册 service worker（让 Foody 可加到主屏、离线兜底）。失败静默，不影响正常使用。 */
 if ('serviceWorker' in navigator) {

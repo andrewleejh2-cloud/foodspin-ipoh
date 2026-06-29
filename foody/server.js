@@ -364,6 +364,34 @@ function banUser(u, ban, reason, byId) {
   }
 }
 
+/* 分级处置（封号之外的中间手段）：
+   - 临时禁言：user.mutedUntil（时间戳）。被禁言者仍可浏览/登录，但不能发帖/评论/私信（自动过期）。
+   - 警告：user.warnings=[{reason,note,by,at,seen}]，用户登录后看到一条未读警告提示。 */
+const MUTE_DAYS = 7;   // 举报队列「禁言」默认天数（管理员在用户列表可自定天数）
+function isMuted(u) { return !!(u && u.mutedUntil && u.mutedUntil > Date.now()); }
+// 禁言守卫中间件：放在 requireAuth 之后，拦截被禁言者的写操作
+function muteGuard(req, res, next) {
+  if (isMuted(req.user)) return res.status(403).json({ error: 'muted', until: req.user.mutedUntil });
+  next();
+}
+// 设/解禁言（days>0 设禁言，≤0 解禁）。返回新的 mutedUntil（0 表示未禁言）
+function setMute(u, days) {
+  if (days > 0) u.mutedUntil = Date.now() + days * 86400000;
+  else delete u.mutedUntil;
+  return u.mutedUntil || 0;
+}
+// 给用户加一条警告（未读）
+function warnUser(u, reason, note, byId) {
+  if (!Array.isArray(u.warnings)) u.warnings = [];
+  u.warnings.push({ reason: String(reason || 'other').slice(0, 30), note: String(note || '').trim().slice(0, 200), by: byId || null, at: Date.now(), seen: false });
+}
+// 最新一条未读警告（给 /api/me 用）
+function latestUnseenWarning(u) {
+  const ws = Array.isArray(u && u.warnings) ? u.warnings : [];
+  for (let i = ws.length - 1; i >= 0; i--) if (!ws[i].seen) return { reason: ws[i].reason, note: ws[i].note, at: ws[i].at };
+  return null;
+}
+
 // 管理操作审计：记录谁在何时对谁做了什么（删除/封号/驳回），只留最近 1000 条，出纠纷时可查
 function logMod(adminId, action, detail) {
   if (!Array.isArray(db.modActions)) db.modActions = [];
@@ -676,10 +704,16 @@ app.post('/api/logout', (req, res) => {
 
 app.get('/api/me', (req, res) => {
   const user = currentUser(req);
-  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [] });
+  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [], muted: isMuted(user) ? user.mutedUntil : 0, warning: user ? latestUnseenWarning(user) : null });
 });
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
+// 把自己的警告全部标记为已读（看过提示条后调用）
+app.post('/api/me/warnings/seen', requireAuth, (req, res) => {
+  if (Array.isArray(req.user.warnings)) { for (const w of req.user.warnings) w.seen = true; saveDb(); }
+  res.json({ ok: true });
+});
+
 app.patch('/api/me', requireAuth, (req, res) => {
   const { bio, username, note } = req.body || {};
   if (typeof username === 'string') {
@@ -1086,7 +1120,7 @@ app.get('/api/users/:username/following', (req, res) => {
   res.json({ users: userListJson(ids, viewer) });
 });
 
-app.post('/api/posts', requireAuth, postLimit, (req, res) => {
+app.post('/api/posts', requireAuth, postLimit, muteGuard, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       const code = err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file';
@@ -1199,7 +1233,7 @@ app.get('/api/posts/:id/comments', (req, res) => {
   res.json({ comments });
 });
 
-app.post('/api/posts/:id/comments', requireAuth, commentLimit, (req, res) => {
+app.post('/api/posts/:id/comments', requireAuth, commentLimit, muteGuard, (req, res) => {
   const post = db.posts.find(p => p.id === req.params.id);
   if (!post) return res.status(404).json({ error: 'not_found' });
   const text = String((req.body || {}).text || '').trim().slice(0, 300);
@@ -1232,7 +1266,7 @@ function dmBetween(aId, bId) {
 }
 
 // 发私信：POST /api/messages { to: 对方用户名, text }
-app.post('/api/messages', requireAuth, messageLimit, (req, res) => {
+app.post('/api/messages', requireAuth, messageLimit, muteGuard, (req, res) => {
   const { to, text } = req.body || {};
   const target = db.users.find(u => u.usernameLower === String(to || '').trim().toLowerCase());
   if (!target) return res.status(404).json({ error: 'not_found' });
@@ -1455,7 +1489,9 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
       createdAt: u.createdAt || 0,
       postCount: postCount.get(u.id) || 0,
       banned: !!u.banned,
-      isAdmin: !!u.isAdmin
+      isAdmin: !!u.isAdmin,
+      mutedUntil: isMuted(u) ? u.mutedUntil : 0,
+      warnings: Array.isArray(u.warnings) ? u.warnings.length : 0
     }));
   res.json({ users });
 });
@@ -1486,6 +1522,7 @@ app.get('/api/admin/reports', requireAdmin, (req, res) => {
       target, exists, reportCount, autoHidden,
       ownerUsername: owner ? owner.username : null,
       ownerBanned: owner ? !!owner.banned : false,
+      ownerMuted: owner ? isMuted(owner) : false,
       ownerIsAdmin: owner ? !!owner.isAdmin : false
     };
   });
@@ -1527,6 +1564,13 @@ app.post('/api/admin/reports/:id', requireAdmin, (req, res) => {
     if (owner.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
     banUser(owner, true, 'report:' + r.reason, req.user.id);
     r.action = 'ban'; r.status = 'resolved';
+  } else if (action === 'mute' || action === 'warn') {
+    const owner = db.users.find(u => u.id === r.ownerId);
+    if (!owner) return res.status(404).json({ error: 'not_found' });
+    if (owner.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
+    if (action === 'mute') setMute(owner, MUTE_DAYS);
+    else warnUser(owner, r.reason, 'report:' + r.reason, req.user.id);
+    r.action = action; r.status = 'resolved';
   } else {
     return res.status(400).json({ error: 'bad_action' });
   }
@@ -1546,6 +1590,29 @@ app.post('/api/admin/users/:username/ban', requireAdmin, (req, res) => {
   logMod(req.user.id, ban ? 'ban' : 'unban', { user: u.username });
   saveDb();
   res.json({ ok: true, banned: !!u.banned });
+});
+
+// 临时禁言 / 解禁：POST /api/admin/users/:username/mute { days }  （days>0 禁言、≤0 解禁）
+app.post('/api/admin/users/:username/mute', requireAdmin, (req, res) => {
+  const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!u) return res.status(404).json({ error: 'not_found' });
+  if (u.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
+  const days = Math.max(0, Math.min(365, parseInt((req.body || {}).days, 10) || 0));
+  const mutedUntil = setMute(u, days);
+  logMod(req.user.id, days > 0 ? 'mute' : 'unmute', { user: u.username, days });
+  saveDb();
+  res.json({ ok: true, mutedUntil });
+});
+
+// 警告：POST /api/admin/users/:username/warn { reason, note }
+app.post('/api/admin/users/:username/warn', requireAdmin, (req, res) => {
+  const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!u) return res.status(404).json({ error: 'not_found' });
+  if (u.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
+  warnUser(u, (req.body || {}).reason, (req.body || {}).note, req.user.id);
+  logMod(req.user.id, 'warn', { user: u.username });
+  saveDb();
+  res.json({ ok: true });
 });
 
 /* ---- 静态文件 ---- */
