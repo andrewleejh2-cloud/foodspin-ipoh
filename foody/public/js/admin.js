@@ -106,6 +106,18 @@
     ago.className = 'adm-ago';
     ago.textContent = fmtAgo(r.createdAt);
     head.append(badge, reason, ago);
+    if (r.reportCount > 1) {   // 被举报多次 → 热度徽章
+      const rc = document.createElement('span');
+      rc.className = 'adm-rcount';
+      rc.textContent = t('admReportCount', { n: r.reportCount });
+      head.appendChild(rc);
+    }
+    if (r.autoHidden) {        // 已达阈值自动暂隐
+      const ah = document.createElement('span');
+      ah.className = 'adm-autohidden';
+      ah.textContent = '🙈 ' + t('admAutoHidden');
+      head.appendChild(ah);
+    }
     el.appendChild(head);
 
     // 目标内容快照

@@ -105,7 +105,7 @@ const DICT = {
     admDoDelete: '删除内容', admDoBan: '封禁作者', admDoDismiss: '驳回', admDoUnban: '解封作者',
     admConfirmDelete: '确定删除这条内容？不可恢复。', admConfirmBan: '确定封禁 @{name}？对方将无法登录或发帖（之后可解封）。',
     admDoneDelete: '内容已删除', admDoneBan: '已封禁', admDoneDismiss: '已驳回', admDoneUnban: '已解封', admBannedTag: '已封禁',
-    admViewReports: '举报队列', admViewUsers: '用户', admViewProfile: '看主页', admUserPosts: '发帖 {n}', admUserJoined: '注册 {date}', admUserSearchPh: '搜索用户名…', admAdminTag: '管理员', admUsersEmpty: '没有用户',
+    admViewReports: '举报队列', admViewUsers: '用户', admViewProfile: '看主页', admUserPosts: '发帖 {n}', admUserJoined: '注册 {date}', admUserSearchPh: '搜索用户名…', admAdminTag: '管理员', admUsersEmpty: '没有用户', admReportCount: '举报 {n} 次', admAutoHidden: '已自动隐藏',
   },
   ms: {
     langName: 'BM',
@@ -208,7 +208,7 @@ const DICT = {
     admDoDelete: 'Padam kandungan', admDoBan: 'Sekat penyiar', admDoDismiss: 'Tolak', admDoUnban: 'Nyahsekat',
     admConfirmDelete: 'Padam kandungan ini? Tak boleh undo.', admConfirmBan: 'Sekat @{name}? Mereka tak boleh log masuk / post (boleh nyahsekat kemudian).',
     admDoneDelete: 'Kandungan dipadam', admDoneBan: 'Telah disekat', admDoneDismiss: 'Ditolak', admDoneUnban: 'Dinyahsekat', admBannedTag: 'Disekat',
-    admViewReports: 'Laporan', admViewUsers: 'Pengguna', admViewProfile: 'Lihat profil', admUserPosts: '{n} pos', admUserJoined: 'Sertai {date}', admUserSearchPh: 'Cari nama…', admAdminTag: 'Admin', admUsersEmpty: 'Tiada pengguna',
+    admViewReports: 'Laporan', admViewUsers: 'Pengguna', admViewProfile: 'Lihat profil', admUserPosts: '{n} pos', admUserJoined: 'Sertai {date}', admUserSearchPh: 'Cari nama…', admAdminTag: 'Admin', admUsersEmpty: 'Tiada pengguna', admReportCount: '{n} laporan', admAutoHidden: 'Auto-sembunyi',
   },
   en: {
     langName: 'EN',
@@ -311,7 +311,7 @@ const DICT = {
     admDoDelete: 'Delete content', admDoBan: 'Ban author', admDoDismiss: 'Dismiss', admDoUnban: 'Unban author',
     admConfirmDelete: 'Delete this content? Cannot be undone.', admConfirmBan: 'Ban @{name}? They cannot log in or post (you can unban later).',
     admDoneDelete: 'Content deleted', admDoneBan: 'Banned', admDoneDismiss: 'Dismissed', admDoneUnban: 'Unbanned', admBannedTag: 'Banned',
-    admViewReports: 'Reports', admViewUsers: 'Users', admViewProfile: 'View profile', admUserPosts: '{n} posts', admUserJoined: 'Joined {date}', admUserSearchPh: 'Search username…', admAdminTag: 'Admin', admUsersEmpty: 'No users',
+    admViewReports: 'Reports', admViewUsers: 'Users', admViewProfile: 'View profile', admUserPosts: '{n} posts', admUserJoined: 'Joined {date}', admUserSearchPh: 'Search username…', admAdminTag: 'Admin', admUsersEmpty: 'No users', admReportCount: '{n} reports', admAutoHidden: 'Auto-hidden',
   }
 };
 

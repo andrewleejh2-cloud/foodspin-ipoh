@@ -290,7 +290,7 @@ function postJson(p, viewer) {
   const author = db.users.find(u => u.id === p.userId);
   const likes = db.likes.filter(l => l.postId === p.id);
   const saves = db.saves.filter(s => s.postId === p.id);
-  const commentCount = db.comments.filter(c => c.postId === p.id).length;
+  const commentCount = db.comments.filter(c => c.postId === p.id && !c.hidden).length;
   return {
     id: p.id,
     username: author ? author.username : '???',
@@ -386,6 +386,20 @@ function autoFlag(type, targetId, ownerId, text) {
     reporterId: 'system', reason: 'auto', note: 'matched: ' + hit,
     status: 'open', action: null, createdAt: Date.now(), resolvedAt: null, resolvedBy: null
   });
+}
+
+/* 多人举报自动隐藏：同一帖/评论累计被这么多「不同真实用户」举报（仍未处理的 open 举报，
+   系统敏感词标记不计）就自动暂隐，从 feed/搜索/探索/主页/地点/评论区消失，等管理员复核。
+   管理员驳回 → 取消隐藏；删除/封号走原逻辑。阈值随时可调。 */
+const AUTO_HIDE_THRESHOLD = 5;
+function maybeAutoHide(type, targetId) {
+  const n = db.reports.filter(r =>
+    r.type === type && r.targetId === targetId && r.status === 'open' && r.reporterId !== 'system'
+  ).length;
+  if (n < AUTO_HIDE_THRESHOLD) return;
+  const obj = type === 'post' ? db.posts.find(p => p.id === targetId)
+            : type === 'comment' ? db.comments.find(c => c.id === targetId) : null;
+  if (obj && !obj.hidden) { obj.hidden = true; obj.hiddenAt = Date.now(); }
 }
 
 /* ---------------- 上传设置 ---------------- */
@@ -862,6 +876,7 @@ app.get('/api/posts', (req, res) => {
   // 被封禁用户的内容从 feed 隐藏（解封后自动恢复）
   const bannedIds = new Set(db.users.filter(u => u.banned).map(u => u.id));
   if (bannedIds.size) posts = posts.filter(p => !bannedIds.has(p.userId));
+  posts = posts.filter(p => !p.hidden);   // 多人举报自动隐藏的内容不进 feed
   if (state && STATES.includes(state)) posts = posts.filter(p => p.state === state);
   if (savedOnly) {
     const savedIds = new Set(db.saves.filter(s => s.userId === viewer.id).map(s => s.postId));
@@ -938,7 +953,7 @@ app.get('/api/search', (req, res) => {
     }));
 
   const posts = [...db.posts]
-    .filter(p => !bannedIds.has(p.userId))
+    .filter(p => !bannedIds.has(p.userId) && !p.hidden)
     .sort((a, b) => b.createdAt - a.createdAt)
     .filter(p => matchQ(p, q))
     .slice(0, 18)
@@ -965,7 +980,7 @@ app.get('/api/explore', (req, res) => {
   const stateCount = new Map(), placeCount = new Map(), tagCount = new Map();
   let total = 0;
   for (const p of db.posts) {
-    if (bannedIds.has(p.userId)) continue;
+    if (bannedIds.has(p.userId) || p.hidden) continue;
     total++;
     if (p.state) stateCount.set(p.state, (stateCount.get(p.state) || 0) + 1);
     const place = (p.place || '').trim();
@@ -979,7 +994,7 @@ app.get('/api/explore', (req, res) => {
   const likeCountByPost = new Map();
   for (const l of db.likes) likeCountByPost.set(l.postId, (likeCountByPost.get(l.postId) || 0) + 1);
   const posts = db.posts
-    .filter(p => !bannedIds.has(p.userId))
+    .filter(p => !bannedIds.has(p.userId) && !p.hidden)
     .map(p => ({ p, likes: likeCountByPost.get(p.id) || 0 }))
     .sort((a, b) => b.likes - a.likes || b.p.createdAt - a.p.createdAt)
     .slice(0, 30)
@@ -999,7 +1014,7 @@ app.get('/api/users/:username', (req, res) => {
   if (!author) return res.status(404).json({ error: 'not_found' });
 
   const myPosts = db.posts
-    .filter(p => p.userId === author.id)
+    .filter(p => p.userId === author.id && !p.hidden)
     .sort((a, b) => b.createdAt - a.createdAt);
   const postIds = new Set(myPosts.map(p => p.id));
   const likeTotal = db.likes.reduce((n, l) => n + (postIds.has(l.postId) ? 1 : 0), 0);
@@ -1168,7 +1183,7 @@ app.get('/api/posts/:id/comments', (req, res) => {
   const post = db.posts.find(p => p.id === req.params.id);
   if (!post) return res.status(404).json({ error: 'not_found' });
   const comments = db.comments
-    .filter(c => c.postId === post.id)
+    .filter(c => c.postId === post.id && !c.hidden)
     .sort((a, b) => a.createdAt - b.createdAt)
     .map(c => {
       const u = db.users.find(x => x.id === c.userId);
@@ -1195,7 +1210,7 @@ app.post('/api/posts/:id/comments', requireAuth, commentLimit, (req, res) => {
   saveDb();
   res.json({
     comment: { id: comment.id, username: req.user.username, avatar: req.user.avatar || null, text, createdAt: comment.createdAt, mine: true },
-    commentCount: db.comments.filter(c => c.postId === post.id).length
+    commentCount: db.comments.filter(c => c.postId === post.id && !c.hidden).length
   });
 });
 
@@ -1280,7 +1295,7 @@ app.get('/api/places/:place', (req, res) => {
   const key = String(req.params.place || '').trim().toLowerCase();
   if (!key) return res.status(404).json({ error: 'not_found' });
   const posts = db.posts
-    .filter(p => (p.place || '').trim().toLowerCase() === key)
+    .filter(p => (p.place || '').trim().toLowerCase() === key && !p.hidden)
     .sort((a, b) => b.createdAt - a.createdAt);
   if (!posts.length) return res.status(404).json({ error: 'not_found' });
   const name = posts[0].place;
@@ -1408,6 +1423,7 @@ app.post('/api/reports', requireAuth, reportLimit, (req, res) => {
     note: String((req.body || {}).note || '').trim().slice(0, 200),
     status: 'open', action: null, createdAt: Date.now(), resolvedAt: null, resolvedBy: null
   });
+  if (type === 'post' || type === 'comment') maybeAutoHide(type, targetId); // 满阈值自动暂隐
   saveDb();
   res.json({ ok: true });
 });
@@ -1451,21 +1467,23 @@ app.get('/api/admin/reports', requireAdmin, (req, res) => {
   if (status !== 'all') list = list.filter(r => r.status === status);
   const reports = list.slice(0, 200).map(r => {
     const reporter = r.reporterId === 'system' ? 'system' : ((db.users.find(u => u.id === r.reporterId) || {}).username || '???');
-    let target = null, exists = false, owner = null;
+    let target = null, exists = false, owner = null, autoHidden = false;
     if (r.type === 'post') {
       const p = db.posts.find(x => x.id === r.targetId);
-      if (p) { exists = true; owner = db.users.find(u => u.id === p.userId); target = { caption: p.caption || '', thumb: p.mediaUrl, mediaType: p.mediaType }; }
+      if (p) { exists = true; owner = db.users.find(u => u.id === p.userId); autoHidden = !!p.hidden; target = { caption: p.caption || '', thumb: p.mediaUrl, mediaType: p.mediaType }; }
     } else if (r.type === 'comment') {
       const c = db.comments.find(x => x.id === r.targetId);
-      if (c) { exists = true; owner = db.users.find(u => u.id === c.userId); target = { text: c.text, postId: c.postId }; }
+      if (c) { exists = true; owner = db.users.find(u => u.id === c.userId); autoHidden = !!c.hidden; target = { text: c.text, postId: c.postId }; }
     } else {
       const u = db.users.find(x => x.id === r.targetId);
       if (u) { exists = true; owner = u; target = { avatar: u.avatar || null, bio: u.bio || '' }; }
     }
+    // 该目标被举报的总次数（含各状态），让管理员看到热度
+    const reportCount = db.reports.reduce((n, x) => n + (x.type === r.type && x.targetId === r.targetId ? 1 : 0), 0);
     return {
       id: r.id, type: r.type, targetId: r.targetId, reason: r.reason, note: r.note || '',
       status: r.status, action: r.action || null, createdAt: r.createdAt, reporter,
-      target, exists,
+      target, exists, reportCount, autoHidden,
       ownerUsername: owner ? owner.username : null,
       ownerBanned: owner ? !!owner.banned : false,
       ownerIsAdmin: owner ? !!owner.isAdmin : false
@@ -1482,6 +1500,16 @@ app.post('/api/admin/reports/:id', requireAdmin, (req, res) => {
 
   if (action === 'dismiss') {
     r.status = 'dismissed';
+    // 内容判定没问题：取消自动隐藏，并把该目标其它未处理举报一并结案
+    if (r.type === 'post' || r.type === 'comment') {
+      const obj = r.type === 'post' ? db.posts.find(p => p.id === r.targetId) : db.comments.find(c => c.id === r.targetId);
+      if (obj && obj.hidden) { obj.hidden = false; delete obj.hiddenAt; }
+      for (const o of db.reports) {
+        if (o.status === 'open' && o.type === r.type && o.targetId === r.targetId) {
+          o.status = 'dismissed'; o.resolvedAt = Date.now(); o.resolvedBy = req.user.id;
+        }
+      }
+    }
   } else if (action === 'delete') {
     if (r.type === 'post') removePostById(r.targetId);
     else if (r.type === 'comment') removeCommentById(r.targetId);

@@ -1695,3 +1695,7 @@ body:not(.page-fyp) main { animation: pageRise .32s ease both; }
   .adm-user{flex-wrap:wrap}
   .adm-user-acts{width:100%;justify-content:flex-end}
 }
+
+/* 举报卡片：被举报次数 + 自动隐藏标记 */
+.adm-rcount{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:#C0492B;background:rgba(217,106,59,.14)}
+.adm-autohidden{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff;background:#C0392B}
