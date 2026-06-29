@@ -4,7 +4,8 @@
   "description": "Foody — 大马美食分享平台 (Beta)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "express": "^4.21.2",
