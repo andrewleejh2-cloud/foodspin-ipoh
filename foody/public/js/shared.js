@@ -30,6 +30,10 @@ const DICT = {
     errTooMany: '尝试太多次了，休息 10 分钟再来',
     errNet: '网络出了点问题，再试一次',
     errAuth: '请先登录',
+    pwChangeTitle: '修改密码', pwOldPh: '当前密码', pwNewPh: '新密码（至少 6 位）', pwChanged: '密码已修改 ✓', pwForgot: '忘记密码？',
+    pwrTitle: '找回密码', pwrStep1Hint: '输入注册时的邮箱和电话，6 位验证码会发到你的邮箱', pwrEmailPh: '注册邮箱', pwrPhonePh: '注册电话',
+    pwrSendCode: '发送验证码', pwrSent: '若账号匹配，验证码已发到邮箱，请查收后填写', pwrCodePh: '6 位验证码', pwrNewPwPh: '新密码（至少 6 位）',
+    pwrReset: '重置密码', pwrResend: '重新发送', pwrDone: '密码已重置，请用新密码登录', pwrNeedFields: '请填邮箱和电话',
     /* FYP */
     fypTitle: 'FYP', home: '首页',
     upload: '发布', uploadTitle: '分享美食 🍜',
@@ -139,6 +143,10 @@ const DICT = {
     errTooMany: 'Terlalu banyak percubaan, rehat 10 minit dulu',
     errNet: 'Ada masalah sambungan, cuba lagi',
     errAuth: 'Sila log masuk dulu',
+    pwChangeTitle: 'Tukar kata laluan', pwOldPh: 'Kata laluan semasa', pwNewPh: 'Kata laluan baru (min 6 aksara)', pwChanged: 'Kata laluan ditukar ✓', pwForgot: 'Lupa kata laluan?',
+    pwrTitle: 'Set semula kata laluan', pwrStep1Hint: 'Masukkan email & telefon pendaftaran; kod 6 digit akan dihantar ke email anda', pwrEmailPh: 'Email pendaftaran', pwrPhonePh: 'Telefon pendaftaran',
+    pwrSendCode: 'Hantar kod', pwrSent: 'Jika akaun sepadan, kod telah dihantar ke email — sila semak', pwrCodePh: 'Kod 6 digit', pwrNewPwPh: 'Kata laluan baru (min 6 aksara)',
+    pwrReset: 'Set semula', pwrResend: 'Hantar semula', pwrDone: 'Kata laluan ditetapkan semula — sila log masuk', pwrNeedFields: 'Isi email dan telefon',
     fypTitle: 'FYP', home: 'Utama',
     upload: 'Post', uploadTitle: 'Kongsi makanan 🍜',
     chooseFile: 'Tekan untuk pilih gambar atau video', changeFile: 'Tukar fail',
@@ -246,6 +254,10 @@ const DICT = {
     errTooMany: 'Too many attempts — take a 10 min break',
     errNet: 'Network hiccup — try again',
     errAuth: 'Please log in first',
+    pwChangeTitle: 'Change password', pwOldPh: 'Current password', pwNewPh: 'New password (min 6 chars)', pwChanged: 'Password changed ✓', pwForgot: 'Forgot password?',
+    pwrTitle: 'Reset password', pwrStep1Hint: 'Enter your registered email & phone; a 6-digit code goes to your email', pwrEmailPh: 'Registered email', pwrPhonePh: 'Registered phone',
+    pwrSendCode: 'Send code', pwrSent: 'If the account matches, a code was sent to the email — please check', pwrCodePh: '6-digit code', pwrNewPwPh: 'New password (min 6 chars)',
+    pwrReset: 'Reset password', pwrResend: 'Resend', pwrDone: 'Password reset — please log in', pwrNeedFields: 'Enter email and phone',
     fypTitle: 'FYP', home: 'Home',
     upload: 'Post', uploadTitle: 'Share some food 🍜',
     chooseFile: 'Tap to choose a photo or video', changeFile: 'Change file',
@@ -375,6 +387,10 @@ function errMsg(code) {
   };
   if (code === 'banned') return LANG === 'zh' ? '你的账号已被限制，暂时无法操作' : LANG === 'ms' ? 'Akaun anda disekat buat masa ini' : 'Your account is restricted';
   if (code === 'muted') return LANG === 'zh' ? '你被临时禁言了，暂时不能发帖 / 评论 / 私信' : LANG === 'ms' ? 'Anda disenyapkan sementara — tak boleh post / komen / mesej' : "You're temporarily muted — can't post, comment or message";
+  if (code === 'wrong_password') return LANG === 'zh' ? '当前密码不对' : LANG === 'ms' ? 'Kata laluan semasa salah' : 'Current password is wrong';
+  if (code === 'bad_code') return LANG === 'zh' ? '验证码不对' : LANG === 'ms' ? 'Kod salah' : 'Wrong code';
+  if (code === 'expired') return LANG === 'zh' ? '验证码已过期，请重新获取' : LANG === 'ms' ? 'Kod tamat tempoh — minta semula' : 'Code expired — request a new one';
+  if (code === 'no_request') return LANG === 'zh' ? '请先获取验证码' : LANG === 'ms' ? 'Sila minta kod dahulu' : 'Request a code first';
   if (code === 'bad_email') return LANG === 'zh' ? '邮箱格式不对' : LANG === 'ms' ? 'Format email tak betul' : 'Invalid email address';
   if (code === 'email_taken') return LANG === 'zh' ? '这个邮箱已经注册过账号了' : LANG === 'ms' ? 'Email ini sudah ada akaun' : 'This email already has an account';
   if (code === 'file_too_big') return LANG === 'zh' ? '文件太大了（最多 150MB）' : LANG === 'ms' ? 'Fail terlalu besar (max 150MB)' : 'File too large (max 150MB)';
@@ -559,6 +575,80 @@ async function submitReport() {
   } finally {
     btn.disabled = false;
   }
+}
+
+/* ---------------- 修改密码 / 找回密码 弹窗（通用，任意页面引入 shared.js 即可调用）---------------- */
+function ensurePwDom() {
+  if (document.getElementById('pwOverlay')) return;
+  const ov = document.createElement('div');
+  ov.className = 'overlay'; ov.id = 'pwOverlay';
+  ov.innerHTML = '<div class="modal pw-modal"><h3><span id="pwTitle"></span><button class="x" id="pwClose"></button></h3><div id="pwBody"></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#pwClose').innerHTML = ICONS.close;
+  ov.querySelector('#pwClose').addEventListener('click', closePw);
+  ov.addEventListener('click', (e) => { if (e.target === ov) closePw(); });
+}
+function closePw() { const ov = document.getElementById('pwOverlay'); if (ov) ov.classList.remove('show'); }
+function pwField(id, ph, type) { return '<div class="field"><input id="' + id + '" type="' + (type || 'text') + '" placeholder="' + ph + '" autocomplete="off"></div>'; }
+
+// 修改密码（登录态）
+function openChangePassword() {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('pwChangeTitle');
+  ov.querySelector('#pwBody').innerHTML =
+    pwField('pwOld', t('pwOldPh'), 'password') + pwField('pwNew', t('pwNewPh'), 'password') +
+    '<div class="pw-forgot"><a id="pwForgotLink">' + t('pwForgot') + '</a></div>' +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="pwSubmit">' + t('pwChangeTitle') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#pwForgotLink').addEventListener('click', () => { closePw(); openPasswordReset(); });
+  ov.querySelector('#pwSubmit').addEventListener('click', async () => {
+    const btn = ov.querySelector('#pwSubmit'); btn.disabled = true;
+    try {
+      await api('/api/me/password', { method: 'POST', body: { oldPassword: ov.querySelector('#pwOld').value, newPassword: ov.querySelector('#pwNew').value } });
+      toast(t('pwChanged')); closePw();
+    } catch (e) { toast(errMsg(e.code)); } finally { btn.disabled = false; }
+  });
+  ov.classList.add('show');
+}
+
+// 找回密码（两步：邮箱+电话 → 收码填新密码）
+function openPasswordReset(prefillEmail) {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('pwrTitle');
+  pwResetStep1(ov, prefillEmail || '');
+  ov.classList.add('show');
+}
+function pwResetStep1(ov, email) {
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('pwrStep1Hint') + '</p>' + pwField('pwrEmail', t('pwrEmailPh'), 'email') + pwField('pwrPhone', t('pwrPhonePh'), 'tel') +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="pwrSend">' + t('pwrSendCode') + '</button></div>';
+  ov.querySelector('#pwrEmail').value = email;
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#pwrSend').addEventListener('click', async () => {
+    const em = ov.querySelector('#pwrEmail').value.trim(), ph = ov.querySelector('#pwrPhone').value.trim();
+    if (!em || !ph) { toast(t('pwrNeedFields')); return; }
+    const btn = ov.querySelector('#pwrSend'); btn.disabled = true;
+    try { await api('/api/auth/reset/request', { method: 'POST', body: { email: em, phone: ph } }); toast(t('pwrSent')); pwResetStep2(ov, em, ph); }
+    catch (e) { toast(errMsg(e.code)); } finally { btn.disabled = false; }
+  });
+}
+function pwResetStep2(ov, email, phone) {
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('pwrSent') + '</p>' + pwField('pwrCode', t('pwrCodePh'), 'text') + pwField('pwrNew', t('pwrNewPwPh'), 'password') +
+    '<div class="pw-forgot"><a id="pwrResend">' + t('pwrResend') + '</a></div>' +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="pwrReset">' + t('pwrReset') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#pwrResend').addEventListener('click', () => pwResetStep1(ov, email));
+  ov.querySelector('#pwrReset').addEventListener('click', async () => {
+    const btn = ov.querySelector('#pwrReset'); btn.disabled = true;
+    try {
+      await api('/api/auth/reset/confirm', { method: 'POST', body: { email, phone, code: ov.querySelector('#pwrCode').value.trim(), newPassword: ov.querySelector('#pwrNew').value } });
+      toast(t('pwrDone')); closePw();
+      setTimeout(() => { if (!location.pathname.endsWith('index.html') && location.pathname !== '/') location.href = 'index.html'; }, 700);
+    } catch (e) { toast(errMsg(e.code)); } finally { btn.disabled = false; }
+  });
 }
 
 /* ---------------- 当前用户（缓存：整页只请求一次 /api/me，多处复用）---------------- */

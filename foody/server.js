@@ -186,6 +186,19 @@ function createSession(res, userId) {
   setSessionCookie(res, token, SESSION_DAYS * 86400);
 }
 
+/* ---- 找回密码（邮箱+电话核身 → 6 位验证码 → 重置）---- */
+const RESET_TTL = 10 * 60 * 1000;     // 验证码有效期 10 分钟
+const RESET_MAX_ATTEMPTS = 5;          // 同一码最多试错 5 次
+function genCode() { return String(crypto.randomInt(0, 1000000)).padStart(6, '0'); }
+function hashCode(userId, code) { return crypto.createHash('sha256').update(userId + ':' + String(code)).digest('hex'); }
+// 必须邮箱（不区分大小写）和电话（归一化）都匹配同一个账号
+function findByEmailPhone(email, phone) {
+  const e = String(email || '').trim().toLowerCase();
+  const ph = normPhone(phone);
+  if (!e || !ph) return null;
+  return db.users.find(u => (u.email || '').toLowerCase() === e && u.phoneWa === ph) || null;
+}
+
 function currentUser(req) {
   const token = getCookie(req, 'foody_session');
   if (!token) return null;
@@ -526,6 +539,27 @@ async function compressAvatar(filename) {
 /* ---------------- App ---------------- */
 const app = express();
 app.disable('x-powered-by');
+
+/* 发信器：配了 FOODY_BREVO_KEY 就用 Brevo 邮件 API（免费档、fetch 直调、无新依赖）；
+   没配 → 开发模式只打日志（找回密码逻辑照常可用、可测，真发邮件等你设 key）。挂 app.locals 便于测试注入。 */
+function makeMailer() {
+  const key = process.env.FOODY_BREVO_KEY;
+  const from = process.env.FOODY_MAIL_FROM || 'no-reply@foody.local';
+  if (key) {
+    return {
+      configured: true,
+      async send({ to, subject, text }) {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'api-key': key, 'content-type': 'application/json', accept: 'application/json' },
+          body: JSON.stringify({ sender: { email: from, name: 'Foody' }, to: [{ email: to }], subject, textContent: text })
+        });
+      }
+    };
+  }
+  return { configured: false, async send({ to, subject, text }) { console.log('[mail:dev] →', to, '|', subject, '\n', text); } };
+}
+app.locals.mailer = makeMailer();
 app.use(express.json({ limit: '1mb' }));
 
 /* 安全响应头（手写，不引入额外依赖）。CSP 允许 Google Fonts 与同源资源。 */
@@ -702,12 +736,70 @@ app.post('/api/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---- 找回密码（登出态）---- */
+const resetReqLimit = rateLimit({ windowMs: 600000, max: 10 });     // 每 IP 每 10 分钟最多请求 10 次验证码（防刷发信；真正发信还要邮箱+电话都匹配）
+const resetConfirmLimit = rateLimit({ windowMs: 600000, max: 30 }); // 提交验证码限流
+
+// 第一步：邮箱+电话核身 → 生成 6 位码并发到邮箱。永远返回成功，不泄露账号是否存在。
+app.post('/api/auth/reset/request', resetReqLimit, async (req, res) => {
+  const { email, phone } = req.body || {};
+  const u = findByEmailPhone(email, phone);
+  if (u && !u.banned) {
+    const code = genCode();
+    u.reset = { codeHash: hashCode(u.id, code), expires: Date.now() + RESET_TTL, attempts: 0 };
+    saveDb();
+    try {
+      await req.app.locals.mailer.send({
+        to: u.email,
+        subject: 'Foody 密码重置验证码',
+        text: `你好 @${u.username}，\n你的 Foody 密码重置验证码是：${code}\n10 分钟内有效。如果不是你本人操作，请忽略此邮件。`
+      });
+    } catch (e) { console.error('[reset] 发码失败:', e.message); }
+  }
+  res.json({ ok: true });
+});
+
+// 第二步：核验证码 → 重置密码（重置后该用户所有会话失效）
+app.post('/api/auth/reset/confirm', resetConfirmLimit, (req, res) => {
+  const { email, phone, code, newPassword } = req.body || {};
+  const u = findByEmailPhone(email, phone);
+  if (!u || !u.reset) return res.status(400).json({ error: 'no_request' });
+  if (Date.now() > u.reset.expires) { delete u.reset; saveDb(); return res.status(400).json({ error: 'expired' }); }
+  if (u.reset.attempts >= RESET_MAX_ATTEMPTS) { delete u.reset; saveDb(); return res.status(400).json({ error: 'too_many' }); }
+  if (hashCode(u.id, code) !== u.reset.codeHash) {
+    u.reset.attempts++; saveDb();
+    return res.status(400).json({ error: 'bad_code' });
+  }
+  // 码对了；再校验新密码（不合法不消耗码，可用同一码重试）
+  if (String(newPassword || '').length < 6) return res.status(400).json({ error: 'bad_password' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  u.salt = salt; u.passHash = hashPassword(String(newPassword), salt);
+  delete u.reset;
+  db.sessions = db.sessions.filter(s => s.userId !== u.id);   // 重置后所有会话失效
+  saveDb();
+  res.json({ ok: true });
+});
+
 app.get('/api/me', (req, res) => {
   const user = currentUser(req);
   res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [], muted: isMuted(user) ? user.mutedUntil : 0, warning: user ? latestUnseenWarning(user) : null });
 });
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
+// 改密码（登录态）：校验旧密码 → 重设 → 踢掉该用户其它会话（保留当前这台，安全）
+app.post('/api/me/password', requireAuth, (req, res) => {
+  const { oldPassword, newPassword } = req.body || {};
+  if (!verifyPassword(String(oldPassword || ''), req.user.salt, req.user.passHash)) return res.status(400).json({ error: 'wrong_password' });
+  if (String(newPassword || '').length < 6) return res.status(400).json({ error: 'bad_password' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  req.user.salt = salt;
+  req.user.passHash = hashPassword(String(newPassword), salt);
+  const cur = getCookie(req, 'foody_session');
+  db.sessions = db.sessions.filter(s => s.userId !== req.user.id || s.token === cur);  // 其它会话失效
+  saveDb();
+  res.json({ ok: true });
+});
+
 // 把自己的警告全部标记为已读（看过提示条后调用）
 app.post('/api/me/warnings/seen', requireAuth, (req, res) => {
   if (Array.isArray(req.user.warnings)) { for (const w of req.user.warnings) w.seen = true; saveDb(); }

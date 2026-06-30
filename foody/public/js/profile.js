@@ -380,6 +380,7 @@
 
   $('#editClose').addEventListener('click', closeEdit);
   $('#editCancel').addEventListener('click', closeEdit);
+  $('#editChangePw').addEventListener('click', () => { closeEdit(); openChangePassword(); });
   $('#editOverlay').addEventListener('click', (e) => { if (e.target === $('#editOverlay')) closeEdit(); });
   $('#editBio').addEventListener('input', () => { $('#bioCount').textContent = $('#editBio').value.length; });
   $('#editAvatarBtn').addEventListener('click', () => $('#editAvatarInput').click());
