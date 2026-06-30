@@ -34,6 +34,7 @@ const DICT = {
     pwrTitle: '找回密码', pwrStep1Hint: '输入注册时的邮箱和电话，6 位验证码会发到你的邮箱', pwrEmailPh: '注册邮箱', pwrPhonePh: '注册电话',
     pwrSendCode: '发送验证码', pwrSent: '若账号匹配，验证码已发到邮箱，请查收后填写', pwrCodePh: '6 位验证码', pwrNewPwPh: '新密码（至少 6 位）',
     pwrReset: '重置密码', pwrResend: '重新发送', pwrDone: '密码已重置，请用新密码登录', pwrNeedFields: '请填邮箱和电话',
+    sessTitle: '登录设备', sessCurrent: '当前设备', sessKick: '踢出', sessRevokeOthers: '退出其它所有设备', sessUnknown: '未知设备', sessDone: '已退出其它设备',
     /* FYP */
     fypTitle: 'FYP', home: '首页',
     upload: '发布', uploadTitle: '分享美食 🍜',
@@ -147,6 +148,7 @@ const DICT = {
     pwrTitle: 'Set semula kata laluan', pwrStep1Hint: 'Masukkan email & telefon pendaftaran; kod 6 digit akan dihantar ke email anda', pwrEmailPh: 'Email pendaftaran', pwrPhonePh: 'Telefon pendaftaran',
     pwrSendCode: 'Hantar kod', pwrSent: 'Jika akaun sepadan, kod telah dihantar ke email — sila semak', pwrCodePh: 'Kod 6 digit', pwrNewPwPh: 'Kata laluan baru (min 6 aksara)',
     pwrReset: 'Set semula', pwrResend: 'Hantar semula', pwrDone: 'Kata laluan ditetapkan semula — sila log masuk', pwrNeedFields: 'Isi email dan telefon',
+    sessTitle: 'Peranti log masuk', sessCurrent: 'Peranti ini', sessKick: 'Keluarkan', sessRevokeOthers: 'Log keluar peranti lain', sessUnknown: 'Peranti tak dikenali', sessDone: 'Peranti lain dilog keluar',
     fypTitle: 'FYP', home: 'Utama',
     upload: 'Post', uploadTitle: 'Kongsi makanan 🍜',
     chooseFile: 'Tekan untuk pilih gambar atau video', changeFile: 'Tukar fail',
@@ -258,6 +260,7 @@ const DICT = {
     pwrTitle: 'Reset password', pwrStep1Hint: 'Enter your registered email & phone; a 6-digit code goes to your email', pwrEmailPh: 'Registered email', pwrPhonePh: 'Registered phone',
     pwrSendCode: 'Send code', pwrSent: 'If the account matches, a code was sent to the email — please check', pwrCodePh: '6-digit code', pwrNewPwPh: 'New password (min 6 chars)',
     pwrReset: 'Reset password', pwrResend: 'Resend', pwrDone: 'Password reset — please log in', pwrNeedFields: 'Enter email and phone',
+    sessTitle: 'Login devices', sessCurrent: 'This device', sessKick: 'Sign out', sessRevokeOthers: 'Sign out other devices', sessUnknown: 'Unknown device', sessDone: 'Other devices signed out',
     fypTitle: 'FYP', home: 'Home',
     upload: 'Post', uploadTitle: 'Share some food 🍜',
     chooseFile: 'Tap to choose a photo or video', changeFile: 'Change file',
@@ -810,6 +813,53 @@ const FoodyCart = (() => {
 })();
 
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
+/* ---------------- 登录设备 / 会话管理 弹窗 ---------------- */
+function ensureSessDom() {
+  if (document.getElementById('sessOverlay')) return;
+  const ov = document.createElement('div');
+  ov.className = 'overlay'; ov.id = 'sessOverlay';
+  ov.innerHTML = '<div class="modal sess-modal"><h3><span id="sessTitle"></span><button class="x" id="sessClose"></button></h3><div id="sessList"></div><div class="modal-actions"><button class="btn-ghost" id="sessRevokeOthers"></button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#sessClose').innerHTML = ICONS.close;
+  ov.querySelector('#sessClose').addEventListener('click', closeSess);
+  ov.addEventListener('click', (e) => { if (e.target === ov) closeSess(); });
+}
+function closeSess() { const ov = document.getElementById('sessOverlay'); if (ov) ov.classList.remove('show'); }
+function openSessions() {
+  ensureSessDom();
+  const ov = document.getElementById('sessOverlay');
+  ov.querySelector('#sessTitle').textContent = t('sessTitle');
+  const ro = ov.querySelector('#sessRevokeOthers');
+  ro.textContent = t('sessRevokeOthers');
+  ro.onclick = async () => { try { await api('/api/me/sessions/revoke-others', { method: 'POST' }); toast(t('sessDone')); loadSessList(); } catch (e) { toast(errMsg(e.code)); } };
+  ov.classList.add('show');
+  loadSessList();
+}
+async function loadSessList() {
+  const box = document.getElementById('sessList');
+  box.innerHTML = '<div class="sess-loading">…</div>';
+  let data; try { data = await api('/api/me/sessions'); } catch { box.innerHTML = ''; return; }
+  box.innerHTML = '';
+  for (const s of data.sessions) {
+    const row = document.createElement('div'); row.className = 'sess-row' + (s.current ? ' cur' : '');
+    const info = document.createElement('div'); info.className = 'sess-info';
+    const dev = document.createElement('div'); dev.className = 'sess-dev'; dev.textContent = s.device || t('sessUnknown');
+    const sub = document.createElement('div'); sub.className = 'sess-sub';
+    sub.textContent = [s.ip, s.createdAt ? new Date(s.createdAt).toLocaleString() : ''].filter(Boolean).join(' · ');
+    info.append(dev, sub);
+    const act = document.createElement('div'); act.className = 'sess-act';
+    if (s.current) {
+      const tag = document.createElement('span'); tag.className = 'sess-cur-tag'; tag.textContent = t('sessCurrent'); act.appendChild(tag);
+    } else {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'sess-kick'; b.textContent = t('sessKick');
+      b.onclick = async () => { try { await api('/api/me/sessions/' + encodeURIComponent(s.id), { method: 'DELETE' }); loadSessList(); } catch (e) { toast(errMsg(e.code)); } };
+      act.appendChild(b);
+    }
+    row.append(info, act);
+    box.appendChild(row);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); maybeShowWarning(); });
 
 /* PWA：注册 service worker（让 Foody 可加到主屏、离线兜底）。失败静默，不影响正常使用。 */

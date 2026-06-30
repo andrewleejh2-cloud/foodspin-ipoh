@@ -1713,3 +1713,14 @@ body:not(.page-fyp) main { animation: pageRise .32s ease both; }
 .pw-forgot a:hover,.login-forgot a:hover{text-decoration:underline}
 .login-forgot{margin-top:.7em;text-align:center}
 .edit-pw-btn{width:100%;margin:.2em 0 .6em}
+
+/* 登录设备 / 会话管理 */
+.sess-modal #sessList{display:flex;flex-direction:column;gap:8px;margin-bottom:.8em;max-height:50vh;overflow:auto}
+.sess-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface)}
+.sess-row.cur{border-color:var(--accent);background:var(--accent-soft)}
+.sess-info{flex:1;min-width:0}
+.sess-dev{font-weight:700;font-size:14px}
+.sess-sub{margin-top:2px;font-size:11.5px;color:var(--ink-2);word-break:break-all}
+.sess-cur-tag{font-size:11px;font-weight:800;color:var(--accent-d);white-space:nowrap}
+.sess-kick{flex:none;padding:6px 12px;border:none;border-radius:8px;background:#C0392B;color:#fff;font-weight:700;font:inherit;cursor:pointer}
+.sess-loading{color:var(--ink-2);text-align:center;padding:1em}

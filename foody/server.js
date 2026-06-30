@@ -178,12 +178,35 @@ function setSessionCookie(res, token, maxAgeSec) {
     `foody_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${secure}`);
 }
 
-function createSession(res, userId) {
+function createSession(req, res, userId) {
   const token = crypto.randomBytes(32).toString('hex');
-  db.sessions.push({ token, userId, expires: Date.now() + SESSION_DAYS * 86400000 });
+  db.sessions.push({
+    id: crypto.randomUUID(), token, userId,
+    createdAt: Date.now(),
+    ua: String(req.headers['user-agent'] || '').slice(0, 200),   // 设备/浏览器（解析成友好名给用户看）
+    ip: clientIp(req),                                            // 只给本人看自己的登录来源
+    expires: Date.now() + SESSION_DAYS * 86400000
+  });
   // 清理过期 session
   db.sessions = db.sessions.filter(s => s.expires > Date.now());
   setSessionCookie(res, token, SESSION_DAYS * 86400);
+}
+
+/* User-Agent → 友好设备名（如 "Chrome · Windows"）。纯函数、尽力而为、品牌名语言中立。 */
+function deviceLabel(ua) {
+  ua = String(ua || '');
+  let browser = '', osName = '';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/OPR\/|Opera/.test(ua)) browser = 'Opera';
+  else if (/Chrome\//.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua)) browser = 'Safari';
+  if (/Windows/.test(ua)) osName = 'Windows';
+  else if (/iPhone|iPad|iPod|iOS/.test(ua)) osName = 'iOS';
+  else if (/Android/.test(ua)) osName = 'Android';
+  else if (/Mac OS X|Macintosh/.test(ua)) osName = 'Mac';
+  else if (/Linux/.test(ua)) osName = 'Linux';
+  return [browser, osName].filter(Boolean).join(' · ');
 }
 
 /* ---- 找回密码（邮箱+电话核身 → 6 位验证码 → 重置）---- */
@@ -705,7 +728,7 @@ app.post('/api/register', registerLimit, (req, res) => {
     createdAt: Date.now()
   };
   db.users.push(user);
-  createSession(res, user.id);
+  createSession(req, res, user.id);
   saveDb();
   res.json({ user: pubUser(user) });
 });
@@ -721,7 +744,7 @@ app.post('/api/login', (req, res) => {
     return res.status(401).json({ error: 'bad_login' });
   }
   if (user.banned) return res.status(403).json({ error: 'banned' }); // 账号已被审核封禁
-  createSession(res, user.id);
+  createSession(req, res, user.id);
   saveDb();
   res.json({ user: pubUser(user) });
 });
@@ -803,6 +826,36 @@ app.post('/api/me/password', requireAuth, (req, res) => {
 // 把自己的警告全部标记为已读（看过提示条后调用）
 app.post('/api/me/warnings/seen', requireAuth, (req, res) => {
   if (Array.isArray(req.user.warnings)) { for (const w of req.user.warnings) w.seen = true; saveDb(); }
+  res.json({ ok: true });
+});
+
+/* ---- 登录设备 / 会话管理 ---- */
+// 我的活跃会话（不返回 token）：设备名 + 登录时间 + 是否当前这台
+app.get('/api/me/sessions', requireAuth, (req, res) => {
+  const cur = getCookie(req, 'foody_session');
+  const mine = db.sessions.filter(s => s.userId === req.user.id);
+  let changed = false;
+  for (const s of mine) if (!s.id) { s.id = crypto.randomUUID(); changed = true; }   // 给老会话补 id
+  if (changed) saveDb();
+  const sessions = mine
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+    .map(s => ({ id: s.id, device: deviceLabel(s.ua), ip: s.ip || '', createdAt: s.createdAt || 0, current: s.token === cur }));
+  res.json({ sessions });
+});
+
+// 踢掉自己的某一台会话（按 id；只能踢自己的）
+app.delete('/api/me/sessions/:id', requireAuth, (req, res) => {
+  const before = db.sessions.length;
+  db.sessions = db.sessions.filter(s => !(s.userId === req.user.id && s.id === req.params.id));
+  if (db.sessions.length !== before) saveDb();
+  res.json({ ok: true });
+});
+
+// 退出其它所有设备（保留当前这台）
+app.post('/api/me/sessions/revoke-others', requireAuth, (req, res) => {
+  const cur = getCookie(req, 'foody_session');
+  db.sessions = db.sessions.filter(s => s.userId !== req.user.id || s.token === cur);
+  saveDb();
   res.json({ ok: true });
 });
 
