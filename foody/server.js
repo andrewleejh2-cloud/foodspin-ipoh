@@ -386,6 +386,34 @@ function removeCommentById(id) {
   return true;
 }
 
+/* 账号注销：硬删该用户及其全部关联数据 + 上传文件（不可恢复，PDPA 被遗忘权）。 */
+function deleteUserCascade(u) {
+  // 1) 删他的帖子（removePostById 连带删媒体文件 + 该帖的赞/收藏/评论）
+  for (const p of db.posts.filter(p => p.userId === u.id)) removePostById(p.id);
+  // 2) 删他在别人帖下的评论、给别人点的赞/收藏
+  db.comments = db.comments.filter(c => c.userId !== u.id);
+  db.likes = db.likes.filter(l => l.userId !== u.id);
+  db.saves = db.saves.filter(s => s.userId !== u.id);
+  // 3) 关注关系（双向）
+  db.follows = db.follows.filter(f => f.followerId !== u.id && f.followingId !== u.id);
+  // 4) 收发的私信
+  db.messages = db.messages.filter(m => m.fromId !== u.id && m.toId !== u.id);
+  // 5) 与他相关的举报（他举报的 + 关于他的）
+  db.reports = db.reports.filter(r => r.reporterId !== u.id && r.ownerId !== u.id && !(r.type === 'user' && r.targetId === u.id));
+  // 6) 上传文件：头像 + 网站封面/菜品图 + 货架图
+  const files = [];
+  if (u.avatar) files.push(u.avatar);
+  if (u.site) {
+    if (u.site.cover) files.push(u.site.cover);
+    for (const cat of (u.site.menu || [])) for (const it of (cat.items || [])) if (it.photo) files.push(it.photo);
+  }
+  for (const it of (u.shelf || [])) if (it.photo) files.push(it.photo);
+  for (const f of files) if (f && f.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(f)), () => {});
+  // 7) 全部会话 + 8) 用户本身
+  db.sessions = db.sessions.filter(s => s.userId !== u.id);
+  db.users = db.users.filter(x => x.id !== u.id);
+}
+
 // 封禁 / 解封一个用户。封禁会踢掉其所有登入 session；不动历史内容（可逆，按需另行删除）
 function banUser(u, ban, reason, byId) {
   if (ban) {
@@ -856,6 +884,15 @@ app.post('/api/me/sessions/revoke-others', requireAuth, (req, res) => {
   const cur = getCookie(req, 'foody_session');
   db.sessions = db.sessions.filter(s => s.userId !== req.user.id || s.token === cur);
   saveDb();
+  res.json({ ok: true });
+});
+
+// 注销账号（需重新输密码确认）：硬删本人及全部关联数据，不可恢复
+app.post('/api/me/delete', requireAuth, (req, res) => {
+  if (!verifyPassword(String((req.body || {}).password || ''), req.user.salt, req.user.passHash)) return res.status(400).json({ error: 'wrong_password' });
+  deleteUserCascade(req.user);
+  saveDb();
+  setSessionCookie(res, '', 0);   // 清当前 cookie
   res.json({ ok: true });
 });
 

@@ -35,6 +35,7 @@ const DICT = {
     pwrSendCode: '发送验证码', pwrSent: '若账号匹配，验证码已发到邮箱，请查收后填写', pwrCodePh: '6 位验证码', pwrNewPwPh: '新密码（至少 6 位）',
     pwrReset: '重置密码', pwrResend: '重新发送', pwrDone: '密码已重置，请用新密码登录', pwrNeedFields: '请填邮箱和电话',
     sessTitle: '登录设备', sessCurrent: '当前设备', sessKick: '踢出', sessRevokeOthers: '退出其它所有设备', sessUnknown: '未知设备', sessDone: '已退出其它设备',
+    delAccount: '注销账号', delWarn: '注销将永久删除你的账号和全部内容（帖子 / 评论 / 赞 / 关注 / 私信），不可恢复。', delPwPh: '输入密码确认', delConfirmBtn: '确认注销', delDone: '账号已注销',
     /* FYP */
     fypTitle: 'FYP', home: '首页',
     upload: '发布', uploadTitle: '分享美食 🍜',
@@ -149,6 +150,7 @@ const DICT = {
     pwrSendCode: 'Hantar kod', pwrSent: 'Jika akaun sepadan, kod telah dihantar ke email — sila semak', pwrCodePh: 'Kod 6 digit', pwrNewPwPh: 'Kata laluan baru (min 6 aksara)',
     pwrReset: 'Set semula', pwrResend: 'Hantar semula', pwrDone: 'Kata laluan ditetapkan semula — sila log masuk', pwrNeedFields: 'Isi email dan telefon',
     sessTitle: 'Peranti log masuk', sessCurrent: 'Peranti ini', sessKick: 'Keluarkan', sessRevokeOthers: 'Log keluar peranti lain', sessUnknown: 'Peranti tak dikenali', sessDone: 'Peranti lain dilog keluar',
+    delAccount: 'Padam akaun', delWarn: 'Memadam akaun akan buang akaun & semua kandungan anda (pos / komen / suka / ikutan / mesej) secara kekal. Tak boleh undo.', delPwPh: 'Masukkan kata laluan untuk sahkan', delConfirmBtn: 'Sahkan padam', delDone: 'Akaun dipadam',
     fypTitle: 'FYP', home: 'Utama',
     upload: 'Post', uploadTitle: 'Kongsi makanan 🍜',
     chooseFile: 'Tekan untuk pilih gambar atau video', changeFile: 'Tukar fail',
@@ -261,6 +263,7 @@ const DICT = {
     pwrSendCode: 'Send code', pwrSent: 'If the account matches, a code was sent to the email — please check', pwrCodePh: '6-digit code', pwrNewPwPh: 'New password (min 6 chars)',
     pwrReset: 'Reset password', pwrResend: 'Resend', pwrDone: 'Password reset — please log in', pwrNeedFields: 'Enter email and phone',
     sessTitle: 'Login devices', sessCurrent: 'This device', sessKick: 'Sign out', sessRevokeOthers: 'Sign out other devices', sessUnknown: 'Unknown device', sessDone: 'Other devices signed out',
+    delAccount: 'Delete account', delWarn: 'Deleting your account permanently removes it and all your content (posts / comments / likes / follows / messages). This cannot be undone.', delPwPh: 'Enter password to confirm', delConfirmBtn: 'Confirm delete', delDone: 'Account deleted',
     fypTitle: 'FYP', home: 'Home',
     upload: 'Post', uploadTitle: 'Share some food 🍜',
     chooseFile: 'Tap to choose a photo or video', changeFile: 'Change file',
@@ -858,6 +861,25 @@ async function loadSessList() {
     row.append(info, act);
     box.appendChild(row);
   }
+}
+
+/* ---------------- 注销账号 弹窗（复用 pwOverlay 容器）---------------- */
+function openDeleteAccount() {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('delAccount');
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint del-warn">' + t('delWarn') + '</p>' + pwField('delPw', t('delPwPh'), 'password') +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn btn-danger" id="delGo">' + t('delConfirmBtn') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#delGo').addEventListener('click', async () => {
+    const btn = ov.querySelector('#delGo'); btn.disabled = true;
+    try {
+      await api('/api/me/delete', { method: 'POST', body: { password: ov.querySelector('#delPw').value } });
+      toast(t('delDone')); closePw(); setTimeout(() => { location.href = 'index.html'; }, 700);
+    } catch (e) { toast(errMsg(e.code)); btn.disabled = false; }
+  });
+  ov.classList.add('show');
 }
 
 document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); maybeShowWarning(); });
