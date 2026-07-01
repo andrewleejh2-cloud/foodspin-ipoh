@@ -79,6 +79,9 @@ const DICT = {
     siteTabHome: '首页', siteTabMenu: '菜单', siteTabContact: '联系', siteTabShelf: '货架',
     siteShelfL: '货架（商品）', siteAddGood: '+ 添加货物', siteShelfHint: '可带走/包装的货物：瓶装酱料、零食、周边等', siteStatusL: '营业状态', statusHide: '不显示', statusOpen: '营业中', statusClosed: '打烊', shelfEditTitle: '管理货架', shelfManage: '管理货架', shelfView: '看主页',
     shopAdd: '加入', shopOrder: '用 WhatsApp 下单', shopTotal: '合计', shopApprox: '约', shopItemsN: '{n} 样', shopOrderHi: '你好！我想订购：', shopFrom: '— 来自 Foody', shopLoginToOrder: '登录后即可下单 🍜', shopSoldOut: '售罄', shopBadge: '店铺', shopMine: '我的店铺', shopView: '看店铺',
+    resvTitle: '预定自取', resvHint: '选个自取时间，会连同订单一起发给卖家。', resvTimeLbl: '自取时间', resvNotePh: '备注（可选）', resvConfirm: '提交预定', resvNeedTime: '请选自取时间', resvDone: '预定已提交 ✓', resvWaTime: '🕒 自取时间:', resvWaNote: '📝 备注:',
+    resvSection: '预定', resvEmpty: '还没有预定', resvMarkDone: '完成', resvMarkCancel: '取消', resvStPending: '待处理', resvStDone: '已完成', resvStCancelled: '已取消',
+    shelfPickupLbl: '支持自取 / 预定', shelfPickupHint: '开启后顾客下单要选自取时间，你能在主页「预定」区看到收到的预定',
     siteThemeL: '配色主题', siteMenuL: '菜单', siteAddCat: '+ 添加分类', siteAddItem: '+ 添加菜品',
     siteCatNamePh: '分类名（如 招牌）', siteItemNamePh: '菜名', siteItemPricePh: '价格 (如 RM 8)', siteItemDescPh: '描述（选填）',
     pfSales: '销量', salesDaily: '近1天', salesWeekly: '近7天', salesMonthly: '近30天', salesNoData: '暂无数据', salesOrders: '单',
@@ -195,6 +198,9 @@ const DICT = {
     siteTabHome: 'Utama', siteTabMenu: 'Menu', siteTabContact: 'Hubungi', siteTabShelf: 'Rak',
     siteShelfL: 'Rak (Produk)', siteAddGood: '+ Tambah barang', siteShelfHint: 'Barang bungkus/bawa balik: sos botol, snek, dll', siteStatusL: 'Status kedai', statusHide: 'Jangan tunjuk', statusOpen: 'Buka', statusClosed: 'Tutup', shelfEditTitle: 'Urus rak', shelfManage: 'Urus rak', shelfView: 'Lihat profil',
     shopAdd: 'Tambah', shopOrder: 'Pesan via WhatsApp', shopTotal: 'Jumlah', shopApprox: '~', shopItemsN: '{n} item', shopOrderHi: 'Hai! Saya nak pesan:', shopFrom: '— dari Foody', shopLoginToOrder: 'Log masuk untuk pesan 🍜', shopSoldOut: 'Habis', shopBadge: 'Kedai', shopMine: 'Kedai saya', shopView: 'Lihat kedai',
+    resvTitle: 'Tempah ambil sendiri', resvHint: 'Pilih masa ambil; ia dihantar bersama pesanan kepada penjual.', resvTimeLbl: 'Masa ambil', resvNotePh: 'Nota (pilihan)', resvConfirm: 'Hantar tempahan', resvNeedTime: 'Sila pilih masa ambil', resvDone: 'Tempahan dihantar ✓', resvWaTime: '🕒 Masa ambil:', resvWaNote: '📝 Nota:',
+    resvSection: 'Tempahan', resvEmpty: 'Belum ada tempahan', resvMarkDone: 'Selesai', resvMarkCancel: 'Batal', resvStPending: 'Menunggu', resvStDone: 'Selesai', resvStCancelled: 'Dibatalkan',
+    shelfPickupLbl: 'Terima ambil sendiri / tempahan', shelfPickupHint: 'Bila dibuka, pembeli pilih masa ambil semasa pesan; anda lihat tempahan di profil.',
     siteThemeL: 'Tema', siteMenuL: 'Menu', siteAddCat: '+ Tambah kategori', siteAddItem: '+ Tambah item',
     siteCatNamePh: 'Nama kategori', siteItemNamePh: 'Nama hidangan', siteItemPricePh: 'Harga (cth RM 8)', siteItemDescPh: 'Penerangan (pilihan)',
     pfSales: 'Jualan', salesDaily: '1 hari', salesWeekly: '7 hari', salesMonthly: '30 hari', salesNoData: 'Belum ada data', salesOrders: 'pesanan',
@@ -310,6 +316,9 @@ const DICT = {
     siteTabHome: 'Home', siteTabMenu: 'Menu', siteTabContact: 'Contact', siteTabShelf: 'Shelf',
     siteShelfL: 'Shelf (Products)', siteAddGood: '+ Add product', siteShelfHint: 'Packaged/takeaway goods: bottled sauce, snacks, merch', siteStatusL: 'Status', statusHide: 'Hide', statusOpen: 'Open', statusClosed: 'Closed', shelfEditTitle: 'Manage shelf', shelfManage: 'Manage shelf', shelfView: 'View profile',
     shopAdd: 'Add', shopOrder: 'Order via WhatsApp', shopTotal: 'Total', shopApprox: '~', shopItemsN: '{n} item(s)', shopOrderHi: "Hi! I'd like to order:", shopFrom: '— via Foody', shopLoginToOrder: 'Log in to order 🍜', shopSoldOut: 'Sold out', shopBadge: 'Shop', shopMine: 'My shop', shopView: 'View shop',
+    resvTitle: 'Reserve for pickup', resvHint: 'Pick a pickup time; it goes to the seller with your order.', resvTimeLbl: 'Pickup time', resvNotePh: 'Note (optional)', resvConfirm: 'Submit reservation', resvNeedTime: 'Please pick a pickup time', resvDone: 'Reservation sent ✓', resvWaTime: '🕒 Pickup time:', resvWaNote: '📝 Note:',
+    resvSection: 'Reservations', resvEmpty: 'No reservations yet', resvMarkDone: 'Done', resvMarkCancel: 'Cancel', resvStPending: 'Pending', resvStDone: 'Done', resvStCancelled: 'Cancelled',
+    shelfPickupLbl: 'Accept pickup / reservations', shelfPickupHint: 'When on, buyers pick a pickup time when ordering; you see reservations on your profile.',
     siteThemeL: 'Theme', siteMenuL: 'Menu', siteAddCat: '+ Add category', siteAddItem: '+ Add item',
     siteCatNamePh: 'Category name', siteItemNamePh: 'Dish name', siteItemPricePh: 'Price (e.g. RM 8)', siteItemDescPh: 'Description (optional)',
     pfSales: 'Sales', salesDaily: '1 day', salesWeekly: '7 days', salesMonthly: '30 days', salesNoData: 'No data yet', salesOrders: 'orders',
@@ -751,6 +760,7 @@ const FoodyCart = (() => {
   let orderBar = null;
   let waUrl = null;
   let seller = null;   // 商家用户名，用于记销量
+  let pickup = false;  // 卖家是否开了自取/预定
   function parsePrice(s) { const m = String(s || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; }
   function money(n) { return 'RM' + (Math.round(n * 100) / 100); }
   function totals() {
@@ -802,20 +812,54 @@ const FoodyCart = (() => {
     document.body.appendChild(bar);
     orderBar = bar;
   }
-  function sendOrder() {
-    if (!cart.size) return;
-    if (!waUrl) { toast(t('shopLoginToOrder')); setTimeout(() => { location.href = 'index.html'; }, 900); return; }
-    const { count, total, unknown } = totals();
+  function orderMsg(extraLines) {
+    const { total, unknown } = totals();
     const lines = [];
     for (const it of cart.values()) lines.push('• ' + it.name + ' ×' + it.qty + (it.price ? ' — ' + it.price : ''));
     let msg = t('shopOrderHi') + '\n' + lines.join('\n');
     if (total > 0) msg += '\n' + t('shopTotal') + ': ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : '');
+    for (const ln of (extraLines || [])) msg += '\n' + ln;
     msg += '\n' + t('shopFrom');
+    return msg;
+  }
+  function sendOrder() {
+    if (!cart.size) return;
+    if (!waUrl) { toast(t('shopLoginToOrder')); setTimeout(() => { location.href = 'index.html'; }, 900); return; }
+    if (pickup) return openReservation();   // 开了预定 → 先选自取时间
+    const { count, total } = totals();
     if (seller) api('/api/orders', { method: 'POST', body: { seller, count, total } }).catch(() => {});   // 记一笔销量（下单量）
-    window.open(waUrl + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+    window.open(waUrl + '?text=' + encodeURIComponent(orderMsg()), '_blank', 'noopener');
+  }
+  // 预定：选自取时间 + 备注 → 记一笔预定 + 照旧开 WhatsApp（清单带自取时间）
+  function openReservation() {
+    ensurePwDom();
+    const ov = document.getElementById('pwOverlay');
+    ov.querySelector('#pwTitle').textContent = t('resvTitle');
+    ov.querySelector('#pwBody').innerHTML =
+      '<p class="pw-hint">' + t('resvHint') + '</p>' +
+      '<div class="field"><label class="resv-lbl">' + t('resvTimeLbl') + '</label><input id="resvTime" type="datetime-local"></div>' +
+      '<div class="field"><input id="resvNote" maxlength="200" placeholder="' + t('resvNotePh') + '"></div>' +
+      '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="resvGo">' + t('resvConfirm') + '</button></div>';
+    ov.querySelector('#pwCancel').addEventListener('click', closePw);
+    ov.querySelector('#resvGo').addEventListener('click', async () => {
+      const timeVal = ov.querySelector('#resvTime').value;
+      if (!timeVal) { toast(t('resvNeedTime')); return; }
+      const note = ov.querySelector('#resvNote').value.trim();
+      const items = []; for (const it of cart.values()) items.push({ name: it.name, qty: it.qty });
+      const btn = ov.querySelector('#resvGo'); btn.disabled = true;
+      try {
+        await api('/api/reservations', { method: 'POST', body: { seller, items, pickupAt: new Date(timeVal).getTime(), note } });
+        closePw();
+        const extra = [t('resvWaTime') + ' ' + timeVal.replace('T', ' ')];
+        if (note) extra.push(t('resvWaNote') + ' ' + note);
+        window.open(waUrl + '?text=' + encodeURIComponent(orderMsg(extra)), '_blank', 'noopener');
+        toast(t('resvDone'));
+      } catch (e) { toast(errMsg(e.code)); btn.disabled = false; }
+    });
+    ov.classList.add('show');
   }
   return {
-    setWaUrl(u, s) { waUrl = u; seller = s || null; },
+    setWaUrl(u, s, canPickup) { waUrl = u; seller = s || null; pickup = !!canPickup; },
     makeBuy, refreshBar,
     reset() { cart.clear(); buyPaint.clear(); if (orderBar) { orderBar.remove(); orderBar = null; } }
   };

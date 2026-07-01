@@ -65,7 +65,7 @@
   $('#shelfForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = $('#saveBtn'); btn.disabled = true;
-    try { await api('/api/me/shelf', { method: 'PATCH', body: { shelf: collectShelf() } }); toast(t('siteSaved')); }
+    try { await api('/api/me/shelf', { method: 'PATCH', body: { shelf: collectShelf(), shelfPickup: $('#shelfPickup').checked } }); toast(t('siteSaved')); }
     catch (err) { toast(errMsg(err.code)); }
     finally { btn.disabled = false; }
   });
@@ -80,6 +80,7 @@
     if (!me || !me.user) return void (location.href = 'index.html');
     ME = me.user;
     if (!me.canSell) return void toProfile();   // 非白名单不能摆货 → 退回主页
+    $('#shelfPickup').checked = !!me.shelfPickup;
     (me.shelf || []).forEach(it => addGoodRow(it));
   });
 })();

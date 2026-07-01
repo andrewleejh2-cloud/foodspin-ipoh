@@ -75,11 +75,11 @@ const SEED_TAGS = {
 function loadDb() {
   if (fs.existsSync(DB_FILE)) {
     db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions', 'orders', 'blocks']) {
+    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions', 'orders', 'blocks', 'reservations']) {
       if (!Array.isArray(db[k])) db[k] = [];
     }
   } else {
-    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [], orders: [], blocks: [] };
+    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [], orders: [], blocks: [], reservations: [] };
     seed();
   }
   let changed = !fs.existsSync(DB_FILE);
@@ -847,7 +847,7 @@ app.post('/api/auth/reset/confirm', resetConfirmLimit, (req, res) => {
 
 app.get('/api/me', (req, res) => {
   const user = currentUser(req);
-  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [], muted: isMuted(user) ? user.mutedUntil : 0, warning: user ? latestUnseenWarning(user) : null, emailVerified: !!(user && user.emailVerified) });
+  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [], shelfPickup: !!(user && user.shelfPickup), muted: isMuted(user) ? user.mutedUntil : 0, warning: user ? latestUnseenWarning(user) : null, emailVerified: !!(user && user.emailVerified) });
 });
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
@@ -1084,7 +1084,71 @@ app.patch('/api/me/shelf', requireAuth, (req, res) => {
     })).filter(it => it.name);
     saveDb();
   }
-  res.json({ ok: true, shelf: req.user.shelf || [] });
+  if (typeof b.shelfPickup === 'boolean') { req.user.shelfPickup = b.shelfPickup; saveDb(); }   // 支持自取/预定开关
+  res.json({ ok: true, shelf: req.user.shelf || [], shelfPickup: !!req.user.shelfPickup });
+});
+
+/* ---- 货架预定（自取/预定，不碰钱；预定记录 + 卖家可管理）---- */
+// 把买家选的商品按卖家货架当前价快照下来（只收未售罄的货架商品）
+function snapshotShelfItems(seller, items) {
+  const shelf = Array.isArray(seller.shelf) ? seller.shelf : [];
+  const out = [];
+  for (const it of (Array.isArray(items) ? items : [])) {
+    const name = String(it.name || '').trim();
+    const qty = Math.max(1, Math.min(99, parseInt(it.qty, 10) || 0));
+    if (!name) continue;
+    const g = shelf.find(s => String(s.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (!g || g.soldOut) continue;
+    out.push({ name: g.name, price: g.price || '', qty });
+  }
+  return out;
+}
+
+const reserveLimit = rateLimit({ windowMs: 600000, max: 30 });
+// 买家提交预定（登录态）。卖家须开了 shelfPickup；拉黑对/自己不行
+app.post('/api/reservations', requireAuth, reserveLimit, (req, res) => {
+  const b = req.body || {};
+  const seller = db.users.find(u => u.usernameLower === String(b.seller || '').trim().toLowerCase());
+  if (!seller || !seller.shelfPickup) return res.status(404).json({ error: 'not_found' });
+  if (seller.id === req.user.id) return res.status(400).json({ error: 'self' });
+  if (isBlockedPair(req.user.id, seller.id)) return res.status(403).json({ error: 'blocked' });
+  const items = snapshotShelfItems(seller, b.items);
+  if (!items.length) return res.status(400).json({ error: 'empty' });
+  const r = {
+    id: crypto.randomUUID(), sellerId: seller.id, buyerId: req.user.id,
+    items, pickupAt: Number(b.pickupAt) || 0, note: String(b.note || '').trim().slice(0, 200),
+    status: 'pending', createdAt: Date.now()
+  };
+  db.reservations.push(r);
+  saveDb();
+  res.json({ ok: true, id: r.id });
+});
+
+// 卖家看自己收到的预定（按自取时间排，近的在前）；买家可点进 profile → 爽约就拉黑
+app.get('/api/me/reservations', requireAuth, (req, res) => {
+  const list = db.reservations.filter(r => r.sellerId === req.user.id)
+    .sort((a, b) => (a.pickupAt || 0) - (b.pickupAt || 0))
+    .map(r => {
+      const buyer = db.users.find(u => u.id === r.buyerId);
+      return {
+        id: r.id,
+        buyer: buyer ? { username: buyer.username, avatar: buyer.avatar || null } : { username: '???', avatar: null },
+        items: r.items, pickupAt: r.pickupAt, note: r.note, status: r.status, createdAt: r.createdAt
+      };
+    });
+  res.json({ reservations: list });
+});
+
+// 卖家改预定状态：pending / done / cancelled
+app.patch('/api/reservations/:id', requireAuth, (req, res) => {
+  const r = db.reservations.find(x => x.id === req.params.id);
+  if (!r) return res.status(404).json({ error: 'not_found' });
+  if (r.sellerId !== req.user.id) return res.status(403).json({ error: 'forbidden' });
+  const status = (req.body || {}).status;
+  if (!['pending', 'done', 'cancelled'].includes(status)) return res.status(400).json({ error: 'bad_status' });
+  r.status = status;
+  saveDb();
+  res.json({ ok: true });
 });
 
 // 销量：顾客经 WhatsApp 下单时记一笔（不碰支付，记的是「下单量」）。需登录，自己点自己不计
@@ -1300,6 +1364,7 @@ app.get('/api/users/:username', (req, res) => {
     sitePublished: !!(author.site && author.site.published),
     shopOpen: !!(author.site && author.site.published && Array.isArray(author.site.menu) && author.site.menu.some(c => Array.isArray(c.items) && c.items.length)),
     shelf: Array.isArray(author.shelf) ? author.shelf : [],   // 货架商品（profile 上展示，访客可见）
+    shelfPickup: !!author.shelfPickup,   // 是否支持自取/预定（买家 UI 据此显示预定入口）
     canSell: !!(viewer && viewer.id === author.id && canSellGoods(author)),   // 本人且白名单 → 显示「管理货架」
     waUrl: viewer && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null,
     posts: myPosts.map(p => postJson(p, viewer))

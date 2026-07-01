@@ -78,7 +78,7 @@
     const u = DATA.user, st = DATA.stats;
     const wrap = $('#pfWrap');
     wrap.innerHTML = '';
-    FoodyCart.setWaUrl(DATA.waUrl, DATA.user.username); FoodyCart.reset();   // 货架下单购物车（重渲染先清，末尾恢复）
+    FoodyCart.setWaUrl(DATA.waUrl, DATA.user.username, DATA.shelfPickup); FoodyCart.reset();   // 货架下单购物车（开了预定则下单先选自取时间）
 
     const head = document.createElement('section');
     head.className = 'pf-head';
@@ -257,6 +257,46 @@
       wrap.appendChild(sales);
       paintVal();
       api('/api/me/sales').then(r => { salesData = r; paintVal(); }).catch(() => { sv.textContent = t('salesNoData'); });
+    }
+
+    // 预定（自取）：仅卖家本人可见，列出收到的预定
+    if (DATA.isMe && DATA.shelfPickup) {
+      const resv = document.createElement('section'); resv.className = 'pf-resv';
+      const rh = document.createElement('div'); rh.className = 'pf-resv-h';
+      rh.innerHTML = ICONS.bag + '<span>' + esc(t('resvSection')) + '</span>';
+      const list = document.createElement('div'); list.className = 'pf-resv-list';
+      list.textContent = '…';
+      resv.append(rh, list);
+      wrap.appendChild(resv);
+      const fmtTime = (ms) => ms ? new Date(ms).toLocaleString() : '';
+      const paintResv = (rows) => {
+        list.innerHTML = '';
+        if (!rows.length) { list.innerHTML = '<div class="pf-resv-empty">' + esc(t('resvEmpty')) + '</div>'; return; }
+        for (const r of rows) {
+          const card = document.createElement('div'); card.className = 'pf-resv-card st-' + r.status;
+          const top = document.createElement('div'); top.className = 'pf-resv-top';
+          const who = document.createElement('a'); who.className = 'pf-resv-buyer'; who.textContent = '@' + r.buyer.username;
+          who.href = 'profile.html?u=' + encodeURIComponent(r.buyer.username);   // 点进买家 → 爽约可拉黑
+          const st = document.createElement('span'); st.className = 'pf-resv-st';
+          st.textContent = t({ pending: 'resvStPending', done: 'resvStDone', cancelled: 'resvStCancelled' }[r.status] || 'resvStPending');
+          top.append(who, st);
+          const time = document.createElement('div'); time.className = 'pf-resv-time'; time.textContent = '🕒 ' + fmtTime(r.pickupAt);
+          const items = document.createElement('div'); items.className = 'pf-resv-items';
+          items.textContent = r.items.map(it => it.name + '×' + it.qty).join('、');
+          card.append(top, time, items);
+          if (r.note) { const nt = document.createElement('div'); nt.className = 'pf-resv-note'; nt.textContent = '📝 ' + r.note; card.appendChild(nt); }
+          if (r.status === 'pending') {
+            const acts = document.createElement('div'); acts.className = 'pf-resv-acts';
+            const setSt = async (status) => { try { await api('/api/reservations/' + encodeURIComponent(r.id), { method: 'PATCH', body: { status } }); loadResv(); } catch (e) { toast(errMsg(e.code)); } };
+            const done = document.createElement('button'); done.type = 'button'; done.className = 'pf-resv-done'; done.textContent = t('resvMarkDone'); done.addEventListener('click', () => setSt('done'));
+            const canc = document.createElement('button'); canc.type = 'button'; canc.className = 'pf-resv-cancel'; canc.textContent = t('resvMarkCancel'); canc.addEventListener('click', () => setSt('cancelled'));
+            acts.append(done, canc); card.appendChild(acts);
+          }
+          list.appendChild(card);
+        }
+      };
+      const loadResv = () => api('/api/me/reservations').then(r => paintResv(r.reservations || [])).catch(() => { list.textContent = ''; });
+      loadResv();
     }
 
     // 作品网格
