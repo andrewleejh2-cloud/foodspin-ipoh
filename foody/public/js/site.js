@@ -2,7 +2,6 @@
    /site.html?u=用户名。未发布的微站只有本人能看到。内容来自 user.site + 用户自己的帖（画廊）。 */
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
-  const U = (new URLSearchParams(location.search).get('u') || '').trim();
   const BACK = { zh: '返回', ms: 'Kembali', en: 'Back' };
   let D = null;
 
@@ -10,8 +9,15 @@
   function fail(msg) { $('#siteRoot').innerHTML = `<div class="site-fail">${esc(msg)}</div>`; }
 
   async function load() {
-    if (!U) return fail(t('pfNotFound'));
-    try { D = await api('/api/site/' + encodeURIComponent(U)); }
+    const m = location.pathname.match(/^\/s\/([^/]+)\/?$/);
+    let endpoint;
+    if (m) endpoint = '/api/site/by-slug/' + encodeURIComponent(m[1]);
+    else {
+      const U = (new URLSearchParams(location.search).get('u') || '').trim();
+      if (!U) return fail(t('pfNotFound'));
+      endpoint = '/api/site/' + encodeURIComponent(U);
+    }
+    try { D = await api(endpoint); }
     catch (e) {
       if (e.code === 'not_published') return fail(t('siteUnpub'));
       if (e.code === 'not_found') return fail(t('pfNotFound'));
@@ -43,6 +49,8 @@
     root.innerHTML = '';
     FoodyCart.setWaUrl(D.waUrl, D.username); FoodyCart.reset();   // 重渲染先清旧订单条，末尾按购物车恢复
     document.body.className = 'page-site site-theme-' + (D.theme || 'warm');   // 套配色主题
+    if (D.accent) document.body.style.setProperty('--site-accent', D.accent);
+    else document.body.style.removeProperty('--site-accent');
 
     const bar = document.createElement('div');
     bar.className = 'site-bar';
@@ -87,14 +95,28 @@
     hero.appendChild(ht);
     root.appendChild(hero);
 
+    if (D.announce) {
+      const ann = document.createElement('div');
+      ann.className = 'site-announce';
+      ann.textContent = D.announce;
+      root.appendChild(ann);
+    }
+
     // ---- 三板块：首页 / 菜单 / 联系 ----
     const home = document.createElement('div'); home.className = 'site-panel';
     const menuPanel = document.createElement('div'); menuPanel.className = 'site-panel';
     const contact = document.createElement('div'); contact.className = 'site-panel';
+    const album = document.createElement('div'); album.className = 'site-panel';
+    if (D.photos && D.photos.length) {
+      const ag = document.createElement('div'); ag.className = 'site-album';
+      for (const ph of D.photos) { const img = document.createElement('img'); img.src = ph.url; img.loading = 'lazy'; img.alt = ''; ag.appendChild(img); }
+      album.appendChild(ag);
+    }
+    const sec = D.sections || {};
 
     // 首页：介绍 + 帖子画廊（视频格只放占位+播放标，不加载视频文件）
     if (D.intro) home.appendChild(section(t('siteAbout'), textBlock(D.intro)));
-    if (D.posts && D.posts.length) {
+    if (sec.gallery !== false && D.posts && D.posts.length) {
       const grid = document.createElement('div');
       grid.className = 'site-grid';
       for (const p of D.posts) {
@@ -145,8 +167,9 @@
 
     // 只显示有内容的板块；只有一个就不显示导航
     const tabs = [{ label: t('siteTabHome'), panel: home }];
-    if (hasMenu) tabs.push({ label: t('siteTabMenu'), panel: menuPanel });
-    if (contact.children.length) tabs.push({ label: t('siteTabContact'), panel: contact });
+    if (sec.menu !== false && hasMenu) tabs.push({ label: t('siteTabMenu'), panel: menuPanel });
+    if (sec.photos !== false && D.photos && D.photos.length) tabs.push({ label: t('siteTabPhotos'), panel: album });
+    if (sec.contact !== false && contact.children.length) tabs.push({ label: t('siteTabContact'), panel: contact });
 
     const nav = document.createElement('div'); nav.className = 'site-nav';
     const body = document.createElement('div'); body.className = 'site-body';
