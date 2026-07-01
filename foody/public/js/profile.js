@@ -171,6 +171,11 @@
         adm.addEventListener('click', () => { location.href = 'admin.html'; });
         actions.append(adm);
       }
+    } else if (DATA.blocked) {
+      // 我拉黑了 ta：只留「取消拉黑」，内容已隐藏
+      const unb = mkBtn('pf-ghost pf-unblock', null, t('pfUnblock'));
+      unb.addEventListener('click', toggleBlock);
+      actions.append(unb);
     } else {
       const loginThen = (go) => DATA.waUrl ? go() : (toast(t('errAuth')), setTimeout(() => { location.href = 'index.html'; }, 900));
       const fol = mkBtn(DATA.isFollowing ? 'pf-following' : 'pf-follow', null, t(DATA.isFollowing ? 'pfFollowed' : 'pfFollow'));
@@ -186,6 +191,9 @@
       } else {
         actions.append(fol, msg, wa);
       }
+      const blk = mkBtn('pf-ghost pf-block', null, t('pfBlock'));
+      blk.addEventListener('click', () => loginThen(() => { if (window.confirm(t('pfBlockConfirm', { name: u.username }))) toggleBlock(); }));
+      actions.append(blk);
     }
     head.appendChild(actions);
     wrap.appendChild(head);
@@ -255,7 +263,7 @@
     if (!DATA.posts.length) {
       const empty = document.createElement('div');
       empty.className = 'pf-empty';
-      empty.innerHTML = `<div class="big">🍽️</div>${esc(t('pfNoPosts'))}`;
+      empty.innerHTML = DATA.blocked ? `<div class="big">🚫</div>${esc(t('pfBlockedNote'))}` : `<div class="big">🍽️</div>${esc(t('pfNoPosts'))}`;
       wrap.appendChild(empty);
     } else {
       const grid = document.createElement('div');
@@ -291,6 +299,14 @@
       DATA.isFollowing = r.following;
       DATA.stats.followerCount = r.followerCount;
       render();
+    } catch (e) { toast(errMsg(e.code)); }
+  }
+
+  async function toggleBlock() {
+    try {
+      const r = await api('/api/users/' + encodeURIComponent(DATA.user.username) + '/block', { method: 'POST' });
+      toast(r.blocked ? t('pfBlocked') : t('pfUnblocked'));
+      load();   // 重新拉数据：拉黑/取消后内容可见性变了
     } catch (e) { toast(errMsg(e.code)); }
   }
 

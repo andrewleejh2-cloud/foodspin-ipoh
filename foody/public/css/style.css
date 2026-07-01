@@ -1730,3 +1730,7 @@ body:not(.page-fyp) main { animation: pageRise .32s ease both; }
 .del-warn{color:#C0392B;font-weight:600}
 .edit-del-btn{display:block;width:100%;margin:.9em 0 .2em;padding:.5em;border:none;background:none;
   color:#C0392B;font-weight:700;font:inherit;font-size:.9rem;cursor:pointer;text-decoration:underline}
+
+/* 拉黑按钮 */
+.pf-block{color:#C0392B}
+.pf-unblock{color:var(--accent-d)}

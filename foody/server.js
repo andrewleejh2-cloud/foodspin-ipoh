@@ -75,11 +75,11 @@ const SEED_TAGS = {
 function loadDb() {
   if (fs.existsSync(DB_FILE)) {
     db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions', 'orders']) {
+    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions', 'orders', 'blocks']) {
       if (!Array.isArray(db[k])) db[k] = [];
     }
   } else {
-    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [], orders: [] };
+    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [], orders: [], blocks: [] };
     seed();
   }
   let changed = !fs.existsSync(DB_FILE);
@@ -412,6 +412,20 @@ function deleteUserCascade(u) {
   // 7) 全部会话 + 8) 用户本身
   db.sessions = db.sessions.filter(s => s.userId !== u.id);
   db.users = db.users.filter(x => x.id !== u.id);
+}
+
+/* 拉黑：相互不可见 + 不可互动。blockedSet(viewer) = 我拉黑的 + 拉黑我的（双向），用于过滤内容作者。 */
+function blockedSet(viewerId) {
+  const s = new Set();
+  if (!viewerId) return s;
+  for (const b of db.blocks) {
+    if (b.blockerId === viewerId) s.add(b.blockedId);
+    if (b.blockedId === viewerId) s.add(b.blockerId);
+  }
+  return s;
+}
+function isBlockedPair(a, b) {
+  return db.blocks.some(x => (x.blockerId === a && x.blockedId === b) || (x.blockerId === b && x.blockedId === a));
 }
 
 // 封禁 / 解封一个用户。封禁会踢掉其所有登入 session；不动历史内容（可逆，按需另行删除）
@@ -1093,6 +1107,8 @@ app.get('/api/posts', (req, res) => {
   const bannedIds = new Set(db.users.filter(u => u.banned).map(u => u.id));
   if (bannedIds.size) posts = posts.filter(p => !bannedIds.has(p.userId));
   posts = posts.filter(p => !p.hidden);   // 多人举报自动隐藏的内容不进 feed
+  const blockedIds = blockedSet(viewer && viewer.id);   // 拉黑对的内容相互不可见
+  if (blockedIds.size) posts = posts.filter(p => !blockedIds.has(p.userId));
   if (state && STATES.includes(state)) posts = posts.filter(p => p.state === state);
   if (savedOnly) {
     const savedIds = new Set(db.saves.filter(s => s.userId === viewer.id).map(s => s.postId));
@@ -1135,6 +1151,7 @@ app.get('/api/posts', (req, res) => {
 app.get('/api/search', (req, res) => {
   const q = String(req.query.q || '').trim().toLowerCase().replace(/^[#@]/, '');
   const bannedIds = new Set(db.users.filter(u => u.banned).map(u => u.id)); // 被封用户不出现在搜索结果
+  const blockedIds = blockedSet((currentUser(req) || {}).id);               // 拉黑对不出现在搜索结果
 
   const tagCount = new Map();
   for (const p of db.posts) {
@@ -1158,7 +1175,7 @@ app.get('/api/search', (req, res) => {
 
   /* 用户：只给公开资料（用户名/地区/帖子数），不带电话 */
   const users = db.users
-    .filter(u => u.usernameLower.includes(q) && !u.banned)
+    .filter(u => u.usernameLower.includes(q) && !u.banned && !blockedIds.has(u.id))
     .slice(0, 8)
     .map(u => ({
       username: u.username,
@@ -1169,7 +1186,7 @@ app.get('/api/search', (req, res) => {
     }));
 
   const posts = [...db.posts]
-    .filter(p => !bannedIds.has(p.userId) && !p.hidden)
+    .filter(p => !bannedIds.has(p.userId) && !p.hidden && !blockedIds.has(p.userId))
     .sort((a, b) => b.createdAt - a.createdAt)
     .filter(p => matchQ(p, q))
     .slice(0, 18)
@@ -1193,10 +1210,11 @@ app.get('/api/search', (req, res) => {
 /* ---- 探索：按州 / 热门地点 / 热门标签聚合，给「探索页」浏览发现用（被封用户的内容不计入）---- */
 app.get('/api/explore', (req, res) => {
   const bannedIds = new Set(db.users.filter(u => u.banned).map(u => u.id));
+  const blockedIds = blockedSet((currentUser(req) || {}).id);   // 拉黑对不计入探索
   const stateCount = new Map(), placeCount = new Map(), tagCount = new Map();
   let total = 0;
   for (const p of db.posts) {
-    if (bannedIds.has(p.userId) || p.hidden) continue;
+    if (bannedIds.has(p.userId) || p.hidden || blockedIds.has(p.userId)) continue;
     total++;
     if (p.state) stateCount.set(p.state, (stateCount.get(p.state) || 0) + 1);
     const place = (p.place || '').trim();
@@ -1210,7 +1228,7 @@ app.get('/api/explore', (req, res) => {
   const likeCountByPost = new Map();
   for (const l of db.likes) likeCountByPost.set(l.postId, (likeCountByPost.get(l.postId) || 0) + 1);
   const posts = db.posts
-    .filter(p => !bannedIds.has(p.userId) && !p.hidden)
+    .filter(p => !bannedIds.has(p.userId) && !p.hidden && !blockedIds.has(p.userId))
     .map(p => ({ p, likes: likeCountByPost.get(p.id) || 0 }))
     .sort((a, b) => b.likes - a.likes || b.p.createdAt - a.p.createdAt)
     .slice(0, 30)
@@ -1229,7 +1247,9 @@ app.get('/api/users/:username', (req, res) => {
   const author = db.users.find(u => u.usernameLower === uname);
   if (!author) return res.status(404).json({ error: 'not_found' });
 
-  const myPosts = db.posts
+  const iBlocked = !!(viewer && db.blocks.some(b => b.blockerId === viewer.id && b.blockedId === author.id));
+  const pairBlocked = !!(viewer && viewer.id !== author.id && isBlockedPair(viewer.id, author.id));
+  const myPosts = pairBlocked ? [] : db.posts   // 拉黑对之间：主页不显示对方帖子
     .filter(p => p.userId === author.id && !p.hidden)
     .sort((a, b) => b.createdAt - a.createdAt);
   const postIds = new Set(myPosts.map(p => p.id));
@@ -1252,6 +1272,7 @@ app.get('/api/users/:username', (req, res) => {
     isAdmin: !!(viewer && viewer.id === author.id && author.isAdmin), // 本人且是管理员 → profile 显示「审核后台」入口
     viewerLoggedIn: !!viewer,
     isFollowing: !!(viewer && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
+    blocked: iBlocked,   // 我是否拉黑了 ta（给「取消拉黑」按钮）
     sitePublished: !!(author.site && author.site.published),
     shopOpen: !!(author.site && author.site.published && Array.isArray(author.site.menu) && author.site.menu.some(c => Array.isArray(c.items) && c.items.length)),
     shelf: Array.isArray(author.shelf) ? author.shelf : [],   // 货架商品（profile 上展示，访客可见）
@@ -1267,12 +1288,39 @@ app.post('/api/users/:username/follow', requireAuth, (req, res) => {
   const target = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
   if (!target) return res.status(404).json({ error: 'not_found' });
   if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  if (isBlockedPair(req.user.id, target.id)) return res.status(403).json({ error: 'blocked' });   // 拉黑对之间不能关注
   const i = db.follows.findIndex(f => f.followerId === req.user.id && f.followingId === target.id);
   let following;
   if (i >= 0) { db.follows.splice(i, 1); following = false; }
   else { db.follows.push({ followerId: req.user.id, followingId: target.id, createdAt: Date.now() }); following = true; }
   saveDb();
   res.json({ following, followerCount: db.follows.reduce((n, f) => n + (f.followingId === target.id ? 1 : 0), 0) });
+});
+
+// 拉黑 / 取消拉黑切换：POST /api/users/:username/block。拉黑时双向解除现有关注。
+app.post('/api/users/:username/block', requireAuth, (req, res) => {
+  const target = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!target) return res.status(404).json({ error: 'not_found' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  const i = db.blocks.findIndex(b => b.blockerId === req.user.id && b.blockedId === target.id);
+  let blocked;
+  if (i >= 0) { db.blocks.splice(i, 1); blocked = false; }
+  else {
+    db.blocks.push({ blockerId: req.user.id, blockedId: target.id, createdAt: Date.now() });
+    // 拉黑即双向解除关注
+    db.follows = db.follows.filter(f => !((f.followerId === req.user.id && f.followingId === target.id) || (f.followerId === target.id && f.followingId === req.user.id)));
+    blocked = true;
+  }
+  saveDb();
+  res.json({ blocked });
+});
+
+// 我拉黑的人
+app.get('/api/me/blocks', requireAuth, (req, res) => {
+  const users = db.blocks.filter(b => b.blockerId === req.user.id)
+    .map(b => db.users.find(u => u.id === b.blockedId)).filter(Boolean)
+    .map(u => ({ username: u.username, avatar: u.avatar || null, bio: u.bio || '' }));
+  res.json({ users });
 });
 
 // 关注/粉丝列表里的用户卡（带 viewer 视角的 isFollowing）
@@ -1398,8 +1446,9 @@ app.get('/api/posts/:id/comments', (req, res) => {
   const viewer = currentUser(req);
   const post = db.posts.find(p => p.id === req.params.id);
   if (!post) return res.status(404).json({ error: 'not_found' });
+  const blockedC = blockedSet(viewer && viewer.id);   // 拉黑对的评论相互不可见
   const comments = db.comments
-    .filter(c => c.postId === post.id && !c.hidden)
+    .filter(c => c.postId === post.id && !c.hidden && !blockedC.has(c.userId))
     .sort((a, b) => a.createdAt - b.createdAt)
     .map(c => {
       const u = db.users.find(x => x.id === c.userId);
@@ -1453,6 +1502,7 @@ app.post('/api/messages', requireAuth, messageLimit, muteGuard, (req, res) => {
   const target = db.users.find(u => u.usernameLower === String(to || '').trim().toLowerCase());
   if (!target) return res.status(404).json({ error: 'not_found' });
   if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  if (isBlockedPair(req.user.id, target.id)) return res.status(403).json({ error: 'blocked' });   // 拉黑对之间不能私信
   const clean = String(text || '').trim().slice(0, 1000);
   if (!clean) return res.status(400).json({ error: 'missing' });
   const msg = { id: crypto.randomUUID(), fromId: req.user.id, toId: target.id, text: clean, createdAt: Date.now(), readAt: null };
@@ -1510,8 +1560,9 @@ app.get('/api/places/:place', (req, res) => {
   const viewer = currentUser(req);
   const key = String(req.params.place || '').trim().toLowerCase();
   if (!key) return res.status(404).json({ error: 'not_found' });
+  const blockedP = blockedSet(viewer && viewer.id);
   const posts = db.posts
-    .filter(p => (p.place || '').trim().toLowerCase() === key && !p.hidden)
+    .filter(p => (p.place || '').trim().toLowerCase() === key && !p.hidden && !blockedP.has(p.userId))
     .sort((a, b) => b.createdAt - a.createdAt);
   if (!posts.length) return res.status(404).json({ error: 'not_found' });
   const name = posts[0].place;
