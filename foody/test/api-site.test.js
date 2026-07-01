@@ -129,3 +129,33 @@ test('slug 跨用户冲突 → 400 slug_taken 且不落盘', async () => {
   const g = await (await fetch(base + '/api/site/seller1')).json();
   assert.strictEqual(g.slug, 'beef-noodle');   // slug 未被改成被占用的值
 });
+
+test('by-slug 能解析到已发布站点', async () => {
+  const r = await fetch(base + '/api/site/by-slug/beef-noodle');
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual((await r.json()).username, 'seller1');
+});
+
+test('by-slug 未知 slug → 404 not_found', async () => {
+  const r = await fetch(base + '/api/site/by-slug/nope-nope');
+  assert.strictEqual(r.status, 404);
+  assert.strictEqual((await r.json()).error, 'not_found');
+});
+
+test('slug-available：可用 / 占用 / 保留 / 不合法', async () => {
+  const ok = await (await fetch(base + '/api/me/site/slug-available?slug=fresh-cafe', { headers: { cookie: sellerCookie } })).json();
+  assert.strictEqual(ok.available, true);
+  const taken = await (await fetch(base + '/api/me/site/slug-available?slug=beef-noodle', { headers: { cookie: sellerCookie } })).json();
+  // 自己已占用的 slug 对自己应算「可用」（排除自己）
+  assert.strictEqual(taken.available, true);
+  const reserved = await (await fetch(base + '/api/me/site/slug-available?slug=admin', { headers: { cookie: sellerCookie } })).json();
+  assert.deepStrictEqual([reserved.available, reserved.reason], [false, 'reserved']);
+  const bad = await (await fetch(base + '/api/me/site/slug-available?slug=ab', { headers: { cookie: sellerCookie } })).json();
+  assert.deepStrictEqual([bad.available, bad.reason], [false, 'bad']);
+});
+
+test('/s/:slug 返回 HTML 页面', async () => {
+  const r = await fetch(base + '/s/beef-noodle');
+  assert.strictEqual(r.status, 200);
+  assert.ok((r.headers.get('content-type') || '').includes('text/html'));
+});

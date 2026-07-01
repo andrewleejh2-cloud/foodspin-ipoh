@@ -1016,6 +1016,24 @@ function buildSitePayload(u, viewer) {
   };
 }
 
+app.get('/api/me/site/slug-available', requireAuth, (req, res) => {
+  const s = normSlug(String(req.query.slug || ''));
+  if (!slugFormatOk(s)) return res.json({ available: false, reason: 'bad' });
+  if (RESERVED_SLUGS.has(s)) return res.json({ available: false, reason: 'reserved' });
+  if (slugTaken(s, req.user.id)) return res.json({ available: false, reason: 'taken' });
+  res.json({ available: true, slug: s });
+});
+
+app.get('/api/site/by-slug/:slug', (req, res) => {
+  const viewer = currentUser(req);
+  const slug = normSlug(req.params.slug);
+  const u = slug ? db.users.find(x => x.site && x.site.slug === slug) : null;
+  if (!u) return res.status(404).json({ error: 'not_found' });
+  const isMe = !!(viewer && viewer.id === u.id);
+  if (!(u.site && u.site.published) && !isMe) return res.status(404).json({ error: 'not_published' });
+  res.json(buildSitePayload(u, viewer));
+});
+
 app.get('/api/site/:username', (req, res) => {
   const viewer = currentUser(req);
   const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
@@ -1982,6 +2000,8 @@ app.post('/api/admin/users/:username/warn', requireAdmin, (req, res) => {
   saveDb();
   res.json({ ok: true });
 });
+
+app.get('/s/:slug', (req, res) => res.sendFile(path.join(ROOT, 'public', 'site.html')));
 
 /* ---- 静态文件 ---- */
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
