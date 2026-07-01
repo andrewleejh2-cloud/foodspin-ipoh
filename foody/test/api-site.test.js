@@ -111,3 +111,21 @@ test('sections 只认白名单键、值转布尔', async () => {
   assert.ok(!('hacker' in g.sections));
   assert.ok(!('gallery' in g.sections));   // 非布尔值被丢弃
 });
+
+test('slug 跨用户冲突 → 400 slug_taken 且不落盘', async () => {
+  const rr = await fetch(base + '/api/register', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'seller2', password: 'pass123', phone: '012-222 2222', state: 'Johor' })
+  });
+  assert.strictEqual(rr.status, 200);
+  const seller2Cookie = rr.headers.get('set-cookie').split(';')[0];
+
+  const s1 = await patchSite(seller2Cookie, { slug: 'popular-shop' });
+  assert.strictEqual(s1.status, 200);
+
+  const r = await patchSite(sellerCookie, { slug: 'popular-shop' });
+  assert.strictEqual(r.status, 400);
+  assert.strictEqual((await r.json()).error, 'slug_taken');
+  const g = await (await fetch(base + '/api/site/seller1')).json();
+  assert.strictEqual(g.slug, 'beef-noodle');   // slug 未被改成被占用的值
+});
