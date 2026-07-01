@@ -1538,10 +1538,12 @@ app.post('/api/messages', requireAuth, messageLimit, muteGuard, (req, res) => {
 // 我的对话列表（收件箱）：GET /api/conversations
 app.get('/api/conversations', requireAuth, (req, res) => {
   const me = req.user.id;
+  const blocked = blockedSet(me);   // 拉黑对的会话不出现在收件箱
   const byOther = new Map();
   for (const m of db.messages) {
     if (m.fromId !== me && m.toId !== me) continue;
     const otherId = m.fromId === me ? m.toId : m.fromId;
+    if (blocked.has(otherId)) continue;
     let c = byOther.get(otherId);
     if (!c) { c = { last: m, unread: 0 }; byOther.set(otherId, c); }
     else if (m.createdAt > c.last.createdAt) c.last = m;
@@ -1560,7 +1562,8 @@ app.get('/api/conversations', requireAuth, (req, res) => {
 // 未读总数（顶栏小红点轮询用）：GET /api/me/unread
 app.get('/api/me/unread', requireAuth, (req, res) => {
   const me = req.user.id;
-  const count = db.messages.reduce((n, m) => n + (m.toId === me && !m.readAt ? 1 : 0), 0);
+  const blocked = blockedSet(me);
+  const count = db.messages.reduce((n, m) => n + (m.toId === me && !m.readAt && !blocked.has(m.fromId) ? 1 : 0), 0);
   res.json({ count });
 });
 
@@ -1569,6 +1572,7 @@ app.get('/api/messages/:username', requireAuth, (req, res) => {
   const other = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
   if (!other) return res.status(404).json({ error: 'not_found' });
   const me = req.user.id;
+  if (isBlockedPair(me, other.id)) return res.json({ user: { username: other.username, avatar: other.avatar || null }, messages: [] });   // 拉黑对不显示历史
   const msgs = dmBetween(me, other.id);
   let changed = false;
   for (const m of msgs) if (m.toId === me && !m.readAt) { m.readAt = Date.now(); changed = true; }
@@ -1625,6 +1629,7 @@ function notifItemsFor(me) {
   const myPostIds = new Set(db.posts.filter(p => p.userId === me).map(p => p.id));
   const meUser = db.users.find(u => u.id === me);
   const meLower = meUser ? meUser.usernameLower : '';
+  const blocked = blockedSet(me);   // 拉黑对之间不互发通知
   const items = [];
   for (const l of db.likes) if (l.userId !== me && myPostIds.has(l.postId)) items.push({ type: 'like', actorId: l.userId, postId: l.postId, createdAt: l.createdAt || 0 });
   for (const c of db.comments) {
@@ -1642,7 +1647,7 @@ function notifItemsFor(me) {
     if (fAt !== undefined && (p.createdAt || 0) >= fAt) items.push({ type: 'newpost', actorId: p.userId, postId: p.id, text: p.caption || '', createdAt: p.createdAt || 0 });
   }
   items.sort((a, b) => b.createdAt - a.createdAt);
-  return items;
+  return blocked.size ? items.filter(it => !blocked.has(it.actorId)) : items;
 }
 
 app.get('/api/notifications', requireAuth, (req, res) => {

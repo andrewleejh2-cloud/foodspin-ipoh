@@ -12,7 +12,9 @@ const now = Date.now();
 const post = (id, u) => ({ id, userId: u.id, mediaUrl: '/seed/x.svg', mediaType: 'image', media: [{ url: '/seed/x.svg', type: 'image' }], caption: id, tags: [], state: 'Johor', city: 'JB', createdAt: now });
 fs.writeFileSync(path.join(dataDir, 'db.json'), JSON.stringify({
   users: [alice, bob, carol], sessions: [], posts: [post('PA', alice), post('PB', bob), post('PC', carol)],
-  comments: [], likes: [], saves: [], messages: [], follows: [{ followerId: alice.id, followingId: bob.id, createdAt: now }], reports: [], modActions: [], orders: []
+  comments: [], likes: [{ postId: 'PA', userId: bob.id, createdAt: now - 1000 }], saves: [],
+  messages: [{ id: 'm0', fromId: bob.id, toId: alice.id, text: 'old msg', createdAt: now - 1000, readAt: null }],
+  follows: [{ followerId: alice.id, followingId: bob.id, createdAt: now }], reports: [], modActions: [], orders: []
 }));
 
 process.env.FOODY_DATA_DIR = dataDir;
@@ -50,6 +52,13 @@ test('拉黑后不能互相私信', async () => {
   assert.strictEqual((await dm(ck.alice, 'bob')).status, 403);
   assert.strictEqual((await dm(ck.bob, 'alice')).status, 403);
   assert.strictEqual((await dm(ck.carol, 'bob')).status, 200);
+});
+
+test('拉黑后：通知和收件箱里不再出现 ta', async () => {
+  const notifs = (await (await fetch(base + '/api/notifications', { headers: { cookie: ck.alice } })).json()).notifications;
+  assert.strictEqual(notifs.some(n => n.username === 'bob'), false, '通知里不该有 bob 的赞');
+  const convos = (await (await fetch(base + '/api/conversations', { headers: { cookie: ck.alice } })).json()).conversations;
+  assert.strictEqual(convos.some(c => c.username === 'bob'), false, '收件箱里不该有和 bob 的会话');
 });
 
 test('拉黑解除了现有关注，且不能再关注', async () => {
