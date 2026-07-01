@@ -981,34 +981,37 @@ const SITE_THEMES = ['warm', 'dark', 'fresh', 'berry', 'mono'];
 const SHELF_SELLERS = new Set(['安德鲁']);
 function canSellGoods(u) { return !!(u && SHELF_SELLERS.has(u.usernameLower)); }
 
+function buildSitePayload(u, viewer) {
+  const isMe = !!(viewer && viewer.id === u.id);
+  const s = u.site || {};
+  const posts = db.posts.filter(p => p.userId === u.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 12)
+    .map(p => ({ id: p.id, mediaUrl: p.mediaUrl, mediaType: p.mediaType }));
+  return {
+    username: u.username, avatar: u.avatar || null, isMe,
+    published: !!s.published, cover: s.cover || null,
+    title: s.title || '', tagline: s.tagline || '', intro: s.intro || '',
+    hours: s.hours || '', address: s.address || '', links: s.links || [],
+    theme: SITE_THEMES.includes(s.theme) ? s.theme : 'warm',
+    accent: /^#[0-9a-fA-F]{6}$/.test(s.accent || '') ? s.accent : '',
+    announce: s.announce || '',
+    photos: Array.isArray(s.photos) ? s.photos : [],
+    sections: (s.sections && typeof s.sections === 'object') ? s.sections : {},
+    slug: s.slug || '',
+    menu: Array.isArray(s.menu) ? s.menu : [],
+    status: s.status || '',
+    mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
+    waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
+    posts
+  };
+}
+
 app.get('/api/site/:username', (req, res) => {
   const viewer = currentUser(req);
   const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
   if (!u) return res.status(404).json({ error: 'not_found' });
   const isMe = !!(viewer && viewer.id === u.id);
-  const s = u.site || {};
-  if (!s.published && !isMe) return res.status(404).json({ error: 'not_published' });
-  const posts = db.posts.filter(p => p.userId === u.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 12)
-    .map(p => ({ id: p.id, mediaUrl: p.mediaUrl, mediaType: p.mediaType }));
-  res.json({
-    username: u.username,
-    avatar: u.avatar || null,
-    isMe,
-    published: !!s.published,
-    cover: s.cover || null,
-    title: s.title || '',
-    tagline: s.tagline || '',
-    intro: s.intro || '',
-    hours: s.hours || '',
-    address: s.address || '',
-    links: s.links || [],
-    theme: SITE_THEMES.includes(s.theme) ? s.theme : 'warm',
-    menu: Array.isArray(s.menu) ? s.menu : [],
-    status: s.status || '',   // 仅本人且在摆货白名单 → 编辑器显示「货架」摆货区
-    mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
-    waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
-    posts
-  });
+  if (!(u.site && u.site.published) && !isMe) return res.status(404).json({ error: 'not_published' });
+  res.json(buildSitePayload(u, viewer));
 });
 
 app.patch('/api/me/site', requireAuth, (req, res) => {
