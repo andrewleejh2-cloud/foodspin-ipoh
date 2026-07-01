@@ -977,6 +977,17 @@ function normLink(url) {
 }
 
 const SITE_THEMES = ['warm', 'dark', 'fresh', 'berry', 'mono'];
+const RESERVED_SLUGS = new Set(['s', 'api', 'admin', 'foody', 'uploads', 'www', 'app', 'me', 'site', 'shop', 'help', 'about']);
+function normSlug(raw) { return String(raw || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); }
+function slugFormatOk(s) { return s.length >= 3 && s.length <= 30 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s); }
+function slugTaken(slug, exceptUserId) { return db.users.some(u => u.id !== exceptUserId && u.site && u.site.slug === slug); }
+function checkSlug(raw, userId) {
+  const s = normSlug(raw);
+  if (!slugFormatOk(s)) return { ok: false, code: 'bad_slug' };
+  if (RESERVED_SLUGS.has(s)) return { ok: false, code: 'reserved_slug' };
+  if (slugTaken(s, userId)) return { ok: false, code: 'slug_taken' };
+  return { ok: true, slug: s };
+}
 // 货架（商品）摆货权限：暂时只允许指定账号；以后放开就往名单里加用户名（小写），或改成用户 flag
 const SHELF_SELLERS = new Set(['安德鲁']);
 function canSellGoods(u) { return !!(u && SHELF_SELLERS.has(u.usernameLower)); }
@@ -1017,6 +1028,16 @@ app.get('/api/site/:username', (req, res) => {
 app.patch('/api/me/site', requireAuth, (req, res) => {
   const b = req.body || {};
   const s = req.user.site || {};
+  // slug 需要明确反馈：非法/占用/保留 → 400 且整个 PATCH 不落盘
+  let nextSlug;   // undefined = 本次不动 slug
+  if (typeof b.slug === 'string') {
+    if (b.slug.trim() === '') nextSlug = '';
+    else {
+      const r = checkSlug(b.slug, req.user.id);
+      if (!r.ok) return res.status(400).json({ error: r.code });
+      nextSlug = r.slug;
+    }
+  }
   if (typeof b.title === 'string') s.title = b.title.trim().slice(0, 60);
   if (typeof b.tagline === 'string') s.tagline = b.tagline.trim().slice(0, 120);
   if (typeof b.intro === 'string') s.intro = b.intro.replace(/\r\n/g, '\n').trim().slice(0, 1000);
@@ -1043,6 +1064,23 @@ app.patch('/api/me/site', requireAuth, (req, res) => {
   }
   if (typeof b.published === 'boolean') s.published = b.published;
   if (typeof b.status === 'string' && ['', 'open', 'closed'].includes(b.status)) s.status = b.status;  // 营业状态：空=不显示
+  if (nextSlug !== undefined) s.slug = nextSlug;
+  if (typeof b.accent === 'string') {
+    const a = b.accent.trim();
+    if (a === '') s.accent = '';
+    else if (/^#[0-9a-fA-F]{6}$/.test(a)) s.accent = a;   // 非法忽略
+  }
+  if (typeof b.announce === 'string') s.announce = b.announce.replace(/\r\n/g, '\n').trim().slice(0, 200);
+  if (Array.isArray(b.photos)) {
+    s.photos = b.photos.slice(0, 20)
+      .map(p => ({ url: (p && typeof p.url === 'string' && p.url.startsWith('/uploads/')) ? p.url : '' }))
+      .filter(p => p.url);
+  }
+  if (b.sections && typeof b.sections === 'object' && !Array.isArray(b.sections)) {
+    const sec = {};
+    for (const k of ['gallery', 'menu', 'photos', 'contact']) if (typeof b.sections[k] === 'boolean') sec[k] = b.sections[k];
+    s.sections = sec;
+  }
   req.user.site = s;
   saveDb();
   res.json({ ok: true, site: s });

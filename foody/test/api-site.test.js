@@ -44,3 +44,70 @@ test('已发布站点 payload 含新字段、默认为空', async () => {
   assert.deepStrictEqual(j.sections, {});
   assert.strictEqual(j.slug, '');
 });
+
+async function patchSite(cookie, body) {
+  return fetch(base + '/api/me/site', {
+    method: 'PATCH', headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify(body)
+  });
+}
+
+test('slug 合法则保存、大写/空格归一化为小写', async () => {
+  const r = await patchSite(sellerCookie, { slug: '  Beef-Noodle  ' });
+  assert.strictEqual(r.status, 200);
+  const g = await (await fetch(base + '/api/site/seller1')).json();
+  assert.strictEqual(g.slug, 'beef-noodle');
+});
+
+test('slug 太短 → 400 bad_slug 且不落盘', async () => {
+  const r = await patchSite(sellerCookie, { slug: 'ab', title: '不该被保存' });
+  assert.strictEqual(r.status, 400);
+  assert.strictEqual((await r.json()).error, 'bad_slug');
+  const g = await (await fetch(base + '/api/site/seller1')).json();
+  assert.strictEqual(g.title, '牛肉面店');      // title 未被这次请求改动
+  assert.strictEqual(g.slug, 'beef-noodle');    // slug 仍是上一次的
+});
+
+test('slug 保留词 → 400 reserved_slug', async () => {
+  const r = await patchSite(sellerCookie, { slug: 'admin' });
+  assert.strictEqual(r.status, 400);
+  assert.strictEqual((await r.json()).error, 'reserved_slug');
+});
+
+test('slug 空串 → 清空', async () => {
+  await patchSite(sellerCookie, { slug: '' });
+  const g = await (await fetch(base + '/api/site/seller1')).json();
+  assert.strictEqual(g.slug, '');
+  await patchSite(sellerCookie, { slug: 'beef-noodle' });   // 复原给后续测试用
+});
+
+test('accent 合法 hex 存、非法忽略、空清空', async () => {
+  await patchSite(sellerCookie, { accent: '#12ab34' });
+  assert.strictEqual((await (await fetch(base + '/api/site/seller1')).json()).accent, '#12ab34');
+  await patchSite(sellerCookie, { accent: 'red' });         // 非法 → 忽略，保持上一个
+  assert.strictEqual((await (await fetch(base + '/api/site/seller1')).json()).accent, '#12ab34');
+  await patchSite(sellerCookie, { accent: '' });            // 空 → 清空
+  assert.strictEqual((await (await fetch(base + '/api/site/seller1')).json()).accent, '');
+});
+
+test('announce 超长截断到 200', async () => {
+  await patchSite(sellerCookie, { announce: 'x'.repeat(500) });
+  assert.strictEqual((await (await fetch(base + '/api/site/seller1')).json()).announce.length, 200);
+});
+
+test('photos 只收 /uploads/、超 20 截断', async () => {
+  const arr = Array.from({ length: 25 }, (_, i) => ({ url: '/uploads/p' + i + '.jpg' }));
+  arr.push({ url: 'https://evil.com/x.jpg' });
+  await patchSite(sellerCookie, { photos: arr });
+  const g = await (await fetch(base + '/api/site/seller1')).json();
+  assert.strictEqual(g.photos.length, 20);
+  assert.ok(g.photos.every(p => p.url.startsWith('/uploads/')));
+});
+
+test('sections 只认白名单键、值转布尔', async () => {
+  await patchSite(sellerCookie, { sections: { menu: false, hacker: true, gallery: 'yes' } });
+  const g = await (await fetch(base + '/api/site/seller1')).json();
+  assert.strictEqual(g.sections.menu, false);
+  assert.ok(!('hacker' in g.sections));
+  assert.ok(!('gallery' in g.sections));   // 非布尔值被丢弃
+});
