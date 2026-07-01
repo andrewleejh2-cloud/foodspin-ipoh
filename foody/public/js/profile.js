@@ -398,6 +398,7 @@
   $('#editCancel').addEventListener('click', closeEdit);
   $('#editChangePw').addEventListener('click', () => { closeEdit(); openChangePassword(); });
   $('#editSessions').addEventListener('click', () => { closeEdit(); openSessions(); });
+  $('#editVerifyEmail').addEventListener('click', () => { closeEdit(); openEmailVerify(); });
   $('#editDeleteAcct').addEventListener('click', () => { closeEdit(); openDeleteAccount(); });
   $('#editOverlay').addEventListener('click', (e) => { if (e.target === $('#editOverlay')) closeEdit(); });
   $('#editBio').addEventListener('input', () => { $('#bioCount').textContent = $('#editBio').value.length; });

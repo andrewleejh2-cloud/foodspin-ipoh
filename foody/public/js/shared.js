@@ -36,6 +36,7 @@ const DICT = {
     pwrReset: '重置密码', pwrResend: '重新发送', pwrDone: '密码已重置，请用新密码登录', pwrNeedFields: '请填邮箱和电话',
     sessTitle: '登录设备', sessCurrent: '当前设备', sessKick: '踢出', sessRevokeOthers: '退出其它所有设备', sessUnknown: '未知设备', sessDone: '已退出其它设备',
     delAccount: '注销账号', delWarn: '注销将永久删除你的账号和全部内容（帖子 / 评论 / 赞 / 关注 / 私信），不可恢复。', delPwPh: '输入密码确认', delConfirmBtn: '确认注销', delDone: '账号已注销',
+    evTitle: '验证邮箱', evHint: '我们会发一个 6 位验证码到你的注册邮箱。', evSend: '发送验证码', evSent: '验证码已发到邮箱，请查收', evConfirm: '确认验证', evDone: '邮箱已验证 ✓', evAlready: '邮箱已验证', evNoEmail: '你还没设置邮箱', evVerify: '验证邮箱', evVerified: '邮箱已验证 ✓',
     /* FYP */
     fypTitle: 'FYP', home: '首页',
     upload: '发布', uploadTitle: '分享美食 🍜',
@@ -152,6 +153,7 @@ const DICT = {
     pwrReset: 'Set semula', pwrResend: 'Hantar semula', pwrDone: 'Kata laluan ditetapkan semula — sila log masuk', pwrNeedFields: 'Isi email dan telefon',
     sessTitle: 'Peranti log masuk', sessCurrent: 'Peranti ini', sessKick: 'Keluarkan', sessRevokeOthers: 'Log keluar peranti lain', sessUnknown: 'Peranti tak dikenali', sessDone: 'Peranti lain dilog keluar',
     delAccount: 'Padam akaun', delWarn: 'Memadam akaun akan buang akaun & semua kandungan anda (pos / komen / suka / ikutan / mesej) secara kekal. Tak boleh undo.', delPwPh: 'Masukkan kata laluan untuk sahkan', delConfirmBtn: 'Sahkan padam', delDone: 'Akaun dipadam',
+    evTitle: 'Sahkan email', evHint: 'Kami akan hantar kod 6 digit ke email pendaftaran anda.', evSend: 'Hantar kod', evSent: 'Kod telah dihantar ke email — sila semak', evConfirm: 'Sahkan', evDone: 'Email disahkan ✓', evAlready: 'Email sudah disahkan', evNoEmail: 'Anda belum set email', evVerify: 'Sahkan email', evVerified: 'Email disahkan ✓',
     fypTitle: 'FYP', home: 'Utama',
     upload: 'Post', uploadTitle: 'Kongsi makanan 🍜',
     chooseFile: 'Tekan untuk pilih gambar atau video', changeFile: 'Tukar fail',
@@ -266,6 +268,7 @@ const DICT = {
     pwrReset: 'Reset password', pwrResend: 'Resend', pwrDone: 'Password reset — please log in', pwrNeedFields: 'Enter email and phone',
     sessTitle: 'Login devices', sessCurrent: 'This device', sessKick: 'Sign out', sessRevokeOthers: 'Sign out other devices', sessUnknown: 'Unknown device', sessDone: 'Other devices signed out',
     delAccount: 'Delete account', delWarn: 'Deleting your account permanently removes it and all your content (posts / comments / likes / follows / messages). This cannot be undone.', delPwPh: 'Enter password to confirm', delConfirmBtn: 'Confirm delete', delDone: 'Account deleted',
+    evTitle: 'Verify email', evHint: "We'll send a 6-digit code to your registered email.", evSend: 'Send code', evSent: 'Code sent to your email — please check', evConfirm: 'Confirm', evDone: 'Email verified ✓', evAlready: 'Email already verified', evNoEmail: "You haven't set an email", evVerify: 'Verify email', evVerified: 'Email verified ✓',
     fypTitle: 'FYP', home: 'Home',
     upload: 'Post', uploadTitle: 'Share some food 🍜',
     chooseFile: 'Tap to choose a photo or video', changeFile: 'Change file',
@@ -883,6 +886,37 @@ function openDeleteAccount() {
     } catch (e) { toast(errMsg(e.code)); btn.disabled = false; }
   });
   ov.classList.add('show');
+}
+
+/* ---------------- 邮箱验证 弹窗（复用 pwOverlay 容器）---------------- */
+function openEmailVerify() {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('evTitle');
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('evHint') + '</p>' +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="evSend">' + t('evSend') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#evSend').addEventListener('click', async () => {
+    const btn = ov.querySelector('#evSend'); btn.disabled = true;
+    try {
+      const r = await api('/api/me/email/verify/request', { method: 'POST' });
+      if (r.already) { toast(t('evAlready')); closePw(); return; }
+      toast(t('evSent')); evStep2(ov);
+    } catch (e) { toast(e.code === 'no_email' ? t('evNoEmail') : errMsg(e.code)); btn.disabled = false; }
+  });
+  ov.classList.add('show');
+}
+function evStep2(ov) {
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('evSent') + '</p>' + pwField('evCode', t('pwrCodePh'), 'text') +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="evConfirm">' + t('evConfirm') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#evConfirm').addEventListener('click', async () => {
+    const btn = ov.querySelector('#evConfirm'); btn.disabled = true;
+    try { await api('/api/me/email/verify/confirm', { method: 'POST', body: { code: ov.querySelector('#evCode').value.trim() } }); toast(t('evDone')); closePw(); }
+    catch (e) { toast(errMsg(e.code)); btn.disabled = false; }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); maybeShowWarning(); });

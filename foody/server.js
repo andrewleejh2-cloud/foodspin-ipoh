@@ -847,7 +847,7 @@ app.post('/api/auth/reset/confirm', resetConfirmLimit, (req, res) => {
 
 app.get('/api/me', (req, res) => {
   const user = currentUser(req);
-  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [], muted: isMuted(user) ? user.mutedUntil : 0, warning: user ? latestUnseenWarning(user) : null });
+  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [], muted: isMuted(user) ? user.mutedUntil : 0, warning: user ? latestUnseenWarning(user) : null, emailVerified: !!(user && user.emailVerified) });
 });
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
@@ -907,6 +907,30 @@ app.post('/api/me/delete', requireAuth, (req, res) => {
   deleteUserCascade(req.user);
   saveDb();
   setSessionCookie(res, '', 0);   // 清当前 cookie
+  res.json({ ok: true });
+});
+
+/* ---- 邮箱验证（复用 mailer + 6 位码）---- */
+const emailVerifyLimit = rateLimit({ windowMs: 600000, max: 10 });
+app.post('/api/me/email/verify/request', requireAuth, emailVerifyLimit, async (req, res) => {
+  const u = req.user;
+  if (!u.email) return res.status(400).json({ error: 'no_email' });
+  if (u.emailVerified) return res.json({ ok: true, already: true });
+  const code = genCode();
+  u.emailVerify = { codeHash: hashCode(u.id, code), expires: Date.now() + RESET_TTL, attempts: 0 };
+  saveDb();
+  try {
+    await req.app.locals.mailer.send({ to: u.email, subject: 'Foody 邮箱验证码', text: `你好 @${u.username}，\n你的 Foody 邮箱验证码是：${code}\n10 分钟内有效。` });
+  } catch (e) { console.error('[email-verify] 发码失败:', e.message); }
+  res.json({ ok: true });
+});
+app.post('/api/me/email/verify/confirm', requireAuth, (req, res) => {
+  const u = req.user;
+  if (!u.emailVerify) return res.status(400).json({ error: 'no_request' });
+  if (Date.now() > u.emailVerify.expires) { delete u.emailVerify; saveDb(); return res.status(400).json({ error: 'expired' }); }
+  if (u.emailVerify.attempts >= RESET_MAX_ATTEMPTS) { delete u.emailVerify; saveDb(); return res.status(400).json({ error: 'too_many' }); }
+  if (hashCode(u.id, (req.body || {}).code) !== u.emailVerify.codeHash) { u.emailVerify.attempts++; saveDb(); return res.status(400).json({ error: 'bad_code' }); }
+  u.emailVerified = true; delete u.emailVerify; saveDb();
   res.json({ ok: true });
 });
 
