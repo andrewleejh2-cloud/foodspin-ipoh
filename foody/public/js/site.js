@@ -8,6 +8,13 @@
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function fail(msg) { $('#siteRoot').innerHTML = `<div class="site-fail">${esc(msg)}</div>`; }
 
+  // 浅色 accent → 深色文字（YIQ 亮度），保证公告条/激活态可读
+  function accentInk(hex) {
+    const m = /^#([0-9a-fA-F]{6})$/.exec(hex || ''); if (!m) return '#fff';
+    const n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return ((r * 299 + g * 587 + b * 114) / 1000) >= 160 ? '#1F1B16' : '#fff';
+  }
+
   async function load() {
     const m = location.pathname.match(/^\/s\/([^/]+)\/?$/);
     let endpoint;
@@ -48,12 +55,17 @@
     const root = $('#siteRoot');
     root.innerHTML = '';
     FoodyCart.setWaUrl(D.waUrl, D.username); FoodyCart.reset();   // 重渲染先清旧订单条，末尾按购物车恢复
-    document.body.className = 'page-site site-theme-' + (D.theme || 'warm');   // 套配色主题
-    if (D.accent) document.body.style.setProperty('--site-accent', D.accent);
-    else document.body.style.removeProperty('--site-accent');
+    document.body.className = 'page-site site-theme-' + (D.theme || 'warm');
+    if (D.accent) {
+      document.body.style.setProperty('--site-accent', D.accent);
+      document.body.style.setProperty('--site-accent-ink', accentInk(D.accent));
+    } else {
+      document.body.style.removeProperty('--site-accent');
+      document.body.style.removeProperty('--site-accent-ink');
+    }
 
     const bar = document.createElement('div');
-    bar.className = 'site-bar';
+    bar.className = 'site-topbar';
     const back = document.createElement('button');
     back.className = 'site-icon'; back.innerHTML = ICONS.back; back.title = BACK[LANG] || BACK.en;
     back.addEventListener('click', () => { if (history.length > 1) history.back(); else location.href = 'fyp.html'; });
@@ -79,7 +91,7 @@
     }
 
     const hero = document.createElement('header');
-    hero.className = 'site-hero' + (D.cover ? ' has-cover' : '');
+    hero.className = 'site-hero' + (D.cover ? ' has-cover' : ' no-cover');
     if (D.cover) { const img = document.createElement('img'); img.className = 'site-cover'; img.src = D.cover; img.alt = ''; hero.appendChild(img); }
     const ht = document.createElement('div');
     ht.className = 'site-hero-text';
@@ -87,11 +99,18 @@
     h1.textContent = D.title || ('@' + D.username);
     ht.appendChild(h1);
     if (D.tagline) { const tg = document.createElement('p'); tg.className = 'site-tagline'; tg.textContent = D.tagline; ht.appendChild(tg); }
+    const meta = document.createElement('div'); meta.className = 'site-hero-meta';
+    const who = document.createElement('a');
+    who.className = 'site-who'; who.href = 'profile.html?u=' + encodeURIComponent(D.username);
+    const av = document.createElement('span'); av.className = 'avatar-sm'; fillAvatar(av, D.username, D.avatar);
+    const wn = document.createElement('span'); wn.textContent = '@' + D.username;
+    who.append(av, wn); meta.appendChild(who);
     if (D.status === 'open' || D.status === 'closed') {
-      const st = document.createElement('div'); st.className = 'site-status ' + D.status;
+      const st = document.createElement('span'); st.className = 'site-status ' + D.status;
       st.textContent = t(D.status === 'open' ? 'statusOpen' : 'statusClosed');
-      ht.appendChild(st);
+      meta.appendChild(st);
     }
+    ht.appendChild(meta);
     hero.appendChild(ht);
     root.appendChild(hero);
 
@@ -137,7 +156,12 @@
       if (!cat.items || !cat.items.length) continue;
       hasMenu = true;
       const c = document.createElement('div'); c.className = 'menu-cat';
-      if (cat.name) { const h = document.createElement('div'); h.className = 'menu-cat-name'; h.textContent = cat.name; c.appendChild(h); }
+      if (cat.name) {
+        const h = document.createElement('div'); h.className = 'menu-cat-name';
+        h.textContent = cat.name;
+        const ct = document.createElement('span'); ct.className = 'mc-count'; ct.textContent = '· ' + cat.items.length;
+        h.appendChild(ct); c.appendChild(h);
+      }
       for (const it of cat.items) {
         const key = 'i' + (uid++);
         const row = document.createElement('div'); row.className = 'menu-item' + (it.soldOut ? ' is-sold' : '');
@@ -145,6 +169,7 @@
         const b = document.createElement('div'); b.className = 'menu-item-body';
         const top = document.createElement('div'); top.className = 'menu-item-top';
         const nm = document.createElement('span'); nm.className = 'menu-item-name'; nm.textContent = it.name; top.appendChild(nm);
+        if (it.soldOut) { const sd = document.createElement('span'); sd.className = 'sold-tag'; sd.textContent = t('shopSoldOut'); top.appendChild(sd); }
         if (it.price) { const pr = document.createElement('span'); pr.className = 'menu-item-price'; pr.textContent = it.price; top.appendChild(pr); }
         b.appendChild(top);
         if (it.desc) { const d = document.createElement('p'); d.className = 'menu-item-desc'; d.textContent = it.desc; b.appendChild(d); }
@@ -187,13 +212,6 @@
     if (tabs.length > 1) root.appendChild(nav);
     root.appendChild(body);
 
-    const foot = document.createElement('a');
-    foot.className = 'site-foot';
-    foot.href = 'profile.html?u=' + encodeURIComponent(D.username);
-    const av = document.createElement('span'); av.className = 'avatar-sm'; fillAvatar(av, D.username, D.avatar);
-    const fn = document.createElement('span'); fn.textContent = '@' + D.username;
-    foot.append(av, fn);
-    root.appendChild(foot);
     const pw = document.createElement('div'); pw.className = 'site-pw'; pw.textContent = 'Powered by Foody';
     root.appendChild(pw);
     FoodyCart.refreshBar();   // 语言切换/重渲染后，按当前购物车恢复底部订单条
