@@ -134,6 +134,20 @@
   $('#addLink').addEventListener('click', () => addLinkRow('', ''));
   $('#addCat').addEventListener('click', () => addCat('', []));
 
+  /* ---- AI 帮我写（标语+故事介绍）：结果只填表单，商家自己保存 ---- */
+  $('#aiGo').addEventListener('click', async () => {
+    const btn = $('#aiGo');
+    if (($('#fTagline').value.trim() || $('#fIntro').value.trim()) && !confirm(t('aiOverwrite'))) return;
+    btn.disabled = true; btn.classList.add('loading');
+    try {
+      const r = await api('/api/me/site/ai-copy', { method: 'POST', body: { hint: $('#aiHint').value.trim(), lang: LANG } });
+      if (r.tagline) $('#fTagline').value = r.tagline;
+      if (r.intro) $('#fIntro').value = r.intro;
+      toast(t('aiFilled'));
+    } catch (e) { toast(errMsg(e.code)); }
+    finally { btn.disabled = false; btn.classList.remove('loading'); }
+  });
+
   function setSlugHint(kind, msg) { const h = $('#slugHint'); h.className = 'slug-hint ' + (kind || ''); h.textContent = msg || ''; }
   let slugTimer, slugSeq = 0;
   $('#fSlug').addEventListener('input', () => {
@@ -223,6 +237,7 @@
     let d = {};
     try { d = await api('/api/site/' + encodeURIComponent(ME.username)); } catch {}
     $('#fSlug').value = d.slug || '';
+    $('#aiField').hidden = !d.aiReady;
     $('#fTitle').value = d.title || '';
     $('#fTagline').value = d.tagline || '';
     $('#fAnnounce').value = d.announce || '';
