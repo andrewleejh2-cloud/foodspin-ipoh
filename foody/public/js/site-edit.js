@@ -134,6 +134,55 @@
   $('#addLink').addEventListener('click', () => addLinkRow('', ''));
   $('#addCat').addEventListener('click', () => addCat('', []));
 
+  function setSlugHint(kind, msg) { const h = $('#slugHint'); h.className = 'slug-hint ' + (kind || ''); h.textContent = msg || ''; }
+  let slugTimer;
+  $('#fSlug').addEventListener('input', () => {
+    const s = $('#fSlug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if ($('#fSlug').value !== s) $('#fSlug').value = s;
+    clearTimeout(slugTimer);
+    if (!s) return setSlugHint('', '');
+    slugTimer = setTimeout(async () => {
+      try {
+        const r = await api('/api/me/site/slug-available?slug=' + encodeURIComponent(s));
+        if (r.available) setSlugHint('ok', t('slugOk'));
+        else setSlugHint('bad', t(r.reason === 'taken' ? 'slugTaken' : r.reason === 'reserved' ? 'slugReserved' : 'slugBad'));
+      } catch { setSlugHint('', ''); }
+    }, 350);
+  });
+
+  function accentOn() { return $('#accentRow').dataset.on === '1'; }
+  function setAccentOn(on, val) {
+    $('#accentRow').dataset.on = on ? '1' : '';
+    if (val) $('#fAccent').value = val;
+    $('#accentRow').classList.toggle('accent-active', on);
+  }
+  $('#fAccent').addEventListener('input', () => setAccentOn(true));
+  $('#accentClear').addEventListener('click', () => setAccentOn(false));
+
+  function addPhotoThumb(url) {
+    const cell = document.createElement('div'); cell.className = 'album-thumb'; cell.dataset.url = url;
+    const img = document.createElement('img'); img.src = url; img.alt = '';
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'album-del'; del.innerHTML = ICONS.close;
+    del.addEventListener('click', () => cell.remove());
+    cell.append(img, del); $('#albumGrid').appendChild(cell);
+  }
+  $('#addPhoto').addEventListener('click', () => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+    inp.addEventListener('change', async () => {
+      const cur = document.querySelectorAll('.album-thumb').length;
+      for (const f of [...inp.files].slice(0, 20 - cur)) {
+        const fd = new FormData(); fd.append('cover', f);
+        try { const r = await api('/api/me/site/menu-photo', { method: 'POST', body: fd }); addPhotoThumb(r.url); }
+        catch (e) { toast(errMsg(e.code)); }
+      }
+    });
+    inp.click();
+  });
+  function collectPhotos() { return [...document.querySelectorAll('.album-thumb')].map(c => ({ url: c.dataset.url })).slice(0, 20); }
+  function collectSections() {
+    return { gallery: $('#secGallery').checked, menu: $('#secMenu').checked, photos: $('#secPhotos').checked, contact: $('#secContact').checked };
+  }
+
   $('#siteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const links = [...document.querySelectorAll('.link-row')]
@@ -149,7 +198,12 @@
       theme: curTheme,
       menu: collectMenu(),
       status: $('#fStatus').value,
-      published: $('#fPublished').checked
+      published: $('#fPublished').checked,
+      slug: $('#fSlug').value.trim(),
+      accent: accentOn() ? $('#fAccent').value : '',
+      announce: $('#fAnnounce').value.trim(),
+      photos: collectPhotos(),
+      sections: collectSections()
     };
     const btn = $('#saveBtn'); btn.disabled = true;
     try { await api('/api/me/site', { method: 'PATCH', body }); toast(t('siteSaved')); }
@@ -166,8 +220,10 @@
     if (!ME) return void (location.href = 'index.html');
     let d = {};
     try { d = await api('/api/site/' + encodeURIComponent(ME.username)); } catch {}
+    $('#fSlug').value = d.slug || '';
     $('#fTitle').value = d.title || '';
     $('#fTagline').value = d.tagline || '';
+    $('#fAnnounce').value = d.announce || '';
     $('#fIntro').value = d.intro || '';
     $('#fHours').value = d.hours || '';
     $('#fAddress').value = d.address || '';
@@ -175,7 +231,14 @@
     (d.links || []).forEach(l => addLinkRow(l.label, l.url));
     curTheme = d.theme || 'warm';
     paintThemePick();
+    setAccentOn(!!d.accent, d.accent || '#D96A3B');
     (d.menu || []).forEach(cat => addCat(cat.name, cat.items));
+    (d.photos || []).forEach(p => addPhotoThumb(p.url));
+    const sec = d.sections || {};
+    $('#secGallery').checked = sec.gallery !== false;
+    $('#secMenu').checked = sec.menu !== false;
+    $('#secPhotos').checked = sec.photos !== false;
+    $('#secContact').checked = sec.contact !== false;
     fillStatusSelect();
     $('#fStatus').value = d.status || '';
     paintCover(d.cover || null);

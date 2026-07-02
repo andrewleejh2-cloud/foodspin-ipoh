@@ -103,6 +103,7 @@ const DICT = {
     plFoodies: '吃货', plMap: '在 Google 地图打开', plNotFound: '还没有这个地点的帖子',
     siteAbout: '关于', siteHours: '营业时间', siteAddress: '地址', siteGallery: '我们的出品', siteMap: '地图', siteDraft: '草稿 · 未发布，只有你看得到', siteUnpub: '这个网站还没发布',
     siteEditTitle: '编辑我的网站', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网站', siteView: '查看网站',
+    siteSlugL: '我的专属网址', siteAnnounceL: '公告 / 活动', siteAnnouncePh: '如：本周牛肉面买一送一', siteAccentL: '自定义主题色', siteAccentClear: '用主题默认', siteAlbumL: '相册（店铺展示图）', siteAddPhoto: '+ 添加照片', siteSectionsL: '显示哪些版块', siteSecGallery: '帖子画廊', siteSecMenu: '菜单', siteSecPhotos: '相册', siteSecContact: '联系', slugOk: '✓ 可用', slugTaken: '已被占用', slugReserved: '这是保留词', slugBad: '3–30 个字母/数字/连字符',
     /* 举报 & 审核 */
     reportTitle: '举报', reportUser: '举报用户',
     reportReasonLabel: '选择原因', reportNotePh: '补充说明（选填）…', reportSubmit: '提交举报',
@@ -222,6 +223,7 @@ const DICT = {
     plFoodies: 'Foodie', plMap: 'Buka di Google Maps', plNotFound: 'Belum ada kiriman untuk lokasi ini',
     siteAbout: 'Tentang', siteHours: 'Waktu operasi', siteAddress: 'Alamat', siteGallery: 'Hasil kami', siteMap: 'Peta', siteDraft: 'Draf · belum terbit, hanya anda nampak', siteUnpub: 'Tapak web ini belum diterbitkan',
     siteEditTitle: 'Edit tapak web saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Tapak web saya', siteView: 'Lihat tapak web',
+    siteSlugL: 'Pautan tapak saya', siteAnnounceL: 'Pengumuman', siteAnnouncePh: 'cth: Promo minggu ini', siteAccentL: 'Warna tersuai', siteAccentClear: 'Guna lalai tema', siteAlbumL: 'Galeri', siteAddPhoto: '+ Tambah foto', siteSectionsL: 'Bahagian dipaparkan', siteSecGallery: 'Galeri pos', siteSecMenu: 'Menu', siteSecPhotos: 'Galeri', siteSecContact: 'Hubungi', slugOk: '✓ Boleh guna', slugTaken: 'Sudah diambil', slugReserved: 'Perkataan simpanan', slugBad: '3–30 huruf/nombor/sengkang',
     reportTitle: 'Lapor', reportUser: 'Lapor pengguna',
     reportReasonLabel: 'Pilih sebab', reportNotePh: 'Maklumat tambahan (pilihan)…', reportSubmit: 'Hantar laporan',
     reportNeedReason: 'Pilih sebab dulu', reportSent: 'Laporan diterima, terima kasih 🙏', reportSelf: 'Tak boleh lapor kandungan sendiri',
@@ -340,6 +342,7 @@ const DICT = {
     plFoodies: 'Foodies', plMap: 'Open in Google Maps', plNotFound: 'No posts for this place yet',
     siteAbout: 'About', siteHours: 'Opening hours', siteAddress: 'Address', siteGallery: 'Our dishes', siteMap: 'Map', siteDraft: 'Draft · not published, only you can see this', siteUnpub: 'This website is not published yet',
     siteEditTitle: 'Edit my website', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My website', siteView: 'View website',
+    siteSlugL: 'My site link', siteAnnounceL: 'Announcement', siteAnnouncePh: 'e.g. This week: buy 1 free 1', siteAccentL: 'Custom accent color', siteAccentClear: 'Use theme default', siteAlbumL: 'Photo gallery', siteAddPhoto: '+ Add photos', siteSectionsL: 'Sections to show', siteSecGallery: 'Post gallery', siteSecMenu: 'Menu', siteSecPhotos: 'Gallery', siteSecContact: 'Contact', slugOk: '✓ Available', slugTaken: 'Already taken', slugReserved: 'Reserved word', slugBad: '3–30 letters/numbers/hyphens',
     reportTitle: 'Report', reportUser: 'Report user',
     reportReasonLabel: 'Choose a reason', reportNotePh: 'Add details (optional)…', reportSubmit: 'Submit report',
     reportNeedReason: 'Pick a reason first', reportSent: 'Report received, thank you 🙏', reportSelf: "You can't report your own content",
@@ -416,6 +419,9 @@ function errMsg(code) {
   if (code === 'email_taken') return LANG === 'zh' ? '这个邮箱已经注册过账号了' : LANG === 'ms' ? 'Email ini sudah ada akaun' : 'This email already has an account';
   if (code === 'file_too_big') return LANG === 'zh' ? '文件太大了（最多 150MB）' : LANG === 'ms' ? 'Fail terlalu besar (max 150MB)' : 'File too large (max 150MB)';
   if (code === 'bad_file') return LANG === 'zh' ? '只支持照片和视频哦' : LANG === 'ms' ? 'Gambar & video sahaja' : 'Photos & videos only';
+  if (code === 'bad_slug') return LANG === 'zh' ? '网址格式不对（3–30 个字母/数字/连字符）' : LANG === 'ms' ? 'Format pautan salah (3–30 huruf/nombor/sengkang)' : 'Invalid link (3–30 letters/numbers/hyphens)';
+  if (code === 'reserved_slug') return LANG === 'zh' ? '这个网址是保留词，换一个' : LANG === 'ms' ? 'Pautan ini disimpan, cuba lain' : 'That link is reserved, try another';
+  if (code === 'slug_taken') return LANG === 'zh' ? '这个网址已被占用，换一个' : LANG === 'ms' ? 'Pautan ini sudah diambil' : 'That link is taken, try another';
   return t(map[code] || 'errNet');
 }
 

@@ -1253,6 +1253,22 @@ body.lb-open { overflow: hidden; }
 .link-row .lk-del svg { width: 14px; height: 14px; }
 .pub-row { display: flex; align-items: center; gap: 10px; margin: 18px 0; font-size: 14.5px; font-weight: 700; color: var(--ink); }
 
+/* 编辑器：专属网址 / 主题色 / 相册 / 版块开关 */
+.slug-row { display: flex; align-items: center; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.slug-prefix { padding: 0 8px; color: var(--ink-2); font-size: 14px; background: var(--surface-2, #F0E8DA); }
+.slug-row input { border: 0; flex: 1; padding: 10px; background: transparent; outline: none; }
+.slug-hint { font-size: 12px; margin-top: 4px; min-height: 16px; }
+.slug-hint.ok { color: #2E9E5B; }
+.slug-hint.bad { color: #C8442E; }
+.accent-row { display: flex; align-items: center; gap: 10px; }
+.accent-row input[type=color] { width: 44px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; opacity: .5; }
+.accent-row.accent-active input[type=color] { opacity: 1; }
+.album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; margin-bottom: 8px; }
+.album-thumb { position: relative; aspect-ratio: 1/1; }
+.album-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block; }
+.album-del { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; border: 0; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.sec-toggle { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; }
+
 /* 顶栏多了私信图标，手机端收紧：缩小间距/控件 + 用户chip 只留头像、收藏只留星星 */
 @media (max-width: 760px) {
   .fyp-top { gap: 4px; padding-left: 8px; padding-right: 8px; }
