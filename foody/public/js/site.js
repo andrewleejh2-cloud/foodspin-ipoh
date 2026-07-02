@@ -51,9 +51,49 @@
   }
   function textBlock(text) { const p = document.createElement('p'); p.className = 'site-text'; p.textContent = text; return p; }
 
+  /* ---- 相册 lightbox（轻量自建，类前缀 slb 避开 fyp 的 .lightbox） ---- */
+  let lbIdx = -1, lbEl = null;
+  function buildLb() {
+    lbEl = document.createElement('div'); lbEl.className = 'slb';
+    lbEl.innerHTML = '<button type="button" class="slb-x">' + ICONS.close + '</button>'
+      + '<button type="button" class="slb-prev">' + ICONS.back + '</button>'
+      + '<img class="slb-img" alt="">'
+      + '<button type="button" class="slb-next">' + ICONS.back + '</button>'
+      + '<div class="slb-count"></div>';
+    lbEl.addEventListener('click', (e) => { if (e.target === lbEl) closeLb(); });
+    lbEl.querySelector('.slb-x').addEventListener('click', closeLb);
+    lbEl.querySelector('.slb-prev').addEventListener('click', () => stepLb(-1));
+    lbEl.querySelector('.slb-next').addEventListener('click', () => stepLb(1));
+    let tx = null;
+    lbEl.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+    lbEl.addEventListener('touchend', (e) => {
+      if (tx == null) return;
+      const dx = e.changedTouches[0].clientX - tx; tx = null;
+      if (Math.abs(dx) > 40) stepLb(dx > 0 ? -1 : 1);
+    }, { passive: true });
+    document.body.appendChild(lbEl);
+  }
+  function paintLb() {
+    lbEl.querySelector('.slb-img').src = D.photos[lbIdx].url;
+    lbEl.querySelector('.slb-count').textContent = (lbIdx + 1) + ' / ' + D.photos.length;
+    const many = D.photos.length > 1;
+    lbEl.querySelector('.slb-prev').style.display = many ? '' : 'none';
+    lbEl.querySelector('.slb-next').style.display = many ? '' : 'none';
+  }
+  function openLb(i) { if (!lbEl) buildLb(); lbIdx = i; paintLb(); lbEl.classList.add('on'); document.body.classList.add('lb-open'); }
+  function closeLb() { if (lbEl) lbEl.classList.remove('on'); document.body.classList.remove('lb-open'); lbIdx = -1; }
+  function stepLb(d) { if (lbIdx < 0) return; lbIdx = (lbIdx + d + D.photos.length) % D.photos.length; paintLb(); }
+  document.addEventListener('keydown', (e) => {
+    if (lbIdx < 0) return;
+    if (e.key === 'Escape') closeLb();
+    else if (e.key === 'ArrowLeft') stepLb(-1);
+    else if (e.key === 'ArrowRight') stepLb(1);
+  });
+
   function render() {
     const root = $('#siteRoot');
     root.innerHTML = '';
+    root.classList.remove('has-wabar');
     FoodyCart.setWaUrl(D.waUrl, D.username); FoodyCart.reset();   // 重渲染先清旧订单条，末尾按购物车恢复
     document.body.className = 'page-site site-theme-' + (D.theme || 'warm');
     if (D.accent) {
@@ -128,7 +168,13 @@
     const album = document.createElement('div'); album.className = 'site-panel';
     if (D.photos && D.photos.length) {
       const ag = document.createElement('div'); ag.className = 'site-album';
-      for (const ph of D.photos) { const img = document.createElement('img'); img.src = ph.url; img.loading = 'lazy'; img.alt = ''; ag.appendChild(img); }
+      D.photos.forEach((ph, i) => {
+        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'site-album-cell';
+        const img = document.createElement('img'); img.src = ph.url; img.loading = 'lazy'; img.alt = '';
+        btn.appendChild(img);
+        btn.addEventListener('click', () => openLb(i));
+        ag.appendChild(btn);
+      });
       album.appendChild(ag);
     }
     const sec = D.sections || {};
@@ -209,8 +255,36 @@
       nav.appendChild(btn);
       body.appendChild(tb.panel);
     });
-    if (tabs.length > 1) root.appendChild(nav);
-    root.appendChild(body);
+    // 桌面双栏：主列（nav+面板）+ 粘性信息卡（联系摘要，≥900px 显示）
+    const layout = document.createElement('div'); layout.className = 'site-layout';
+    const main = document.createElement('div'); main.className = 'site-main';
+    if (tabs.length > 1) main.appendChild(nav);
+    main.appendChild(body);
+    layout.appendChild(main);
+    const side = document.createElement('aside'); side.className = 'site-side';
+    if (D.status === 'open' || D.status === 'closed') {
+      const st = document.createElement('div'); st.className = 'site-status ' + D.status;
+      st.textContent = t(D.status === 'open' ? 'statusOpen' : 'statusClosed');
+      side.appendChild(st);
+    }
+    if (D.hours) side.appendChild(section(t('siteHours'), textBlock(D.hours), ICONS.clock));
+    if (D.address) side.appendChild(section(t('siteAddress'), textBlock(D.address), ICONS.pin));
+    const sideActs = document.createElement('div'); sideActs.className = 'site-acts';
+    if (D.waUrl) sideActs.appendChild(linkBtn('wa', ICONS.whatsapp, 'WhatsApp', D.waUrl));
+    if (D.mapUrl) sideActs.appendChild(linkBtn('map', ICONS.pin, t('siteMap'), D.mapUrl));
+    for (const l of (D.links || [])) sideActs.appendChild(linkBtn('link', ICONS.share, l.label, l.url));
+    if (sideActs.children.length) side.appendChild(sideActs);
+    if (side.children.length) layout.appendChild(side);
+    root.appendChild(layout);
+
+    // 手机 WhatsApp 行动条（登录访客且非本人；购物车订单条出现时 CSS 隐藏它）
+    if (D.waUrl && !D.isMe) {
+      const wb = document.createElement('a');
+      wb.className = 'site-wabar'; wb.href = D.waUrl; wb.target = '_blank'; wb.rel = 'noopener';
+      wb.innerHTML = ICONS.whatsapp + '<span>WhatsApp</span>';
+      root.appendChild(wb);
+      root.classList.add('has-wabar');
+    }
 
     const pw = document.createElement('div'); pw.className = 'site-pw'; pw.textContent = 'Powered by Foody';
     root.appendChild(pw);

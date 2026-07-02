@@ -31,13 +31,13 @@
 .site-announce::before { content: '📢 '; }
 
 /* ---- 吸顶下划线 nav ---- */
-.site-nav { position: sticky; top: 0; z-index: 15; display: flex; gap: 2px; padding: 4px 12px 0; margin: 10px auto 0; max-width: 640px; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.site-nav { position: sticky; top: 0; z-index: 15; display: flex; gap: 2px; padding: 4px 12px 0; margin-top: 10px; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .site-nav button { position: relative; padding: 11px 14px 12px; font-size: 14.5px; font-weight: 800; color: var(--ink-2); transition: color .15s; }
 .site-nav button.on { color: var(--ink); }
 .site-nav button.on::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--site-accent, var(--accent)); }
 
 /* ---- 面板/正文 ---- */
-.site-body { padding: 16px 20px 8px; max-width: 640px; margin: 0 auto; }
+.site-body { padding: 16px 20px 8px; }
 .site-panel { display: none; }
 .site-panel.on { display: block; }
 
@@ -114,6 +114,49 @@
 .site-status.closed { background: #EFEAE3; color: #8A7D6A; }
 .site-status.closed::before { background: #B3A690; }
 
-/* 独立站：独立相册网格 */
-.site-album{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
-.site-album img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;display:block}
+/* ---- 相册瀑布流 ---- */
+.site-album { columns: 2; column-gap: 8px; }
+.site-album-cell { display: block; width: 100%; margin-bottom: 8px; border-radius: 12px; overflow: hidden; padding: 0; break-inside: avoid; }
+.site-album-cell img { width: 100%; display: block; }
+@media (prefers-reduced-motion: no-preference) {
+  .site-album-cell { transition: transform .16s ease, box-shadow .16s ease; }
+  .site-album-cell:hover { transform: scale(1.015); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+}
+
+/* ---- lightbox ---- */
+.slb { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.94); display: none; align-items: center; justify-content: center; }
+.slb.on { display: flex; }
+.slb-img { max-width: 94vw; max-height: 88vh; object-fit: contain; border-radius: 6px; }
+.slb-x, .slb-prev, .slb-next { position: absolute; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; }
+.slb-x:hover, .slb-prev:hover, .slb-next:hover { background: rgba(255,255,255,.22); }
+.slb-x { top: calc(14px + env(safe-area-inset-top)); right: 14px; }
+.slb-x svg, .slb-prev svg, .slb-next svg { width: 20px; height: 20px; }
+.slb-prev { left: 10px; top: 50%; transform: translateY(-50%); }
+.slb-next { right: 10px; top: 50%; transform: translateY(-50%) rotate(180deg); }
+.slb-count { position: absolute; bottom: calc(16px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.85); font-size: 13px; font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) {
+  .slb-x, .slb-prev, .slb-next { transition: background .15s ease; }
+}
+
+/* ---- 布局：手机单列 / 桌面双栏 ---- */
+.site-layout { max-width: 640px; margin: 0 auto; }
+.site-side { display: none; }
+@media (min-width: 900px) {
+  .site-layout { display: grid; grid-template-columns: minmax(0, 640px) 300px; gap: 28px; max-width: 990px; padding: 0 20px; }
+  .site-side { display: block; position: sticky; top: 64px; align-self: start; margin-top: 16px; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+  .site-side .site-status { margin-top: 0; }
+  .site-side .site-sec { margin-top: 16px; }
+  .site-side .site-acts { margin-top: 16px; flex-direction: column; }
+  .site-side .site-btn { justify-content: center; }
+}
+
+/* ---- 手机 WhatsApp 行动条 ---- */
+.site-wabar { display: none; }
+@media (max-width: 759px) {
+  .site-wabar { position: fixed; left: 14px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 55;
+    display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 999px;
+    background: var(--wa); color: #fff; font-weight: 800; font-size: 15px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+  .site-wabar svg { width: 19px; height: 19px; }
+  .site.has-wabar { padding-bottom: 84px; }
+  body:has(.order-bar) .site-wabar { display: none; }   /* 购物车订单条出现时让位 */
+}
