@@ -1,0 +1,96 @@
+/* Foody — 站点公开页样式（site.html 专用，编辑器不引） */
+
+/* ============================================================
+   微站 site（一键发布的落地页）
+   ============================================================ */
+.page-site { background: var(--bg); min-height: 100%; }
+.site { max-width: 640px; margin: 0 auto; background: var(--surface); min-height: 100dvh; }
+.site-bar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); }
+.site-icon { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.site-icon svg { width: 19px; height: 19px; }
+.site-draft { margin: 0 14px 6px; background: var(--accent-soft); color: var(--accent-d); font-size: 13px; font-weight: 700; text-align: center; padding: 8px 12px; border-radius: 10px; }
+
+.site-hero { position: relative; }
+.site-hero.has-cover { height: 240px; }
+.site-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+.site-hero.has-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .12), rgba(0, 0, 0, .6)); }
+.site-hero-text { padding: 16px 20px 12px; }
+.site-hero.has-cover .site-hero-text { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; }
+.site-hero-text h1 { font-size: 26px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+.site-hero.has-cover .site-hero-text h1 { color: #fff; }
+.site-tagline { font-size: 15px; color: var(--ink-2); margin-top: 5px; font-weight: 600; }
+.site-hero.has-cover .site-tagline { color: rgba(255, 255, 255, .92); }
+
+.site-body { padding: 16px 20px 8px; }
+.site-acts { display: flex; flex-wrap: wrap; gap: 9px; }
+.site-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border-radius: 12px; font-size: 14.5px; font-weight: 800; }
+.site-btn svg { width: 17px; height: 17px; }
+.site-btn-wa { background: var(--wa); color: #fff; }
+.site-btn-map { background: var(--accent); color: #fff; }
+.site-btn-link { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); }
+.site-btn-link:hover { border-color: var(--accent); }
+
+.site-sec { margin-top: 22px; }
+.site-sec h2 { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 9px; }
+.site-sec h2 svg { width: 17px; height: 17px; color: var(--accent); }
+.site-text { font-size: 14.5px; color: var(--ink); line-height: 1.65; white-space: pre-line; word-break: break-word; }
+.site-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.site-cell { aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--surface-2, #F0E8DA); }
+.site-cell img, .site-cell video { width: 100%; height: 100%; object-fit: cover; }
+
+.site-foot { display: flex; align-items: center; gap: 9px; justify-content: center; margin-top: 28px; padding: 14px; color: var(--ink); font-weight: 700; font-size: 14px; }
+.site-foot .avatar-sm { width: 30px; height: 30px; font-size: 13px; }
+.site-pw { text-align: center; font-size: 12px; color: var(--ink-2); padding-bottom: 24px; }
+.site-fail { text-align: center; color: var(--ink-2); padding: 80px 24px; font-size: 15px; font-weight: 700; }
+
+/* ---------------- 「我的网站」升级：配色主题 + 站内导航 + 菜单 ---------------- */
+/* 5 套主题：套在 body 上覆盖全局色变量，只影响 site 页（--wa 保持绿色不变） */
+.site-theme-warm  { --bg: #FAF4EA; --surface: #FFFDF8; --ink: #2E2A24; --ink-2: #7A7166; --line: #ECE2D2; --accent: var(--site-accent, #D96A3B); --accent-d: #BC5026; --accent-soft: #F9E8DC; --surface-2: #F0E8DA; }
+.site-theme-dark  { --bg: #17130F; --surface: #241D17; --ink: #F4ECE0; --ink-2: #B3A797; --line: #3A2F26; --accent: var(--site-accent, #E8894B); --accent-d: #F0A064; --accent-soft: #2E241B; --surface-2: #2E241B; }
+.site-theme-fresh { --bg: #EEF6EF; --surface: #FFFFFF; --ink: #1F2A22; --ink-2: #5E7065; --line: #DCEADF; --accent: var(--site-accent, #3E9C6B); --accent-d: #2F7E54; --accent-soft: #DDF0E4; --surface-2: #EAF3EC; }
+.site-theme-berry { --bg: #FBF0F3; --surface: #FFFFFF; --ink: #2E2230; --ink-2: #7C6B75; --line: #F1DEE5; --accent: var(--site-accent, #C84E78); --accent-d: #A93B61; --accent-soft: #FBE2EA; --surface-2: #F6E6EC; }
+.site-theme-mono  { --bg: #F4F4F3; --surface: #FFFFFF; --ink: #1A1A1A; --ink-2: #6B6B6B; --line: #E2E2E0; --accent: var(--site-accent, #2B2B2B); --accent-d: #000000; --accent-soft: #ECECEA; --surface-2: #ECECEA; }
+
+/* 站内导航（首页/菜单/联系 切换） */
+.site-nav { display: flex; gap: 4px; padding: 4px; margin: 14px 20px 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 13px; position: sticky; top: 58px; z-index: 9; }
+.site-nav button { flex: 1; padding: 9px 6px; border-radius: 9px; font-size: 14px; font-weight: 800; color: var(--ink-2); transition: background .15s, color .15s; }
+.site-nav button.on { background: var(--accent); color: #fff; }
+.site-panel { display: none; }
+.site-panel.on { display: block; animation: pageFade .25s ease; }
+
+/* 菜单板块 */
+.menu-cat { margin-top: 18px; }
+.menu-cat:first-child { margin-top: 6px; }
+.menu-cat-name { font-size: 16.5px; font-weight: 800; color: var(--ink); margin-bottom: 8px; padding-bottom: 7px; border-bottom: 2px solid var(--accent-soft); }
+.menu-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.menu-item:last-child { border-bottom: none; }
+.menu-item-photo { width: 66px; height: 66px; border-radius: 11px; object-fit: cover; flex: none; background: var(--surface-2); }
+.menu-item-body { flex: 1; min-width: 0; }
+.menu-item-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.menu-item-name { font-size: 15px; font-weight: 800; color: var(--ink); }
+.menu-item-price { font-size: 14.5px; font-weight: 800; color: var(--accent-d); flex: none; white-space: nowrap; }
+.menu-item-desc { font-size: 13px; color: var(--ink-2); margin-top: 3px; line-height: 1.5; white-space: pre-line; word-break: break-word; }
+.menu-empty { color: var(--ink-2); font-size: 14px; padding: 20px 0; text-align: center; }
+/* 画廊里的视频格：占位 + 居中播放标（不加载视频文件） */
+.site-cell.is-video { display: grid; place-items: center; background: linear-gradient(160deg, #2c2219, #17120d); }
+.site-cell.is-video .site-play { color: #fff; opacity: .92; line-height: 0; }
+.site-cell.is-video .site-play svg { width: 26px; height: 26px; }
+
+.menu-item.is-sold { opacity: .55; }
+.menu-item.is-sold .menu-item-photo { filter: grayscale(.7); }
+
+/* 店铺营业状态徽章 */
+.site-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 4px 13px; border-radius: 999px; font-weight: 800; font-size: 13px; }
+.site-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
+.site-status.open { background: #E3F5E9; color: #1E8A4C; }
+.site-status.open::before { background: #25A35A; box-shadow: 0 0 0 3px rgba(37,163,90,.18); }
+.site-status.closed { background: #EFEAE3; color: #8A7D6A; }
+.site-status.closed::before { background: #B3A690; }
+
+/* 独立站：公告栏 */
+.site-announce{margin:10px 16px 0;padding:10px 14px;border-radius:12px;
+  background:var(--site-accent,var(--accent));color:#fff;font-weight:700;
+  font-size:14px;line-height:1.4;text-align:center;white-space:pre-wrap}
+/* 独立站：独立相册网格 */
+.site-album{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.site-album img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;display:block}
