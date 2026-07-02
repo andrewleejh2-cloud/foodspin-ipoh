@@ -977,6 +977,14 @@ function normLink(url) {
 }
 
 const SITE_THEMES = ['warm', 'dark', 'fresh', 'berry', 'mono'];
+const SECTION_KEYS = ['gallery', 'menu', 'photos', 'contact'];
+function cleanSections(src) {
+  const out = {};
+  if (src && typeof src === 'object' && !Array.isArray(src)) {
+    for (const k of SECTION_KEYS) if (typeof src[k] === 'boolean') out[k] = src[k];
+  }
+  return out;
+}
 const RESERVED_SLUGS = new Set(['s', 'api', 'admin', 'foody', 'uploads', 'www', 'app', 'me', 'site', 'shop', 'help', 'about']);
 function normSlug(raw) { return String(raw || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); }
 function slugFormatOk(s) { return s.length >= 3 && s.length <= 30 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s); }
@@ -1006,7 +1014,7 @@ function buildSitePayload(u, viewer) {
     accent: /^#[0-9a-fA-F]{6}$/.test(s.accent || '') ? s.accent : '',
     announce: s.announce || '',
     photos: Array.isArray(s.photos) ? s.photos : [],
-    sections: (s.sections && typeof s.sections === 'object') ? s.sections : {},
+    sections: cleanSections(s.sections),
     slug: s.slug || '',
     menu: Array.isArray(s.menu) ? s.menu : [],
     status: s.status || '',
@@ -1056,6 +1064,9 @@ app.patch('/api/me/site', requireAuth, (req, res) => {
       nextSlug = r.slug;
     }
   }
+  // 孤儿图清理：快照旧的菜单图/相册图，落盘后 diff 删除被移除的文件
+  const oldMenuPhotos = Array.isArray(s.menu) ? s.menu.flatMap(c => (c.items || []).map(i => i.photo).filter(Boolean)) : [];
+  const oldAlbum = Array.isArray(s.photos) ? s.photos.map(p => p.url).filter(Boolean) : [];
   if (typeof b.title === 'string') s.title = b.title.trim().slice(0, 60);
   if (typeof b.tagline === 'string') s.tagline = b.tagline.trim().slice(0, 120);
   if (typeof b.intro === 'string') s.intro = b.intro.replace(/\r\n/g, '\n').trim().slice(0, 1000);
@@ -1094,13 +1105,20 @@ app.patch('/api/me/site', requireAuth, (req, res) => {
       .map(p => ({ url: (p && typeof p.url === 'string' && p.url.startsWith('/uploads/')) ? p.url : '' }))
       .filter(p => p.url);
   }
-  if (b.sections && typeof b.sections === 'object' && !Array.isArray(b.sections)) {
-    const sec = {};
-    for (const k of ['gallery', 'menu', 'photos', 'contact']) if (typeof b.sections[k] === 'boolean') sec[k] = b.sections[k];
-    s.sections = sec;
-  }
+  if (b.sections && typeof b.sections === 'object' && !Array.isArray(b.sections)) s.sections = cleanSections(b.sections);
   req.user.site = s;
   saveDb();
+  // 只有这次 PATCH 真的带了 menu/photos 才对对应集合做 diff；新数据整体做保留集，防止 url 在两字段间挪动被误删
+  if (Array.isArray(b.menu) || Array.isArray(b.photos)) {
+    const keep = new Set([
+      ...(Array.isArray(s.menu) ? s.menu.flatMap(c => (c.items || []).map(i => i.photo).filter(Boolean)) : []),
+      ...(Array.isArray(s.photos) ? s.photos.map(p => p.url).filter(Boolean) : [])
+    ]);
+    const removed = [];
+    if (Array.isArray(b.menu)) for (const u of oldMenuPhotos) if (!keep.has(u)) removed.push(u);
+    if (Array.isArray(b.photos)) for (const u of oldAlbum) if (!keep.has(u)) removed.push(u);
+    for (const u of removed) if (u.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(u)), () => {});
+  }
   res.json({ ok: true, site: s });
 });
 
