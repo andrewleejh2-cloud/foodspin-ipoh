@@ -159,3 +159,18 @@ test('/s/:slug 返回 HTML 页面', async () => {
   assert.strictEqual(r.status, 200);
   assert.ok((r.headers.get('content-type') || '').includes('text/html'));
 });
+
+test('未发布站点 by-slug：访客 404、本人可见', async () => {
+  // seller2 在跨用户冲突测试里已占 slug popular-shop 且从未发布（published falsy）
+  const anon = await fetch(base + '/api/site/by-slug/popular-shop');
+  assert.strictEqual(anon.status, 404);
+  assert.strictEqual((await anon.json()).error, 'not_published');
+  const lr = await fetch(base + '/api/login', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'seller2', password: 'pass123' })
+  });
+  const c2 = lr.headers.get('set-cookie').split(';')[0];
+  const own = await fetch(base + '/api/site/by-slug/popular-shop', { headers: { cookie: c2 } });
+  assert.strictEqual(own.status, 200);
+  assert.strictEqual((await own.json()).isMe, true);
+});
