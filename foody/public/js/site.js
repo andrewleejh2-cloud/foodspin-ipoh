@@ -94,6 +94,7 @@
     const root = $('#siteRoot');
     root.innerHTML = '';
     root.classList.remove('has-wabar');
+    closeLb();   // 语言切换重渲染时，防御性关掉可能开着的相册 lightbox
     FoodyCart.setWaUrl(D.waUrl, D.username); FoodyCart.reset();   // 重渲染先清旧订单条，末尾按购物车恢复
     document.body.className = 'page-site site-theme-' + (D.theme || 'warm');
     if (D.accent) {
