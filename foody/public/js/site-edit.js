@@ -135,18 +135,20 @@
   $('#addCat').addEventListener('click', () => addCat('', []));
 
   function setSlugHint(kind, msg) { const h = $('#slugHint'); h.className = 'slug-hint ' + (kind || ''); h.textContent = msg || ''; }
-  let slugTimer;
+  let slugTimer, slugSeq = 0;
   $('#fSlug').addEventListener('input', () => {
     const s = $('#fSlug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
     if ($('#fSlug').value !== s) $('#fSlug').value = s;
     clearTimeout(slugTimer);
+    const seq = ++slugSeq;                  // 只允许最新一次请求绘制提示（防慢响应回填旧结果）
     if (!s) return setSlugHint('', '');
     slugTimer = setTimeout(async () => {
       try {
         const r = await api('/api/me/site/slug-available?slug=' + encodeURIComponent(s));
+        if (seq !== slugSeq) return;        // 已有更新输入，丢弃过期结果
         if (r.available) setSlugHint('ok', t('slugOk'));
         else setSlugHint('bad', t(r.reason === 'taken' ? 'slugTaken' : r.reason === 'reserved' ? 'slugReserved' : 'slugBad'));
-      } catch { setSlugHint('', ''); }
+      } catch { if (seq === slugSeq) setSlugHint('', ''); }
     }, 350);
   });
 
