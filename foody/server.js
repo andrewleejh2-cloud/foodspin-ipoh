@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { createGeminiClient } = require('./lib/gemini');
 
 const ROOT = __dirname;
 // 数据/上传目录可用环境变量覆盖（部署到云端时指向挂载的持久磁盘，重启不丢数据）
@@ -976,6 +977,12 @@ function normLink(url) {
   return ''; // 拒绝 javascript: 等不安全协议
 }
 
+/* ---- AI 写文案（标语+故事介绍）：Gemini 免费档，key 只在服务器 ---- */
+const AI_COPY_DAILY_MAX = 10;   // 每用户每天成功生成次数上限
+const GEMINI_KEY = (process.env.FOODY_GEMINI_KEY || '').trim();
+const AI_READY = !!GEMINI_KEY;
+if (AI_READY) app.locals.gemini = createGeminiClient({ apiKey: GEMINI_KEY, model: (process.env.FOODY_GEMINI_MODEL || 'gemini-2.5-flash').trim() });
+
 const SITE_THEMES = ['warm', 'dark', 'fresh', 'berry', 'mono'];
 const SECTION_KEYS = ['gallery', 'menu', 'photos', 'contact'];
 function cleanSections(src) {
@@ -1016,6 +1023,7 @@ function buildSitePayload(u, viewer) {
     photos: Array.isArray(s.photos) ? s.photos : [],
     sections: cleanSections(s.sections),
     slug: s.slug || '',
+    aiReady: isMe ? AI_READY : undefined,   // 仅本人可见；undefined 会被 JSON 序列化剔除
     menu: Array.isArray(s.menu) ? s.menu : [],
     status: s.status || '',
     mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
@@ -1145,6 +1153,77 @@ app.post('/api/me/site/menu-photo', requireAuth, (req, res) => {
     const name = await compressImage(req.file.filename);
     res.json({ ok: true, url: '/uploads/' + name });
   });
+});
+
+/* AI 取材：全部服务器侧收集，防前端伪造 */
+function aiHarvest(u) {
+  const s = u.site || {};
+  const menuNames = [];
+  outer: for (const cat of (Array.isArray(s.menu) ? s.menu : [])) {
+    if (cat.name) menuNames.push(cat.name);
+    for (const it of (cat.items || [])) {
+      if (it.name) menuNames.push(it.name);
+      if (menuNames.length >= 30) break outer;
+    }
+    if (menuNames.length >= 30) break;
+  }
+  const places = [...new Set(db.posts.filter(p => p.userId === u.id && p.place).map(p => p.place))].slice(0, 5);
+  return { username: u.username, bio: u.bio || '', city: u.city || '', state: u.state || '', title: s.title || '', menuNames, places };
+}
+
+const AI_LANG_NAME = { zh: '简体中文', ms: 'Bahasa Melayu', en: 'English' };
+function aiPrompt(h, hint, lang) {
+  const L = AI_LANG_NAME[lang] || AI_LANG_NAME.zh;
+  return [
+    '你是马来西亚本地美食小店的文案助手。根据下面的真实资料，为这家小店写宣传文案。',
+    '只能依据给出的资料；资料里没有的具体事实（菜品、价格、年份、地址等）一律不得编造，可以用泛化的暖心表述。',
+    '输出语言：' + L + '。',
+    '只返回一个 JSON 对象，不要任何其它文字或代码围栏，格式：{"tagline":"一句吸睛标语(50字符内)","intro":"2-4段有人情味的小店故事(700字符内，段落用\\n分隔)"}',
+    '',
+    '资料：',
+    '店名/标题：' + (h.title || h.username),
+    '店主用户名：' + h.username,
+    h.bio ? '店主简介：' + h.bio : '',
+    (h.city || h.state) ? '所在地：' + [h.city, h.state].filter(Boolean).join(', ') : '',
+    h.menuNames.length ? '菜单（名字）：' + h.menuNames.join('、') : '',
+    h.places.length ? '常出现的地点标签：' + h.places.join('、') : '',
+    hint ? '店主补充提示：' + hint : ''
+  ].filter(Boolean).join('\n');
+}
+
+/* 从模型输出挖 JSON：剥 ``` 围栏 → 直接 parse → 失败取第一个 {...} 块重试 */
+function aiParseCopy(text) {
+  const t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  let obj = null;
+  try { obj = JSON.parse(t); } catch {
+    const m = t.match(/\{[\s\S]*\}/);
+    if (m) { try { obj = JSON.parse(m[0]); } catch {} }
+  }
+  if (!obj || typeof obj !== 'object') return null;
+  const tagline = String(obj.tagline || '').trim().slice(0, 120);
+  const intro = String(obj.intro || '').replace(/\r\n/g, '\n').trim().slice(0, 1000);
+  if (!tagline && !intro) return null;
+  return { tagline, intro };
+}
+
+const aiCopyIpLimit = rateLimit({ windowMs: 60000, max: Number(process.env.FOODY_AI_IP_MAX || 5) });   // 每 IP 每分钟（默认 5）
+app.post('/api/me/site/ai-copy', requireAuth, aiCopyIpLimit, async (req, res) => {
+  if (!AI_READY || !req.app.locals.gemini) return res.status(503).json({ error: 'ai_disabled' });
+  const today = new Date().toISOString().slice(0, 10);
+  const rec = (req.user.aiCopy && req.user.aiCopy.day === today) ? req.user.aiCopy : { day: today, n: 0 };
+  if (rec.n >= AI_COPY_DAILY_MAX) return res.status(429).json({ error: 'too_many' });
+  const b = req.body || {};
+  const hint = String(b.hint || '').trim().slice(0, 120);
+  const lang = ['zh', 'ms', 'en'].includes(b.lang) ? b.lang : 'zh';
+  try {
+    const text = await req.app.locals.gemini.generate(aiPrompt(aiHarvest(req.user), hint, lang));
+    const copy = aiParseCopy(text);
+    if (!copy) return res.status(502).json({ error: 'ai_failed' });
+    rec.n += 1; req.user.aiCopy = rec; saveDb();   // 只有成功才计数；结果绝不写入 user.site
+    res.json(copy);
+  } catch {
+    res.status(502).json({ error: 'ai_failed' });
+  }
 });
 
 // 货架（商品）：独立于「网页」，存 user.shelf。暂时只允许白名单账号（canSellGoods）摆货
