@@ -29,11 +29,26 @@
         <button type="button" class="cover-pick" id="coverPick"><span id="coverInner"></span></button>
         <input type="file" id="coverInput" accept="image/*" hidden>
       </div>
+      <div class="field">
+        <label data-i18n="siteSlugL"></label>
+        <div class="slug-row"><span class="slug-prefix">/s/</span><input id="fSlug" maxlength="30" autocomplete="off" spellcheck="false"></div>
+        <div class="slug-hint" id="slugHint"></div>
+      </div>
       <div class="field"><label data-i18n="siteTitle"></label><input id="fTitle" maxlength="60" autocomplete="off"></div>
       <div class="field"><label data-i18n="siteTaglineL"></label><input id="fTagline" maxlength="120" autocomplete="off"></div>
+      <div class="field"><label data-i18n="siteAnnounceL"></label><textarea id="fAnnounce" rows="2" maxlength="200" data-i18n-ph="siteAnnouncePh"></textarea></div>
       <div class="field"><label data-i18n="siteAbout"></label><textarea id="fIntro" rows="4" maxlength="1000"></textarea></div>
+      <div class="field ai-field" id="aiField" hidden>
+        <label data-i18n="aiCopyL"></label>
+        <div class="ai-row">
+          <input id="aiHint" maxlength="120" autocomplete="off" data-i18n-ph="aiHintPh">
+          <button type="button" class="btn-ghost ai-btn" id="aiGo" data-i18n="aiGo"></button>
+        </div>
+        <div class="ai-note" data-i18n="aiNote"></div>
+      </div>
       <div class="field"><label data-i18n="siteHours"></label><textarea id="fHours" rows="2" maxlength="300" data-i18n-ph="siteHoursPh"></textarea></div>
       <div class="field"><label data-i18n="siteAddress"></label><input id="fAddress" maxlength="200" autocomplete="off"></div>
+      <div class="field"><label data-i18n="siteStatusL"></label><select id="fStatus"></select></div>
       <div class="field">
         <label data-i18n="siteLinks"></label>
         <div id="linkList"></div>
@@ -44,9 +59,28 @@
         <div class="theme-pick" id="themePick"></div>
       </div>
       <div class="field">
+        <label data-i18n="siteAccentL"></label>
+        <div class="accent-row" id="accentRow">
+          <input type="color" id="fAccent" value="#D96A3B">
+          <button type="button" class="btn-ghost" id="accentClear" data-i18n="siteAccentClear"></button>
+        </div>
+      </div>
+      <div class="field">
         <label data-i18n="siteMenuL"></label>
         <div id="menuList"></div>
         <button type="button" class="btn-ghost" id="addCat" data-i18n="siteAddCat"></button>
+      </div>
+      <div class="field">
+        <label data-i18n="siteAlbumL"></label>
+        <div class="album-grid" id="albumGrid"></div>
+        <button type="button" class="btn-ghost" id="addPhoto" data-i18n="siteAddPhoto"></button>
+      </div>
+      <div class="field">
+        <label data-i18n="siteSectionsL"></label>
+        <label class="sec-toggle"><input type="checkbox" id="secGallery" checked> <span data-i18n="siteSecGallery"></span></label>
+        <label class="sec-toggle"><input type="checkbox" id="secMenu" checked> <span data-i18n="siteSecMenu"></span></label>
+        <label class="sec-toggle"><input type="checkbox" id="secPhotos" checked> <span data-i18n="siteSecPhotos"></span></label>
+        <label class="sec-toggle"><input type="checkbox" id="secContact" checked> <span data-i18n="siteSecContact"></span></label>
       </div>
       <div class="pub-row">
         <span class="switch"><input type="checkbox" id="fPublished"><i></i></span>

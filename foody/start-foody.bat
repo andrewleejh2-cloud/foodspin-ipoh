@@ -4,6 +4,8 @@ cd /d "%%~dp0"
 rem === Moderation admins are configured in foody\server.js (DEFAULT_ADMINS) — currently your own accounts ===
 rem To override here instead (avoid non-ASCII usernames in .bat), set them in server.js or via this var:
 rem set FOODY_ADMIN=username1,username2
+REM 可选：AI 写文案。去 https://aistudio.google.com 免费拿 key 填这里并去掉 REM
+REM set FOODY_GEMINI_KEY=你的key
 where node >nul 2>nul
 if errorlevel 1 (echo [Foody] Node.js not found. & pause & exit /b 1) 
 if not exist node_modules (echo [Foody] Installing... & call npm install) 

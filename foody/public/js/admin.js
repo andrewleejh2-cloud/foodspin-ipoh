@@ -9,6 +9,8 @@
   };
   let ME = null;
   let curStatus = 'open';
+  let curView = 'reports';   // 'reports' | 'users'
+  let allUsers = [];         // /api/admin/users 缓存（前端按用户名搜索）
 
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
 
@@ -21,7 +23,13 @@
     setLang(next);
     toast({ zh: '语言：中文', ms: 'Bahasa: BM', en: 'Language: English' }[next]);
   });
-  document.addEventListener('foody:lang', () => { paintStatic(); if (ME && ME.isAdmin) { paintTabs(); loadAll(); } });
+  document.addEventListener('foody:lang', () => {
+    paintStatic();
+    if (ME && ME.isAdmin) {
+      paintViewToggle(); paintTabs(); applyUserSearchPh(); loadAll();
+      if (curView === 'users') loadUsers();
+    }
+  });
 
   function paintStatic() {
     $('#admTitle').textContent = t('admTitle');
@@ -98,6 +106,18 @@
     ago.className = 'adm-ago';
     ago.textContent = fmtAgo(r.createdAt);
     head.append(badge, reason, ago);
+    if (r.reportCount > 1) {   // 被举报多次 → 热度徽章
+      const rc = document.createElement('span');
+      rc.className = 'adm-rcount';
+      rc.textContent = t('admReportCount', { n: r.reportCount });
+      head.appendChild(rc);
+    }
+    if (r.autoHidden) {        // 已达阈值自动暂隐
+      const ah = document.createElement('span');
+      ah.className = 'adm-autohidden';
+      ah.textContent = '🙈 ' + t('admAutoHidden');
+      head.appendChild(ah);
+    }
     el.appendChild(head);
 
     // 目标内容快照
@@ -129,6 +149,12 @@
       tag.textContent = t('admBannedTag');
       body.appendChild(tag);
     }
+    if (r.ownerMuted && !r.ownerBanned) {
+      const tag = document.createElement('span');
+      tag.className = 'adm-tag banned';
+      tag.textContent = t('admMutedTag');
+      body.appendChild(tag);
+    }
     el.appendChild(body);
 
     // 举报人 + 备注
@@ -145,8 +171,13 @@
       if (r.exists && (r.type === 'post' || r.type === 'comment')) {
         acts.appendChild(actBtn('danger', t('admDoDelete'), () => act(r.id, 'delete', t('admConfirmDelete'))));
       }
-      if (r.exists && r.ownerUsername && !r.ownerIsAdmin && !r.ownerBanned) {
+      if (r.ownerUsername && !r.ownerIsAdmin && !r.ownerBanned) {
+        acts.appendChild(actBtn('ghost', t('admDoWarn'), () => act(r.id, 'warn', t('admConfirmWarn', { name: r.ownerUsername }))));
+        if (!r.ownerMuted) acts.appendChild(actBtn('warn', t('admDoMute'), () => act(r.id, 'mute', t('admDoMute') + ' @' + r.ownerUsername + ' (7d)?')));
         acts.appendChild(actBtn('warn', t('admDoBan'), () => act(r.id, 'ban', t('admConfirmBan', { name: r.ownerUsername }))));
+      }
+      if (r.ownerMuted && r.ownerUsername) {
+        acts.appendChild(actBtn('ghost', t('admDoUnmute'), () => unmute(r.ownerUsername)));
       }
       if (r.ownerBanned && r.ownerUsername) {
         acts.appendChild(actBtn('ghost', t('admDoUnban'), () => unban(r.ownerUsername)));
@@ -155,7 +186,7 @@
     } else {
       const done = document.createElement('span');
       done.className = 'adm-done-tag';
-      done.textContent = r.action === 'delete' ? t('admDoneDelete') : r.action === 'ban' ? t('admDoneBan') : t('admDoneDismiss');
+      done.textContent = ({ delete: t('admDoneDelete'), ban: t('admDoneBan'), mute: t('admDoneMute'), warn: t('admDoneWarn') }[r.action]) || t('admDoneDismiss');
       acts.appendChild(done);
       if (r.ownerBanned && r.ownerUsername) acts.appendChild(actBtn('ghost', t('admDoUnban'), () => unban(r.ownerUsername)));
     }
@@ -178,7 +209,7 @@
     if (confirmMsg && !window.confirm(confirmMsg)) return;
     try {
       await api('/api/admin/reports/' + id, { method: 'POST', body: { action } });
-      toast(action === 'delete' ? t('admDoneDelete') : action === 'ban' ? t('admDoneBan') : t('admDoneDismiss'));
+      toast(({ delete: t('admDoneDelete'), ban: t('admDoneBan'), mute: t('admDoneMute'), warn: t('admDoneWarn') }[action]) || t('admDoneDismiss'));
       loadAll();
     } catch (e) { toast(errMsg(e.code)); }
   }
@@ -187,6 +218,125 @@
     try {
       await api('/api/admin/users/' + encodeURIComponent(username) + '/ban', { method: 'POST', body: { ban: false } });
       toast(t('admDoneUnban'));
+      loadAll();
+    } catch (e) { toast(errMsg(e.code)); }
+  }
+
+  /* ---------------- 用户列表视图 ---------------- */
+  // 主切换：举报队列 / 用户
+  function paintViewToggle() {
+    const views = [['reports', 'admViewReports'], ['users', 'admViewUsers']];
+    const wrap = $('#admViewToggle');
+    wrap.innerHTML = '';
+    for (const [v, key] of views) {
+      const b = document.createElement('button');
+      b.className = 'adm-vt' + (v === curView ? ' on' : '');
+      b.textContent = t(key);
+      b.addEventListener('click', () => switchView(v));
+      wrap.appendChild(b);
+    }
+  }
+
+  function switchView(v) {
+    if (curView === v) return;
+    curView = v;
+    paintViewToggle();
+    $('#admReportView').hidden = v !== 'reports';
+    $('#admUsersView').hidden = v !== 'users';
+    if (v === 'users') { applyUserSearchPh(); loadUsers(); }
+  }
+
+  function applyUserSearchPh() {
+    const s = $('#admUserSearch');
+    if (s) s.placeholder = t('admUserSearchPh');
+  }
+
+  async function loadUsers() {
+    const list = $('#admUserList');
+    list.innerHTML = '<div class="adm-state"><div class="spinner" style="margin:0 auto"></div></div>';
+    try { const d = await api('/api/admin/users'); allUsers = d.users || []; }
+    catch { list.innerHTML = `<div class="adm-state">${esc(t('admLoadFail'))}</div>`; return; }
+    renderUsers();
+  }
+
+  function renderUsers() {
+    const list = $('#admUserList');
+    const q = ($('#admUserSearch').value || '').trim().toLowerCase();
+    const rows = q ? allUsers.filter(u => u.username.toLowerCase().includes(q)) : allUsers;
+    if (!rows.length) { list.innerHTML = `<div class="adm-state">${esc(t('admUsersEmpty'))}</div>`; return; }
+    list.innerHTML = '';
+    for (const u of rows) list.appendChild(userRow(u));
+  }
+
+  function userRow(u) {
+    const el = document.createElement('div');
+    el.className = 'adm-user' + (u.banned ? ' banned' : '');
+
+    const av = document.createElement('span'); av.className = 'avatar-sm';
+    fillAvatar(av, u.username, u.avatar);
+
+    const info = document.createElement('div'); info.className = 'adm-user-info';
+    const nameRow = document.createElement('div'); nameRow.className = 'adm-user-name';
+    nameRow.innerHTML = `<b>@${esc(u.username)}</b>`;
+    if (u.isAdmin) { const tg = document.createElement('span'); tg.className = 'adm-tag admin'; tg.textContent = t('admAdminTag'); nameRow.appendChild(tg); }
+    if (u.banned) { const tg = document.createElement('span'); tg.className = 'adm-tag banned'; tg.textContent = t('admBannedTag'); nameRow.appendChild(tg); }
+    if (u.mutedUntil && !u.banned) { const tg = document.createElement('span'); tg.className = 'adm-tag banned'; tg.textContent = t('admMutedTag'); nameRow.appendChild(tg); }
+    const sub = document.createElement('div'); sub.className = 'adm-user-sub';
+    const region = [u.city, u.state].filter(Boolean).join(', ');
+    const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '';
+    sub.textContent = [region, t('admUserPosts', { n: u.postCount }), t('admUserJoined', { date: joined })].filter(Boolean).join(' · ');
+    info.append(nameRow, sub);
+
+    const acts = document.createElement('div'); acts.className = 'adm-user-acts';
+    if (!u.isAdmin) {   // 管理员账号不可处置（沿用现有保护）
+      acts.appendChild(actBtn('ghost', t('admDoWarn'), () => userWarn(u.username)));
+      if (u.mutedUntil) acts.appendChild(actBtn('ghost', t('admDoUnmute'), () => userMute(u.username, 0)));
+      else acts.appendChild(actBtn('warn', t('admDoMute'), () => userMute(u.username)));
+      if (u.banned) acts.appendChild(actBtn('ghost', t('admDoUnban'), () => userBan(u.username, false)));
+      else acts.appendChild(actBtn('warn', t('admDoBan'), () => userBan(u.username, true)));
+    }
+    acts.appendChild(actBtn('link', t('admViewProfile'), () => { location.href = 'profile.html?u=' + encodeURIComponent(u.username); }));
+
+    el.append(av, info, acts);
+    return el;
+  }
+
+  async function userBan(username, ban) {
+    if (ban && !window.confirm(t('admConfirmBan', { name: username }))) return;
+    try {
+      await api('/api/admin/users/' + encodeURIComponent(username) + '/ban', { method: 'POST', body: { ban } });
+      toast(ban ? t('admDoneBan') : t('admDoneUnban'));
+      loadSummary(); loadUsers();   // 刷新概览统计 + 用户列表
+    } catch (e) { toast(errMsg(e.code)); }
+  }
+
+  async function userWarn(username) {
+    if (!window.confirm(t('admConfirmWarn', { name: username }))) return;
+    try {
+      await api('/api/admin/users/' + encodeURIComponent(username) + '/warn', { method: 'POST', body: { reason: 'other' } });
+      toast(t('admDoneWarn'));
+    } catch (e) { toast(errMsg(e.code)); }
+  }
+
+  // days 省略 = 弹窗问天数（默认 7）；days===0 = 解禁
+  async function userMute(username, days) {
+    if (days === undefined) {
+      const ans = window.prompt(t('admMuteDaysPrompt'), '7');
+      if (ans === null) return;
+      days = parseInt(ans, 10); if (!(days > 0)) days = 7;
+    }
+    try {
+      await api('/api/admin/users/' + encodeURIComponent(username) + '/mute', { method: 'POST', body: { days } });
+      toast(days > 0 ? t('admDoneMute') : t('admDoneUnmute'));
+      loadUsers();
+    } catch (e) { toast(errMsg(e.code)); }
+  }
+
+  // 举报卡片上的「解禁」用（解禁后刷新举报队列）
+  async function unmute(username) {
+    try {
+      await api('/api/admin/users/' + encodeURIComponent(username) + '/mute', { method: 'POST', body: { days: 0 } });
+      toast(t('admDoneUnmute'));
       loadAll();
     } catch (e) { toast(errMsg(e.code)); }
   }
@@ -200,7 +350,10 @@
       $('#admWrap').innerHTML = `<div class="adm-state"><div class="big">🔒</div>${esc(t('admNoAccess'))}</div>`;
       return;
     }
+    paintViewToggle();
     paintTabs();
+    applyUserSearchPh();
+    $('#admUserSearch').addEventListener('input', renderUsers);
     loadAll();
   });
 })();

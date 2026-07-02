@@ -30,6 +30,13 @@ const DICT = {
     errTooMany: '尝试太多次了，休息 10 分钟再来',
     errNet: '网络出了点问题，再试一次',
     errAuth: '请先登录',
+    pwChangeTitle: '修改密码', pwOldPh: '当前密码', pwNewPh: '新密码（至少 6 位）', pwChanged: '密码已修改 ✓', pwForgot: '忘记密码？',
+    pwrTitle: '找回密码', pwrStep1Hint: '输入注册时的邮箱和电话，6 位验证码会发到你的邮箱', pwrEmailPh: '注册邮箱', pwrPhonePh: '注册电话',
+    pwrSendCode: '发送验证码', pwrSent: '若账号匹配，验证码已发到邮箱，请查收后填写', pwrCodePh: '6 位验证码', pwrNewPwPh: '新密码（至少 6 位）',
+    pwrReset: '重置密码', pwrResend: '重新发送', pwrDone: '密码已重置，请用新密码登录', pwrNeedFields: '请填邮箱和电话',
+    sessTitle: '登录设备', sessCurrent: '当前设备', sessKick: '踢出', sessRevokeOthers: '退出其它所有设备', sessUnknown: '未知设备', sessDone: '已退出其它设备',
+    delAccount: '注销账号', delWarn: '注销将永久删除你的账号和全部内容（帖子 / 评论 / 赞 / 关注 / 私信），不可恢复。', delPwPh: '输入密码确认', delConfirmBtn: '确认注销', delDone: '账号已注销',
+    evTitle: '验证邮箱', evHint: '我们会发一个 6 位验证码到你的注册邮箱。', evSend: '发送验证码', evSent: '验证码已发到邮箱，请查收', evConfirm: '确认验证', evDone: '邮箱已验证 ✓', evAlready: '邮箱已验证', evNoEmail: '你还没设置邮箱', evVerify: '验证邮箱', evVerified: '邮箱已验证 ✓',
     /* FYP */
     fypTitle: 'FYP', home: '首页',
     upload: '发布', uploadTitle: '分享美食 🍜',
@@ -69,10 +76,16 @@ const DICT = {
     backAgainExit: '再按一次离开 Foody',
     swipeHint: '上滑看更多',
     exTrending: '热门美食', followBtn: '关注',
-    siteTabHome: '首页', siteTabMenu: '菜单', siteTabContact: '联系',
+    siteTabHome: '首页', siteTabMenu: '菜单', siteTabContact: '联系', siteTabPhotos: '相册', siteTabShelf: '货架',
+    siteShelfL: '货架（商品）', siteAddGood: '+ 添加货物', siteShelfHint: '可带走/包装的货物：瓶装酱料、零食、周边等', siteStatusL: '营业状态', statusHide: '不显示', statusOpen: '营业中', statusClosed: '打烊', shelfEditTitle: '管理货架', shelfManage: '管理货架', shelfView: '看主页',
+    shopAdd: '加入', shopOrder: '用 WhatsApp 下单', shopTotal: '合计', shopApprox: '约', shopItemsN: '{n} 样', shopOrderHi: '你好！我想订购：', shopFrom: '— 来自 Foody', shopLoginToOrder: '登录后即可下单 🍜', shopSoldOut: '售罄', shopBadge: '店铺', shopMine: '我的店铺', shopView: '看店铺',
+    resvTitle: '预定自取', resvHint: '选个自取时间，会连同订单一起发给卖家。', resvTimeLbl: '自取时间', resvNotePh: '备注（可选）', resvConfirm: '提交预定', resvNeedTime: '请选自取时间', resvDone: '预定已提交 ✓', resvWaTime: '🕒 自取时间:', resvWaNote: '📝 备注:',
+    resvSection: '预定', resvEmpty: '还没有预定', resvMarkDone: '完成', resvMarkCancel: '取消', resvStPending: '待处理', resvStDone: '已完成', resvStCancelled: '已取消',
+    shelfPickupLbl: '支持自取 / 预定', shelfPickupHint: '开启后顾客下单要选自取时间，你能在主页「预定」区看到收到的预定',
     siteThemeL: '配色主题', siteMenuL: '菜单', siteAddCat: '+ 添加分类', siteAddItem: '+ 添加菜品',
     siteCatNamePh: '分类名（如 招牌）', siteItemNamePh: '菜名', siteItemPricePh: '价格 (如 RM 8)', siteItemDescPh: '描述（选填）',
-    pfSales: '销量', salesDaily: '每日', salesWeekly: '每周', salesMonthly: '每月', salesNoData: '暂无数据',
+    pfSales: '销量', salesDaily: '近1天', salesWeekly: '近7天', salesMonthly: '近30天', salesNoData: '暂无数据', salesOrders: '单',
+    webLink: '网站',
     /* Profile 主页 */
     pfPosts: '作品', pfLikes: '获赞',
     pfEdit: '编辑资料', pfSave: '保存', pfBioPh: '介绍一下你的美食 / 店…',
@@ -85,10 +98,13 @@ const DICT = {
     pfMessage: '发消息', dmTitle: '私信', dmPh: '输入消息…', dmYou: '你：',
     dmEmpty: '还没有私信。去别人主页点「发消息」就能开聊啦 💬', dmSayHi: '给 @{name} 发条消息，打个招呼吧 👋',
     pfFollow: '关注', pfFollowed: '已关注', pfFollowers: '粉丝', pfFollowing: '关注中', pfNobody: '还没有人', feedFollowing: '关注', feedEmptyFollow: '你还没关注谁。去逛逛、点别人头像关注，这里就有他们的新帖啦 👀',
+    pfBlock: '拉黑', pfUnblock: '取消拉黑', pfBlocked: '已拉黑', pfUnblocked: '已取消拉黑', pfBlockConfirm: '拉黑 @{name}？你们将互相看不到对方的内容，也不能私信。', pfBlockedNote: '你已拉黑此用户，看不到其内容',
     ntTitle: '通知', ntLiked: '赞了你的帖子', ntCommented: '评论了你的帖子', ntMention: '在评论里提到你', ntFollowed: '关注了你', ntNewPost: '发布了新帖子', editPost: '编辑帖子', reply: '回复', ntEmpty: '还没有通知。有人赞你、评论或关注你时，会出现在这里 🔔',
     plFoodies: '吃货', plMap: '在 Google 地图打开', plNotFound: '还没有这个地点的帖子',
     siteAbout: '关于', siteHours: '营业时间', siteAddress: '地址', siteGallery: '我们的出品', siteMap: '地图', siteDraft: '草稿 · 未发布，只有你看得到', siteUnpub: '这个网站还没发布',
     siteEditTitle: '编辑我的网站', sitePreview: '查看', siteCover: '封面图', siteCoverAdd: '上传封面', siteTitle: '名称 / 店名', siteTaglineL: '标语（一句话）', siteHoursPh: '如：每天 10:00–22:00', siteLinks: '链接按钮', siteAddLink: '+ 加一个链接', sitePublishLabel: '公开发布（别人才看得到）', siteSaved: '已保存 ✅', siteLinkLabelPh: '按钮文字，如 看菜单', siteMine: '我的网站', siteView: '查看网站',
+    siteSlugL: '我的专属网址', siteAnnounceL: '公告 / 活动', siteAnnouncePh: '如：本周牛肉面买一送一', siteAccentL: '自定义主题色', siteAccentClear: '用主题默认', siteAlbumL: '相册（店铺展示图）', siteAddPhoto: '+ 添加照片', siteSectionsL: '显示哪些版块', siteSecGallery: '帖子画廊', siteSecMenu: '菜单', siteSecPhotos: '相册', siteSecContact: '联系', slugOk: '✓ 可用', slugTaken: '已被占用', slugReserved: '这是保留词', slugBad: '3–30 个字母/数字/连字符',
+    aiCopyL: '✨ AI 帮我写', aiHintPh: '一句提示（可选），如：怡保老字号牛肉面 10 年', aiGo: '生成标语和介绍', aiNote: '生成结果只填进表单，检查满意后记得点保存', aiFilled: '已填入，检查后记得保存 ✨', aiOverwrite: '会覆盖你已填的标语/介绍，继续？',
     /* 举报 & 审核 */
     reportTitle: '举报', reportUser: '举报用户',
     reportReasonLabel: '选择原因', reportNotePh: '补充说明（选填）…', reportSubmit: '提交举报',
@@ -101,7 +117,12 @@ const DICT = {
     admReporter: '举报人', admAuto: '系统自动', admGone: '（内容已不存在）', admViewPost: '查看帖子',
     admDoDelete: '删除内容', admDoBan: '封禁作者', admDoDismiss: '驳回', admDoUnban: '解封作者',
     admConfirmDelete: '确定删除这条内容？不可恢复。', admConfirmBan: '确定封禁 @{name}？对方将无法登录或发帖（之后可解封）。',
-    admDoneDelete: '内容已删除', admDoneBan: '已封禁', admDoneDismiss: '已驳回', admDoneUnban: '已解封', admBannedTag: '已封禁'
+    admDoneDelete: '内容已删除', admDoneBan: '已封禁', admDoneDismiss: '已驳回', admDoneUnban: '已解封', admBannedTag: '已封禁',
+    admViewReports: '举报队列', admViewUsers: '用户', admViewProfile: '看主页', admUserPosts: '发帖 {n}', admUserJoined: '注册 {date}', admUserSearchPh: '搜索用户名…', admAdminTag: '管理员', admUsersEmpty: '没有用户', admReportCount: '举报 {n} 次', admAutoHidden: '已自动隐藏',
+    admDoWarn: '警告', admDoMute: '禁言', admDoUnmute: '解禁', admMutedTag: '已禁言',
+    admConfirmWarn: '给 @{name} 发一条警告？', admMuteDaysPrompt: '禁言多少天？（默认 7）',
+    admDoneWarn: '已警告', admDoneMute: '已禁言', admDoneUnmute: '已解禁',
+    warnNotice: '⚠️ 你收到一条管理员警告', warnDismiss: '知道了',
   },
   ms: {
     langName: 'BM',
@@ -131,6 +152,13 @@ const DICT = {
     errTooMany: 'Terlalu banyak percubaan, rehat 10 minit dulu',
     errNet: 'Ada masalah sambungan, cuba lagi',
     errAuth: 'Sila log masuk dulu',
+    pwChangeTitle: 'Tukar kata laluan', pwOldPh: 'Kata laluan semasa', pwNewPh: 'Kata laluan baru (min 6 aksara)', pwChanged: 'Kata laluan ditukar ✓', pwForgot: 'Lupa kata laluan?',
+    pwrTitle: 'Set semula kata laluan', pwrStep1Hint: 'Masukkan email & telefon pendaftaran; kod 6 digit akan dihantar ke email anda', pwrEmailPh: 'Email pendaftaran', pwrPhonePh: 'Telefon pendaftaran',
+    pwrSendCode: 'Hantar kod', pwrSent: 'Jika akaun sepadan, kod telah dihantar ke email — sila semak', pwrCodePh: 'Kod 6 digit', pwrNewPwPh: 'Kata laluan baru (min 6 aksara)',
+    pwrReset: 'Set semula', pwrResend: 'Hantar semula', pwrDone: 'Kata laluan ditetapkan semula — sila log masuk', pwrNeedFields: 'Isi email dan telefon',
+    sessTitle: 'Peranti log masuk', sessCurrent: 'Peranti ini', sessKick: 'Keluarkan', sessRevokeOthers: 'Log keluar peranti lain', sessUnknown: 'Peranti tak dikenali', sessDone: 'Peranti lain dilog keluar',
+    delAccount: 'Padam akaun', delWarn: 'Memadam akaun akan buang akaun & semua kandungan anda (pos / komen / suka / ikutan / mesej) secara kekal. Tak boleh undo.', delPwPh: 'Masukkan kata laluan untuk sahkan', delConfirmBtn: 'Sahkan padam', delDone: 'Akaun dipadam',
+    evTitle: 'Sahkan email', evHint: 'Kami akan hantar kod 6 digit ke email pendaftaran anda.', evSend: 'Hantar kod', evSent: 'Kod telah dihantar ke email — sila semak', evConfirm: 'Sahkan', evDone: 'Email disahkan ✓', evAlready: 'Email sudah disahkan', evNoEmail: 'Anda belum set email', evVerify: 'Sahkan email', evVerified: 'Email disahkan ✓',
     fypTitle: 'FYP', home: 'Utama',
     upload: 'Post', uploadTitle: 'Kongsi makanan 🍜',
     chooseFile: 'Tekan untuk pilih gambar atau video', changeFile: 'Tukar fail',
@@ -169,10 +197,16 @@ const DICT = {
     backAgainExit: 'Tekan sekali lagi untuk keluar',
     swipeHint: 'Leret ke atas untuk lagi',
     exTrending: 'Popular', followBtn: 'Ikut',
-    siteTabHome: 'Utama', siteTabMenu: 'Menu', siteTabContact: 'Hubungi',
+    siteTabHome: 'Utama', siteTabMenu: 'Menu', siteTabContact: 'Hubungi', siteTabPhotos: 'Galeri', siteTabShelf: 'Rak',
+    siteShelfL: 'Rak (Produk)', siteAddGood: '+ Tambah barang', siteShelfHint: 'Barang bungkus/bawa balik: sos botol, snek, dll', siteStatusL: 'Status kedai', statusHide: 'Jangan tunjuk', statusOpen: 'Buka', statusClosed: 'Tutup', shelfEditTitle: 'Urus rak', shelfManage: 'Urus rak', shelfView: 'Lihat profil',
+    shopAdd: 'Tambah', shopOrder: 'Pesan via WhatsApp', shopTotal: 'Jumlah', shopApprox: '~', shopItemsN: '{n} item', shopOrderHi: 'Hai! Saya nak pesan:', shopFrom: '— dari Foody', shopLoginToOrder: 'Log masuk untuk pesan 🍜', shopSoldOut: 'Habis', shopBadge: 'Kedai', shopMine: 'Kedai saya', shopView: 'Lihat kedai',
+    resvTitle: 'Tempah ambil sendiri', resvHint: 'Pilih masa ambil; ia dihantar bersama pesanan kepada penjual.', resvTimeLbl: 'Masa ambil', resvNotePh: 'Nota (pilihan)', resvConfirm: 'Hantar tempahan', resvNeedTime: 'Sila pilih masa ambil', resvDone: 'Tempahan dihantar ✓', resvWaTime: '🕒 Masa ambil:', resvWaNote: '📝 Nota:',
+    resvSection: 'Tempahan', resvEmpty: 'Belum ada tempahan', resvMarkDone: 'Selesai', resvMarkCancel: 'Batal', resvStPending: 'Menunggu', resvStDone: 'Selesai', resvStCancelled: 'Dibatalkan',
+    shelfPickupLbl: 'Terima ambil sendiri / tempahan', shelfPickupHint: 'Bila dibuka, pembeli pilih masa ambil semasa pesan; anda lihat tempahan di profil.',
     siteThemeL: 'Tema', siteMenuL: 'Menu', siteAddCat: '+ Tambah kategori', siteAddItem: '+ Tambah item',
     siteCatNamePh: 'Nama kategori', siteItemNamePh: 'Nama hidangan', siteItemPricePh: 'Harga (cth RM 8)', siteItemDescPh: 'Penerangan (pilihan)',
-    pfSales: 'Jualan', salesDaily: 'Harian', salesWeekly: 'Mingguan', salesMonthly: 'Bulanan', salesNoData: 'Belum ada data',
+    pfSales: 'Jualan', salesDaily: '1 hari', salesWeekly: '7 hari', salesMonthly: '30 hari', salesNoData: 'Belum ada data', salesOrders: 'pesanan',
+    webLink: 'Tapak web',
     /* Profile */
     pfPosts: 'Kiriman', pfLikes: 'Suka',
     pfEdit: 'Edit profil', pfSave: 'Simpan', pfBioPh: 'Cerita pasal makanan / kedai anda…',
@@ -185,10 +219,13 @@ const DICT = {
     pfMessage: 'Mesej', dmTitle: 'Mesej', dmPh: 'Taip mesej…', dmYou: 'Anda:',
     dmEmpty: 'Belum ada mesej. Buka profil orang & tekan「Mesej」untuk mula 💬', dmSayHi: 'Hantar mesej kepada @{name} 👋',
     pfFollow: 'Ikut', pfFollowed: 'Mengikut', pfFollowers: 'Pengikut', pfFollowing: 'Mengikuti', pfNobody: 'Tiada lagi', feedFollowing: 'Ikutan', feedEmptyFollow: 'Anda belum ikut sesiapa. Tekan avatar orang untuk ikut, kiriman mereka akan muncul di sini 👀',
+    pfBlock: 'Sekat', pfUnblock: 'Nyahsekat', pfBlocked: 'Disekat', pfUnblocked: 'Nyahsekat selesai', pfBlockConfirm: 'Sekat @{name}? Anda takkan nampak kandungan satu sama lain & tak boleh mesej.', pfBlockedNote: 'Anda telah sekat pengguna ini',
     ntTitle: 'Notifikasi', ntLiked: 'suka kiriman anda', ntCommented: 'komen kiriman anda', ntMention: 'sebut anda dalam komen', ntFollowed: 'mula ikut anda', ntNewPost: 'siar kiriman baru', editPost: 'Edit kiriman', reply: 'Balas', ntEmpty: 'Belum ada notifikasi. Bila orang suka, komen atau ikut anda, ia muncul di sini 🔔',
     plFoodies: 'Foodie', plMap: 'Buka di Google Maps', plNotFound: 'Belum ada kiriman untuk lokasi ini',
     siteAbout: 'Tentang', siteHours: 'Waktu operasi', siteAddress: 'Alamat', siteGallery: 'Hasil kami', siteMap: 'Peta', siteDraft: 'Draf · belum terbit, hanya anda nampak', siteUnpub: 'Tapak web ini belum diterbitkan',
     siteEditTitle: 'Edit tapak web saya', sitePreview: 'Lihat', siteCover: 'Gambar kover', siteCoverAdd: 'Muat naik kover', siteTitle: 'Nama / kedai', siteTaglineL: 'Slogan (satu ayat)', siteHoursPh: 'cth: Setiap hari 10:00–22:00', siteLinks: 'Butang pautan', siteAddLink: '+ Tambah pautan', sitePublishLabel: 'Terbitkan (orang lain boleh lihat)', siteSaved: 'Disimpan ✅', siteLinkLabelPh: 'Teks butang, cth Menu', siteMine: 'Tapak web saya', siteView: 'Lihat tapak web',
+    siteSlugL: 'Pautan tapak saya', siteAnnounceL: 'Pengumuman', siteAnnouncePh: 'cth: Promo minggu ini', siteAccentL: 'Warna tersuai', siteAccentClear: 'Guna lalai tema', siteAlbumL: 'Galeri', siteAddPhoto: '+ Tambah foto', siteSectionsL: 'Bahagian dipaparkan', siteSecGallery: 'Galeri pos', siteSecMenu: 'Menu', siteSecPhotos: 'Galeri', siteSecContact: 'Hubungi', slugOk: '✓ Boleh guna', slugTaken: 'Sudah diambil', slugReserved: 'Perkataan simpanan', slugBad: '3–30 huruf/nombor/sengkang',
+    aiCopyL: '✨ AI tulis untuk saya', aiHintPh: 'Petunjuk ringkas (pilihan), cth: mee lembu Ipoh 10 tahun', aiGo: 'Jana slogan & cerita', aiNote: 'Hasil diisi ke borang sahaja — semak & tekan simpan', aiFilled: 'Telah diisi — semak dan simpan ✨', aiOverwrite: 'Ini akan menggantikan slogan/cerita sedia ada. Teruskan?',
     reportTitle: 'Lapor', reportUser: 'Lapor pengguna',
     reportReasonLabel: 'Pilih sebab', reportNotePh: 'Maklumat tambahan (pilihan)…', reportSubmit: 'Hantar laporan',
     reportNeedReason: 'Pilih sebab dulu', reportSent: 'Laporan diterima, terima kasih 🙏', reportSelf: 'Tak boleh lapor kandungan sendiri',
@@ -200,7 +237,12 @@ const DICT = {
     admReporter: 'Pelapor', admAuto: 'Automatik', admGone: '(Kandungan tiada)', admViewPost: 'Lihat kiriman',
     admDoDelete: 'Padam kandungan', admDoBan: 'Sekat penyiar', admDoDismiss: 'Tolak', admDoUnban: 'Nyahsekat',
     admConfirmDelete: 'Padam kandungan ini? Tak boleh undo.', admConfirmBan: 'Sekat @{name}? Mereka tak boleh log masuk / post (boleh nyahsekat kemudian).',
-    admDoneDelete: 'Kandungan dipadam', admDoneBan: 'Telah disekat', admDoneDismiss: 'Ditolak', admDoneUnban: 'Dinyahsekat', admBannedTag: 'Disekat'
+    admDoneDelete: 'Kandungan dipadam', admDoneBan: 'Telah disekat', admDoneDismiss: 'Ditolak', admDoneUnban: 'Dinyahsekat', admBannedTag: 'Disekat',
+    admViewReports: 'Laporan', admViewUsers: 'Pengguna', admViewProfile: 'Lihat profil', admUserPosts: '{n} pos', admUserJoined: 'Sertai {date}', admUserSearchPh: 'Cari nama…', admAdminTag: 'Admin', admUsersEmpty: 'Tiada pengguna', admReportCount: '{n} laporan', admAutoHidden: 'Auto-sembunyi',
+    admDoWarn: 'Beri amaran', admDoMute: 'Senyapkan', admDoUnmute: 'Nyahsenyap', admMutedTag: 'Disenyap',
+    admConfirmWarn: 'Beri amaran kepada @{name}?', admMuteDaysPrompt: 'Senyap berapa hari? (default 7)',
+    admDoneWarn: 'Amaran dihantar', admDoneMute: 'Disenyapkan', admDoneUnmute: 'Dinyahsenyap',
+    warnNotice: '⚠️ Anda menerima amaran daripada admin', warnDismiss: 'Faham',
   },
   en: {
     langName: 'EN',
@@ -230,6 +272,13 @@ const DICT = {
     errTooMany: 'Too many attempts — take a 10 min break',
     errNet: 'Network hiccup — try again',
     errAuth: 'Please log in first',
+    pwChangeTitle: 'Change password', pwOldPh: 'Current password', pwNewPh: 'New password (min 6 chars)', pwChanged: 'Password changed ✓', pwForgot: 'Forgot password?',
+    pwrTitle: 'Reset password', pwrStep1Hint: 'Enter your registered email & phone; a 6-digit code goes to your email', pwrEmailPh: 'Registered email', pwrPhonePh: 'Registered phone',
+    pwrSendCode: 'Send code', pwrSent: 'If the account matches, a code was sent to the email — please check', pwrCodePh: '6-digit code', pwrNewPwPh: 'New password (min 6 chars)',
+    pwrReset: 'Reset password', pwrResend: 'Resend', pwrDone: 'Password reset — please log in', pwrNeedFields: 'Enter email and phone',
+    sessTitle: 'Login devices', sessCurrent: 'This device', sessKick: 'Sign out', sessRevokeOthers: 'Sign out other devices', sessUnknown: 'Unknown device', sessDone: 'Other devices signed out',
+    delAccount: 'Delete account', delWarn: 'Deleting your account permanently removes it and all your content (posts / comments / likes / follows / messages). This cannot be undone.', delPwPh: 'Enter password to confirm', delConfirmBtn: 'Confirm delete', delDone: 'Account deleted',
+    evTitle: 'Verify email', evHint: "We'll send a 6-digit code to your registered email.", evSend: 'Send code', evSent: 'Code sent to your email — please check', evConfirm: 'Confirm', evDone: 'Email verified ✓', evAlready: 'Email already verified', evNoEmail: "You haven't set an email", evVerify: 'Verify email', evVerified: 'Email verified ✓',
     fypTitle: 'FYP', home: 'Home',
     upload: 'Post', uploadTitle: 'Share some food 🍜',
     chooseFile: 'Tap to choose a photo or video', changeFile: 'Change file',
@@ -268,10 +317,16 @@ const DICT = {
     backAgainExit: 'Press back again to exit',
     swipeHint: 'Swipe up for more',
     exTrending: 'Trending', followBtn: 'Follow',
-    siteTabHome: 'Home', siteTabMenu: 'Menu', siteTabContact: 'Contact',
+    siteTabHome: 'Home', siteTabMenu: 'Menu', siteTabContact: 'Contact', siteTabPhotos: 'Gallery', siteTabShelf: 'Shelf',
+    siteShelfL: 'Shelf (Products)', siteAddGood: '+ Add product', siteShelfHint: 'Packaged/takeaway goods: bottled sauce, snacks, merch', siteStatusL: 'Status', statusHide: 'Hide', statusOpen: 'Open', statusClosed: 'Closed', shelfEditTitle: 'Manage shelf', shelfManage: 'Manage shelf', shelfView: 'View profile',
+    shopAdd: 'Add', shopOrder: 'Order via WhatsApp', shopTotal: 'Total', shopApprox: '~', shopItemsN: '{n} item(s)', shopOrderHi: "Hi! I'd like to order:", shopFrom: '— via Foody', shopLoginToOrder: 'Log in to order 🍜', shopSoldOut: 'Sold out', shopBadge: 'Shop', shopMine: 'My shop', shopView: 'View shop',
+    resvTitle: 'Reserve for pickup', resvHint: 'Pick a pickup time; it goes to the seller with your order.', resvTimeLbl: 'Pickup time', resvNotePh: 'Note (optional)', resvConfirm: 'Submit reservation', resvNeedTime: 'Please pick a pickup time', resvDone: 'Reservation sent ✓', resvWaTime: '🕒 Pickup time:', resvWaNote: '📝 Note:',
+    resvSection: 'Reservations', resvEmpty: 'No reservations yet', resvMarkDone: 'Done', resvMarkCancel: 'Cancel', resvStPending: 'Pending', resvStDone: 'Done', resvStCancelled: 'Cancelled',
+    shelfPickupLbl: 'Accept pickup / reservations', shelfPickupHint: 'When on, buyers pick a pickup time when ordering; you see reservations on your profile.',
     siteThemeL: 'Theme', siteMenuL: 'Menu', siteAddCat: '+ Add category', siteAddItem: '+ Add item',
     siteCatNamePh: 'Category name', siteItemNamePh: 'Dish name', siteItemPricePh: 'Price (e.g. RM 8)', siteItemDescPh: 'Description (optional)',
-    pfSales: 'Sales', salesDaily: 'Daily', salesWeekly: 'Weekly', salesMonthly: 'Monthly', salesNoData: 'No data yet',
+    pfSales: 'Sales', salesDaily: '1 day', salesWeekly: '7 days', salesMonthly: '30 days', salesNoData: 'No data yet', salesOrders: 'orders',
+    webLink: 'Website',
     /* Profile */
     pfPosts: 'Posts', pfLikes: 'Likes',
     pfEdit: 'Edit profile', pfSave: 'Save', pfBioPh: 'Tell people about your food / shop…',
@@ -284,10 +339,13 @@ const DICT = {
     pfMessage: 'Message', dmTitle: 'Messages', dmPh: 'Type a message…', dmYou: 'You:',
     dmEmpty: 'No messages yet. Open a profile and tap "Message" to start 💬', dmSayHi: 'Say hi to @{name} 👋',
     pfFollow: 'Follow', pfFollowed: 'Following', pfFollowers: 'Followers', pfFollowing: 'Following', pfNobody: 'Nobody yet', feedFollowing: 'Following', feedEmptyFollow: 'You are not following anyone yet. Tap a profile avatar to follow, and their posts show up here 👀',
+    pfBlock: 'Block', pfUnblock: 'Unblock', pfBlocked: 'Blocked', pfUnblocked: 'Unblocked', pfBlockConfirm: "Block @{name}? You won't see each other's content and can't message.", pfBlockedNote: "You've blocked this user",
     ntTitle: 'Notifications', ntLiked: 'liked your post', ntCommented: 'commented on your post', ntMention: 'mentioned you in a comment', ntFollowed: 'followed you', ntNewPost: 'posted something new', editPost: 'Edit post', reply: 'Reply', ntEmpty: 'No notifications yet. When someone likes, comments or follows you, it shows up here 🔔',
     plFoodies: 'Foodies', plMap: 'Open in Google Maps', plNotFound: 'No posts for this place yet',
     siteAbout: 'About', siteHours: 'Opening hours', siteAddress: 'Address', siteGallery: 'Our dishes', siteMap: 'Map', siteDraft: 'Draft · not published, only you can see this', siteUnpub: 'This website is not published yet',
     siteEditTitle: 'Edit my website', sitePreview: 'View', siteCover: 'Cover image', siteCoverAdd: 'Upload cover', siteTitle: 'Name / shop', siteTaglineL: 'Tagline (one line)', siteHoursPh: 'e.g. Daily 10:00–22:00', siteLinks: 'Link buttons', siteAddLink: '+ Add a link', sitePublishLabel: 'Publish (others can see it)', siteSaved: 'Saved ✅', siteLinkLabelPh: 'Button text, e.g. Menu', siteMine: 'My website', siteView: 'View website',
+    siteSlugL: 'My site link', siteAnnounceL: 'Announcement', siteAnnouncePh: 'e.g. This week: buy 1 free 1', siteAccentL: 'Custom accent color', siteAccentClear: 'Use theme default', siteAlbumL: 'Photo gallery', siteAddPhoto: '+ Add photos', siteSectionsL: 'Sections to show', siteSecGallery: 'Post gallery', siteSecMenu: 'Menu', siteSecPhotos: 'Gallery', siteSecContact: 'Contact', slugOk: '✓ Available', slugTaken: 'Already taken', slugReserved: 'Reserved word', slugBad: '3–30 letters/numbers/hyphens',
+    aiCopyL: '✨ AI write for me', aiHintPh: 'One-line hint (optional), e.g. Ipoh beef noodles since 2015', aiGo: 'Generate tagline & story', aiNote: 'Fills the form only — review, then hit Save', aiFilled: 'Filled in — review & save ✨', aiOverwrite: 'This will overwrite your current tagline/intro. Continue?',
     reportTitle: 'Report', reportUser: 'Report user',
     reportReasonLabel: 'Choose a reason', reportNotePh: 'Add details (optional)…', reportSubmit: 'Submit report',
     reportNeedReason: 'Pick a reason first', reportSent: 'Report received, thank you 🙏', reportSelf: "You can't report your own content",
@@ -299,7 +357,12 @@ const DICT = {
     admReporter: 'Reporter', admAuto: 'Auto', admGone: '(Content no longer exists)', admViewPost: 'View post',
     admDoDelete: 'Delete content', admDoBan: 'Ban author', admDoDismiss: 'Dismiss', admDoUnban: 'Unban author',
     admConfirmDelete: 'Delete this content? Cannot be undone.', admConfirmBan: 'Ban @{name}? They cannot log in or post (you can unban later).',
-    admDoneDelete: 'Content deleted', admDoneBan: 'Banned', admDoneDismiss: 'Dismissed', admDoneUnban: 'Unbanned', admBannedTag: 'Banned'
+    admDoneDelete: 'Content deleted', admDoneBan: 'Banned', admDoneDismiss: 'Dismissed', admDoneUnban: 'Unbanned', admBannedTag: 'Banned',
+    admViewReports: 'Reports', admViewUsers: 'Users', admViewProfile: 'View profile', admUserPosts: '{n} posts', admUserJoined: 'Joined {date}', admUserSearchPh: 'Search username…', admAdminTag: 'Admin', admUsersEmpty: 'No users', admReportCount: '{n} reports', admAutoHidden: 'Auto-hidden',
+    admDoWarn: 'Warn', admDoMute: 'Mute', admDoUnmute: 'Unmute', admMutedTag: 'Muted',
+    admConfirmWarn: 'Send a warning to @{name}?', admMuteDaysPrompt: 'Mute for how many days? (default 7)',
+    admDoneWarn: 'Warned', admDoneMute: 'Muted', admDoneUnmute: 'Unmuted',
+    warnNotice: '⚠️ You have a warning from a moderator', warnDismiss: 'Got it',
   }
 };
 
@@ -350,10 +413,20 @@ function errMsg(code) {
     file_too_big: 'errNet', bad_file: 'errNet', net: 'errNet'
   };
   if (code === 'banned') return LANG === 'zh' ? '你的账号已被限制，暂时无法操作' : LANG === 'ms' ? 'Akaun anda disekat buat masa ini' : 'Your account is restricted';
+  if (code === 'muted') return LANG === 'zh' ? '你被临时禁言了，暂时不能发帖 / 评论 / 私信' : LANG === 'ms' ? 'Anda disenyapkan sementara — tak boleh post / komen / mesej' : "You're temporarily muted — can't post, comment or message";
+  if (code === 'wrong_password') return LANG === 'zh' ? '当前密码不对' : LANG === 'ms' ? 'Kata laluan semasa salah' : 'Current password is wrong';
+  if (code === 'bad_code') return LANG === 'zh' ? '验证码不对' : LANG === 'ms' ? 'Kod salah' : 'Wrong code';
+  if (code === 'expired') return LANG === 'zh' ? '验证码已过期，请重新获取' : LANG === 'ms' ? 'Kod tamat tempoh — minta semula' : 'Code expired — request a new one';
+  if (code === 'no_request') return LANG === 'zh' ? '请先获取验证码' : LANG === 'ms' ? 'Sila minta kod dahulu' : 'Request a code first';
   if (code === 'bad_email') return LANG === 'zh' ? '邮箱格式不对' : LANG === 'ms' ? 'Format email tak betul' : 'Invalid email address';
   if (code === 'email_taken') return LANG === 'zh' ? '这个邮箱已经注册过账号了' : LANG === 'ms' ? 'Email ini sudah ada akaun' : 'This email already has an account';
   if (code === 'file_too_big') return LANG === 'zh' ? '文件太大了（最多 150MB）' : LANG === 'ms' ? 'Fail terlalu besar (max 150MB)' : 'File too large (max 150MB)';
   if (code === 'bad_file') return LANG === 'zh' ? '只支持照片和视频哦' : LANG === 'ms' ? 'Gambar & video sahaja' : 'Photos & videos only';
+  if (code === 'bad_slug') return LANG === 'zh' ? '网址格式不对（3–30 个字母/数字/连字符）' : LANG === 'ms' ? 'Format pautan salah (3–30 huruf/nombor/sengkang)' : 'Invalid link (3–30 letters/numbers/hyphens)';
+  if (code === 'reserved_slug') return LANG === 'zh' ? '这个网址是保留词，换一个' : LANG === 'ms' ? 'Pautan ini disimpan, cuba lain' : 'That link is reserved, try another';
+  if (code === 'slug_taken') return LANG === 'zh' ? '这个网址已被占用，换一个' : LANG === 'ms' ? 'Pautan ini sudah diambil' : 'That link is taken, try another';
+  if (code === 'ai_disabled') return LANG === 'zh' ? 'AI 功能未开启' : LANG === 'ms' ? 'Ciri AI belum diaktifkan' : 'AI is not enabled';
+  if (code === 'ai_failed') return LANG === 'zh' ? 'AI 生成失败，再试一次' : LANG === 'ms' ? 'AI gagal jana — cuba lagi' : 'AI generation failed — try again';
   return t(map[code] || 'errNet');
 }
 
@@ -443,6 +516,7 @@ const ICONS = {
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-1.6 3.6L16 11H5"/></svg>',
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 9-4-1.1-7-4.4-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>',
   more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.34 3.27a1 1 0 0 1 1.32 0l8 7a1 1 0 0 1 .34.75V20a1 1 0 0 1-1 1h-4.5a1 1 0 0 1-1-1v-4.4a1 1 0 0 0-1-1h-2.6a1 1 0 0 0-1 1V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8.98a1 1 0 0 1 .34-.75l8-7Z"/></svg>',
   compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M15.4 8.6 13.5 13.5 8.6 15.4 10.5 10.5 15.4 8.6Z" fill="currentColor" stroke="none"/></svg>',
   chevronUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13l6-6 6 6M6 18l6-6 6 6"/></svg>',
@@ -535,11 +609,99 @@ async function submitReport() {
   }
 }
 
+/* ---------------- 修改密码 / 找回密码 弹窗（通用，任意页面引入 shared.js 即可调用）---------------- */
+function ensurePwDom() {
+  if (document.getElementById('pwOverlay')) return;
+  const ov = document.createElement('div');
+  ov.className = 'overlay'; ov.id = 'pwOverlay';
+  ov.innerHTML = '<div class="modal pw-modal"><h3><span id="pwTitle"></span><button class="x" id="pwClose"></button></h3><div id="pwBody"></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#pwClose').innerHTML = ICONS.close;
+  ov.querySelector('#pwClose').addEventListener('click', closePw);
+  ov.addEventListener('click', (e) => { if (e.target === ov) closePw(); });
+}
+function closePw() { const ov = document.getElementById('pwOverlay'); if (ov) ov.classList.remove('show'); }
+function pwField(id, ph, type) { return '<div class="field"><input id="' + id + '" type="' + (type || 'text') + '" placeholder="' + ph + '" autocomplete="off"></div>'; }
+
+// 修改密码（登录态）
+function openChangePassword() {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('pwChangeTitle');
+  ov.querySelector('#pwBody').innerHTML =
+    pwField('pwOld', t('pwOldPh'), 'password') + pwField('pwNew', t('pwNewPh'), 'password') +
+    '<div class="pw-forgot"><a id="pwForgotLink">' + t('pwForgot') + '</a></div>' +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="pwSubmit">' + t('pwChangeTitle') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#pwForgotLink').addEventListener('click', () => { closePw(); openPasswordReset(); });
+  ov.querySelector('#pwSubmit').addEventListener('click', async () => {
+    const btn = ov.querySelector('#pwSubmit'); btn.disabled = true;
+    try {
+      await api('/api/me/password', { method: 'POST', body: { oldPassword: ov.querySelector('#pwOld').value, newPassword: ov.querySelector('#pwNew').value } });
+      toast(t('pwChanged')); closePw();
+    } catch (e) { toast(errMsg(e.code)); } finally { btn.disabled = false; }
+  });
+  ov.classList.add('show');
+}
+
+// 找回密码（两步：邮箱+电话 → 收码填新密码）
+function openPasswordReset(prefillEmail) {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('pwrTitle');
+  pwResetStep1(ov, prefillEmail || '');
+  ov.classList.add('show');
+}
+function pwResetStep1(ov, email) {
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('pwrStep1Hint') + '</p>' + pwField('pwrEmail', t('pwrEmailPh'), 'email') + pwField('pwrPhone', t('pwrPhonePh'), 'tel') +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="pwrSend">' + t('pwrSendCode') + '</button></div>';
+  ov.querySelector('#pwrEmail').value = email;
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#pwrSend').addEventListener('click', async () => {
+    const em = ov.querySelector('#pwrEmail').value.trim(), ph = ov.querySelector('#pwrPhone').value.trim();
+    if (!em || !ph) { toast(t('pwrNeedFields')); return; }
+    const btn = ov.querySelector('#pwrSend'); btn.disabled = true;
+    try { await api('/api/auth/reset/request', { method: 'POST', body: { email: em, phone: ph } }); toast(t('pwrSent')); pwResetStep2(ov, em, ph); }
+    catch (e) { toast(errMsg(e.code)); } finally { btn.disabled = false; }
+  });
+}
+function pwResetStep2(ov, email, phone) {
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('pwrSent') + '</p>' + pwField('pwrCode', t('pwrCodePh'), 'text') + pwField('pwrNew', t('pwrNewPwPh'), 'password') +
+    '<div class="pw-forgot"><a id="pwrResend">' + t('pwrResend') + '</a></div>' +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="pwrReset">' + t('pwrReset') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#pwrResend').addEventListener('click', () => pwResetStep1(ov, email));
+  ov.querySelector('#pwrReset').addEventListener('click', async () => {
+    const btn = ov.querySelector('#pwrReset'); btn.disabled = true;
+    try {
+      await api('/api/auth/reset/confirm', { method: 'POST', body: { email, phone, code: ov.querySelector('#pwrCode').value.trim(), newPassword: ov.querySelector('#pwrNew').value } });
+      toast(t('pwrDone')); closePw();
+      setTimeout(() => { if (!location.pathname.endsWith('index.html') && location.pathname !== '/') location.href = 'index.html'; }, 700);
+    } catch (e) { toast(errMsg(e.code)); } finally { btn.disabled = false; }
+  });
+}
+
 /* ---------------- 当前用户（缓存：整页只请求一次 /api/me，多处复用）---------------- */
 let _mePromise = null;
 function getMe() {
   if (!_mePromise) _mePromise = api('/api/me').catch(() => ({ user: null }));
   return _mePromise;
+}
+
+/* 管理员警告提示条：登录用户若有未读警告，顶部显示一条可关闭的提示；关掉即标记已读。 */
+async function maybeShowWarning() {
+  let me; try { me = await getMe(); } catch { return; }
+  if (!me || !me.warning || document.querySelector('.warn-banner')) return;
+  const w = me.warning;
+  const bar = document.createElement('div'); bar.className = 'warn-banner';
+  const txt = document.createElement('span'); txt.className = 'wb-txt';
+  txt.textContent = t('warnNotice') + (w.note && !String(w.note).startsWith('report:') ? '：' + w.note : '');
+  const x = document.createElement('button'); x.className = 'wb-x'; x.textContent = t('warnDismiss');
+  x.addEventListener('click', () => { bar.remove(); api('/api/me/warnings/seen', { method: 'POST' }).catch(() => {}); });
+  bar.append(txt, x);
+  document.body.appendChild(bar);
 }
 
 /* ---------------- 底部导航栏（共享组件，TikTok 式 5 格）----------------
@@ -556,6 +718,7 @@ function mountBottomNav() {
   nav.className = 'bottom-nav';
   nav.setAttribute('aria-label', 'Foody');
   nav.innerHTML =
+    `<a class="bn-brand" href="fyp.html"><img src="img/logo.svg" alt=""><span>Foody</span></a>` +
     `<a class="bn-item bn-home" href="fyp.html"><span class="bn-ic">${ICONS.home}</span><span class="bn-tx" data-i18n="navHome">${t('navHome')}</span></a>` +
     `<a class="bn-item bn-explore" href="explore.html"><span class="bn-ic">${ICONS.compass}</span><span class="bn-tx" data-i18n="navExplore">${t('navExplore')}</span></a>` +
     `<button class="bn-item bn-create" type="button"><span class="bn-ic">${ICONS.plus}</span><span class="bn-tx" data-i18n="navPost">${t('navPost')}</span></button>` +
@@ -600,8 +763,218 @@ async function pollNavUnread(nav) {
   if (dot) dot.hidden = !(((a.count || 0) + (b.count || 0)) > 0);
 }
 
+/* 通用购物车（店铺菜单 / profile 货架共用）：加购 → 底部订单条 → 一键生成 WhatsApp 清单。
+   不碰在线支付。各页面用 FoodyCart.setWaUrl(商家WhatsApp)，再用 FoodyCart.makeBuy(key,item) 渲染加购控件。 */
+const FoodyCart = (() => {
+  const cart = new Map();      // key → { name, price, qty }
+  const buyPaint = new Map();  // key → 重绘该件加购按钮
+  let orderBar = null;
+  let waUrl = null;
+  let seller = null;   // 商家用户名，用于记销量
+  let pickup = false;  // 卖家是否开了自取/预定
+  function parsePrice(s) { const m = String(s || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; }
+  function money(n) { return 'RM' + (Math.round(n * 100) / 100); }
+  function totals() {
+    let count = 0, total = 0, unknown = false;
+    for (const it of cart.values()) { count += it.qty; const pp = parsePrice(it.price); if (isNaN(pp)) unknown = true; else total += pp * it.qty; }
+    return { count, total, unknown };
+  }
+  function setQty(key, it, qty) {
+    qty = Math.max(0, Math.min(99, qty | 0));
+    if (qty <= 0) cart.delete(key); else cart.set(key, { name: it.name, price: it.price, qty });
+    const p = buyPaint.get(key); if (p) p();
+    refreshBar();
+  }
+  function makeBuy(key, it) {
+    const wrap = document.createElement('div'); wrap.className = 'mi-buy';
+    if (it.soldOut) { const s = document.createElement('span'); s.className = 'mi-sold'; s.textContent = t('shopSoldOut'); wrap.appendChild(s); return wrap; }
+    function paint() {
+      const qty = (cart.get(key) || {}).qty || 0;
+      wrap.innerHTML = '';
+      if (qty <= 0) {
+        const add = document.createElement('button'); add.type = 'button'; add.className = 'mi-add'; add.textContent = t('shopAdd');
+        add.addEventListener('click', () => setQty(key, it, 1));
+        wrap.appendChild(add);
+      } else {
+        const minus = document.createElement('button'); minus.type = 'button'; minus.className = 'mi-step'; minus.textContent = '−';
+        minus.addEventListener('click', () => setQty(key, it, qty - 1));
+        const n = document.createElement('span'); n.className = 'mi-qty'; n.textContent = qty;
+        const plus = document.createElement('button'); plus.type = 'button'; plus.className = 'mi-step'; plus.textContent = '＋';
+        plus.addEventListener('click', () => setQty(key, it, qty + 1));
+        wrap.append(minus, n, plus);
+      }
+    }
+    buyPaint.set(key, paint);
+    paint();
+    return wrap;
+  }
+  function refreshBar() {
+    if (orderBar) { orderBar.remove(); orderBar = null; }
+    const { count, total, unknown } = totals();
+    if (count <= 0) return;
+    const bar = document.createElement('div'); bar.className = 'order-bar';
+    const info = document.createElement('div'); info.className = 'ob-info';
+    const cnt = document.createElement('span'); cnt.className = 'ob-cnt'; cnt.textContent = t('shopItemsN', { n: count });
+    info.appendChild(cnt);
+    if (total > 0) { const tt = document.createElement('span'); tt.className = 'ob-total'; tt.textContent = t('shopTotal') + ' ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : ''); info.appendChild(tt); }
+    const send = document.createElement('button'); send.type = 'button'; send.className = 'ob-send'; send.innerHTML = ICONS.whatsapp + '<span>' + t('shopOrder') + '</span>';
+    send.addEventListener('click', sendOrder);
+    bar.append(info, send);
+    document.body.appendChild(bar);
+    orderBar = bar;
+  }
+  function orderMsg(extraLines) {
+    const { total, unknown } = totals();
+    const lines = [];
+    for (const it of cart.values()) lines.push('• ' + it.name + ' ×' + it.qty + (it.price ? ' — ' + it.price : ''));
+    let msg = t('shopOrderHi') + '\n' + lines.join('\n');
+    if (total > 0) msg += '\n' + t('shopTotal') + ': ' + t('shopApprox') + ' ' + money(total) + (unknown ? '+' : '');
+    for (const ln of (extraLines || [])) msg += '\n' + ln;
+    msg += '\n' + t('shopFrom');
+    return msg;
+  }
+  function sendOrder() {
+    if (!cart.size) return;
+    if (!waUrl) { toast(t('shopLoginToOrder')); setTimeout(() => { location.href = 'index.html'; }, 900); return; }
+    if (pickup) return openReservation();   // 开了预定 → 先选自取时间
+    const { count, total } = totals();
+    if (seller) api('/api/orders', { method: 'POST', body: { seller, count, total } }).catch(() => {});   // 记一笔销量（下单量）
+    window.open(waUrl + '?text=' + encodeURIComponent(orderMsg()), '_blank', 'noopener');
+  }
+  // 预定：选自取时间 + 备注 → 记一笔预定 + 照旧开 WhatsApp（清单带自取时间）
+  function openReservation() {
+    ensurePwDom();
+    const ov = document.getElementById('pwOverlay');
+    ov.querySelector('#pwTitle').textContent = t('resvTitle');
+    ov.querySelector('#pwBody').innerHTML =
+      '<p class="pw-hint">' + t('resvHint') + '</p>' +
+      '<div class="field"><label class="resv-lbl">' + t('resvTimeLbl') + '</label><input id="resvTime" type="datetime-local"></div>' +
+      '<div class="field"><input id="resvNote" maxlength="200" placeholder="' + t('resvNotePh') + '"></div>' +
+      '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="resvGo">' + t('resvConfirm') + '</button></div>';
+    ov.querySelector('#pwCancel').addEventListener('click', closePw);
+    ov.querySelector('#resvGo').addEventListener('click', async () => {
+      const timeVal = ov.querySelector('#resvTime').value;
+      if (!timeVal) { toast(t('resvNeedTime')); return; }
+      const note = ov.querySelector('#resvNote').value.trim();
+      const items = []; for (const it of cart.values()) items.push({ name: it.name, qty: it.qty });
+      const btn = ov.querySelector('#resvGo'); btn.disabled = true;
+      try {
+        await api('/api/reservations', { method: 'POST', body: { seller, items, pickupAt: new Date(timeVal).getTime(), note } });
+        closePw();
+        const extra = [t('resvWaTime') + ' ' + timeVal.replace('T', ' ')];
+        if (note) extra.push(t('resvWaNote') + ' ' + note);
+        window.open(waUrl + '?text=' + encodeURIComponent(orderMsg(extra)), '_blank', 'noopener');
+        toast(t('resvDone'));
+      } catch (e) { toast(errMsg(e.code)); btn.disabled = false; }
+    });
+    ov.classList.add('show');
+  }
+  return {
+    setWaUrl(u, s, canPickup) { waUrl = u; seller = s || null; pickup = !!canPickup; },
+    makeBuy, refreshBar,
+    reset() { cart.clear(); buyPaint.clear(); if (orderBar) { orderBar.remove(); orderBar = null; } }
+  };
+})();
+
 /* 第一时间套用语言（页面各自再调一次以覆盖动态内容） */
-document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); });
+/* ---------------- 登录设备 / 会话管理 弹窗 ---------------- */
+function ensureSessDom() {
+  if (document.getElementById('sessOverlay')) return;
+  const ov = document.createElement('div');
+  ov.className = 'overlay'; ov.id = 'sessOverlay';
+  ov.innerHTML = '<div class="modal sess-modal"><h3><span id="sessTitle"></span><button class="x" id="sessClose"></button></h3><div id="sessList"></div><div class="modal-actions"><button class="btn-ghost" id="sessRevokeOthers"></button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#sessClose').innerHTML = ICONS.close;
+  ov.querySelector('#sessClose').addEventListener('click', closeSess);
+  ov.addEventListener('click', (e) => { if (e.target === ov) closeSess(); });
+}
+function closeSess() { const ov = document.getElementById('sessOverlay'); if (ov) ov.classList.remove('show'); }
+function openSessions() {
+  ensureSessDom();
+  const ov = document.getElementById('sessOverlay');
+  ov.querySelector('#sessTitle').textContent = t('sessTitle');
+  const ro = ov.querySelector('#sessRevokeOthers');
+  ro.textContent = t('sessRevokeOthers');
+  ro.onclick = async () => { try { await api('/api/me/sessions/revoke-others', { method: 'POST' }); toast(t('sessDone')); loadSessList(); } catch (e) { toast(errMsg(e.code)); } };
+  ov.classList.add('show');
+  loadSessList();
+}
+async function loadSessList() {
+  const box = document.getElementById('sessList');
+  box.innerHTML = '<div class="sess-loading">…</div>';
+  let data; try { data = await api('/api/me/sessions'); } catch { box.innerHTML = ''; return; }
+  box.innerHTML = '';
+  for (const s of data.sessions) {
+    const row = document.createElement('div'); row.className = 'sess-row' + (s.current ? ' cur' : '');
+    const info = document.createElement('div'); info.className = 'sess-info';
+    const dev = document.createElement('div'); dev.className = 'sess-dev'; dev.textContent = s.device || t('sessUnknown');
+    const sub = document.createElement('div'); sub.className = 'sess-sub';
+    sub.textContent = [s.ip, s.createdAt ? new Date(s.createdAt).toLocaleString() : ''].filter(Boolean).join(' · ');
+    info.append(dev, sub);
+    const act = document.createElement('div'); act.className = 'sess-act';
+    if (s.current) {
+      const tag = document.createElement('span'); tag.className = 'sess-cur-tag'; tag.textContent = t('sessCurrent'); act.appendChild(tag);
+    } else {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'sess-kick'; b.textContent = t('sessKick');
+      b.onclick = async () => { try { await api('/api/me/sessions/' + encodeURIComponent(s.id), { method: 'DELETE' }); loadSessList(); } catch (e) { toast(errMsg(e.code)); } };
+      act.appendChild(b);
+    }
+    row.append(info, act);
+    box.appendChild(row);
+  }
+}
+
+/* ---------------- 注销账号 弹窗（复用 pwOverlay 容器）---------------- */
+function openDeleteAccount() {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('delAccount');
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint del-warn">' + t('delWarn') + '</p>' + pwField('delPw', t('delPwPh'), 'password') +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn btn-danger" id="delGo">' + t('delConfirmBtn') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#delGo').addEventListener('click', async () => {
+    const btn = ov.querySelector('#delGo'); btn.disabled = true;
+    try {
+      await api('/api/me/delete', { method: 'POST', body: { password: ov.querySelector('#delPw').value } });
+      toast(t('delDone')); closePw(); setTimeout(() => { location.href = 'index.html'; }, 700);
+    } catch (e) { toast(errMsg(e.code)); btn.disabled = false; }
+  });
+  ov.classList.add('show');
+}
+
+/* ---------------- 邮箱验证 弹窗（复用 pwOverlay 容器）---------------- */
+function openEmailVerify() {
+  ensurePwDom();
+  const ov = document.getElementById('pwOverlay');
+  ov.querySelector('#pwTitle').textContent = t('evTitle');
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('evHint') + '</p>' +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="evSend">' + t('evSend') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#evSend').addEventListener('click', async () => {
+    const btn = ov.querySelector('#evSend'); btn.disabled = true;
+    try {
+      const r = await api('/api/me/email/verify/request', { method: 'POST' });
+      if (r.already) { toast(t('evAlready')); closePw(); return; }
+      toast(t('evSent')); evStep2(ov);
+    } catch (e) { toast(e.code === 'no_email' ? t('evNoEmail') : errMsg(e.code)); btn.disabled = false; }
+  });
+  ov.classList.add('show');
+}
+function evStep2(ov) {
+  ov.querySelector('#pwBody').innerHTML =
+    '<p class="pw-hint">' + t('evSent') + '</p>' + pwField('evCode', t('pwrCodePh'), 'text') +
+    '<div class="modal-actions"><button class="btn-ghost" id="pwCancel">' + t('cancel') + '</button><button class="btn" id="evConfirm">' + t('evConfirm') + '</button></div>';
+  ov.querySelector('#pwCancel').addEventListener('click', closePw);
+  ov.querySelector('#evConfirm').addEventListener('click', async () => {
+    const btn = ov.querySelector('#evConfirm'); btn.disabled = true;
+    try { await api('/api/me/email/verify/confirm', { method: 'POST', body: { code: ov.querySelector('#evCode').value.trim() } }); toast(t('evDone')); closePw(); }
+    catch (e) { toast(errMsg(e.code)); btn.disabled = false; }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => { applyLang(); mountBottomNav(); maybeShowWarning(); });
 
 /* PWA：注册 service worker（让 Foody 可加到主屏、离线兜底）。失败静默，不影响正常使用。 */
 if ('serviceWorker' in navigator) {

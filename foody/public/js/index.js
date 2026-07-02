@@ -74,6 +74,9 @@
   });
 
   /* ---- 提交 ---- */
+  const forgotLink = document.getElementById('forgotLink');
+  if (forgotLink) forgotLink.addEventListener('click', () => openPasswordReset($('#liName').value.includes('@') ? $('#liName').value.trim() : ''));
+
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault(); hideErr();
     const username = $('#liName').value.trim();

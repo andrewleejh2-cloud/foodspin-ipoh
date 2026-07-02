@@ -78,6 +78,7 @@
     const u = DATA.user, st = DATA.stats;
     const wrap = $('#pfWrap');
     wrap.innerHTML = '';
+    FoodyCart.setWaUrl(DATA.waUrl, DATA.user.username, DATA.shelfPickup); FoodyCart.reset();   // 货架下单购物车（开了预定则下单先选自取时间）
 
     const head = document.createElement('section');
     head.className = 'pf-head';
@@ -125,7 +126,15 @@
     } else {
       note.hidden = true;
     }
-    head.append(av, name, region, note, stats);
+    head.append(av, name, region);
+    if (DATA.shopOpen) {   // 店铺标识：已发布且有菜品 → 显示「🛍 店铺」徽章，点进店铺页
+      const shopTag = document.createElement('div');
+      shopTag.className = 'pf-shoptag';
+      shopTag.innerHTML = ICONS.bag + '<span>' + t('shopBadge') + '</span>';
+      shopTag.addEventListener('click', () => { location.href = 'site.html?u=' + encodeURIComponent(u.username); });
+      head.appendChild(shopTag);
+    }
+    head.append(note, stats);
 
     // 简介
     const bio = document.createElement('p');
@@ -145,18 +154,28 @@
     const actions = document.createElement('div');
     actions.className = 'pf-actions';
     if (DATA.isMe) {
-      const site = mkBtn('pf-site', ICONS.globe, t('siteMine'));
+      const site = mkBtn('pf-site', DATA.shopOpen ? ICONS.bag : ICONS.globe, t(DATA.shopOpen ? 'shopMine' : 'siteMine'));
       site.addEventListener('click', () => { location.href = 'site-edit.html'; });
       const edit = mkBtn('pf-ghost', ICONS.edit, t('pfEdit'));
       edit.addEventListener('click', openEdit);
       const out = mkBtn('pf-ghost pf-logout', null, t('logout'));
       out.addEventListener('click', logout);
       actions.append(site, edit, out);
+      if (DATA.canSell) {   // 白名单卖家：管理货架入口
+        const mg = mkBtn('pf-ghost pf-shelf-btn', ICONS.bag, t('shelfManage'));
+        mg.addEventListener('click', () => { location.href = 'shelf-edit.html'; });
+        actions.append(mg);
+      }
       if (DATA.isAdmin) {
         const adm = mkBtn('pf-ghost pf-admin', ICONS.shield, t('admEntry'));
         adm.addEventListener('click', () => { location.href = 'admin.html'; });
         actions.append(adm);
       }
+    } else if (DATA.blocked) {
+      // 我拉黑了 ta：只留「取消拉黑」，内容已隐藏
+      const unb = mkBtn('pf-ghost pf-unblock', null, t('pfUnblock'));
+      unb.addEventListener('click', toggleBlock);
+      actions.append(unb);
     } else {
       const loginThen = (go) => DATA.waUrl ? go() : (toast(t('errAuth')), setTimeout(() => { location.href = 'index.html'; }, 900));
       const fol = mkBtn(DATA.isFollowing ? 'pf-following' : 'pf-follow', null, t(DATA.isFollowing ? 'pfFollowed' : 'pfFollow'));
@@ -166,46 +185,125 @@
       const wa = mkBtn('pf-wa', ICONS.whatsapp, t('pfWa'));
       wa.addEventListener('click', () => loginThen(() => { location.href = DATA.waUrl; }));
       if (DATA.sitePublished) {
-        const site = mkBtn('pf-site', ICONS.globe, t('siteView'));
+        const site = mkBtn('pf-site', DATA.shopOpen ? ICONS.bag : ICONS.globe, t(DATA.shopOpen ? 'shopView' : 'siteView'));
         site.addEventListener('click', () => { location.href = 'site.html?u=' + encodeURIComponent(u.username); });
         actions.append(fol, site, msg, wa);
       } else {
         actions.append(fol, msg, wa);
       }
+      const blk = mkBtn('pf-ghost pf-block', null, t('pfBlock'));
+      blk.addEventListener('click', () => loginThen(() => { if (window.confirm(t('pfBlockConfirm', { name: u.username }))) toggleBlock(); }));
+      actions.append(blk);
     }
     head.appendChild(actions);
     wrap.appendChild(head);
 
-    // 销量（每日 / 每周 / 每月）—— 暂时只加按钮，未接实际数据
-    const sales = document.createElement('section');
-    sales.className = 'pf-sales';
-    const sh = document.createElement('div');
-    sh.className = 'pf-sales-h';
-    sh.innerHTML = ICONS.chart + '<span>' + esc(t('pfSales')) + '</span>';
-    const seg = document.createElement('div');
-    seg.className = 'pf-sales-seg';
-    [['daily', t('salesDaily')], ['weekly', t('salesWeekly')], ['monthly', t('salesMonthly')]].forEach((p, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'pf-sales-btn' + (i === 0 ? ' on' : '');
-      b.textContent = p[1];
-      b.addEventListener('click', () => {
-        seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
+    // 货架（商品）：访客在主页直接看商品 + 加购 + WhatsApp 下单（货物只有白名单卖家会有）
+    if (DATA.shelf && DATA.shelf.length) {
+      const shop = document.createElement('section');
+      shop.className = 'pf-shelf';
+      const sh = document.createElement('div'); sh.className = 'pf-shelf-h';
+      sh.innerHTML = ICONS.bag + '<span>' + esc(t('siteShelfL')) + '</span>';
+      shop.appendChild(sh);
+      const grid = document.createElement('div'); grid.className = 'shelf-grid';
+      let gid = 0;
+      for (const it of DATA.shelf) {
+        const key = 'g' + (gid++);
+        const card = document.createElement('div'); card.className = 'good-card' + (it.soldOut ? ' is-sold' : '');
+        if (it.photo) { const img = document.createElement('img'); img.className = 'good-photo'; img.src = it.photo; img.loading = 'lazy'; img.alt = ''; card.appendChild(img); }
+        const gb = document.createElement('div'); gb.className = 'good-body';
+        const gn = document.createElement('div'); gn.className = 'good-name'; gn.textContent = it.name; gb.appendChild(gn);
+        if (it.desc) { const gd = document.createElement('p'); gd.className = 'good-desc'; gd.textContent = it.desc; gb.appendChild(gd); }
+        const bottom = document.createElement('div'); bottom.className = 'good-bottom';
+        if (it.price) { const pr = document.createElement('span'); pr.className = 'good-price'; pr.textContent = it.price; bottom.appendChild(pr); }
+        bottom.appendChild(FoodyCart.makeBuy(key, it));
+        gb.appendChild(bottom);
+        card.appendChild(gb);
+        grid.appendChild(card);
+      }
+      shop.appendChild(grid);
+      wrap.appendChild(shop);
+    }
+
+    // 销量（近 1/7/30 天）：仅卖家本人可见，统计经 WhatsApp 的下单量 + 约总额
+    if (DATA.isMe && (DATA.canSell || DATA.sitePublished)) {
+      const sales = document.createElement('section');
+      sales.className = 'pf-sales';
+      const sh = document.createElement('div');
+      sh.className = 'pf-sales-h';
+      sh.innerHTML = ICONS.chart + '<span>' + esc(t('pfSales')) + '</span>';
+      const seg = document.createElement('div');
+      seg.className = 'pf-sales-seg';
+      const sv = document.createElement('div');
+      sv.className = 'pf-sales-val';
+      let salesData = null, cur = 'daily';
+      function paintVal() {
+        if (!salesData) { sv.textContent = '…'; return; }
+        const d = salesData[cur] || { orders: 0, total: 0 };
+        sv.innerHTML = '<b>' + fmtN(d.orders) + '</b> ' + esc(t('salesOrders')) + (d.total > 0 ? ' <span class="pf-sales-rm">≈ RM' + d.total + '</span>' : '');
+      }
+      [['daily', t('salesDaily')], ['weekly', t('salesWeekly')], ['monthly', t('salesMonthly')]].forEach((p, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pf-sales-btn' + (i === 0 ? ' on' : '');
+        b.textContent = p[1];
+        b.addEventListener('click', () => {
+          seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+          b.classList.add('on'); cur = p[0]; paintVal();
+        });
+        seg.appendChild(b);
       });
-      seg.appendChild(b);
-    });
-    const sv = document.createElement('div');
-    sv.className = 'pf-sales-val';
-    sv.textContent = t('salesNoData');
-    sales.append(sh, seg, sv);
-    wrap.appendChild(sales);
+      sales.append(sh, seg, sv);
+      wrap.appendChild(sales);
+      paintVal();
+      api('/api/me/sales').then(r => { salesData = r; paintVal(); }).catch(() => { sv.textContent = t('salesNoData'); });
+    }
+
+    // 预定（自取）：仅卖家本人可见，列出收到的预定
+    if (DATA.isMe && DATA.shelfPickup) {
+      const resv = document.createElement('section'); resv.className = 'pf-resv';
+      const rh = document.createElement('div'); rh.className = 'pf-resv-h';
+      rh.innerHTML = ICONS.bag + '<span>' + esc(t('resvSection')) + '</span>';
+      const list = document.createElement('div'); list.className = 'pf-resv-list';
+      list.textContent = '…';
+      resv.append(rh, list);
+      wrap.appendChild(resv);
+      const fmtTime = (ms) => ms ? new Date(ms).toLocaleString() : '';
+      const paintResv = (rows) => {
+        list.innerHTML = '';
+        if (!rows.length) { list.innerHTML = '<div class="pf-resv-empty">' + esc(t('resvEmpty')) + '</div>'; return; }
+        for (const r of rows) {
+          const card = document.createElement('div'); card.className = 'pf-resv-card st-' + r.status;
+          const top = document.createElement('div'); top.className = 'pf-resv-top';
+          const who = document.createElement('a'); who.className = 'pf-resv-buyer'; who.textContent = '@' + r.buyer.username;
+          who.href = 'profile.html?u=' + encodeURIComponent(r.buyer.username);   // 点进买家 → 爽约可拉黑
+          const st = document.createElement('span'); st.className = 'pf-resv-st';
+          st.textContent = t({ pending: 'resvStPending', done: 'resvStDone', cancelled: 'resvStCancelled' }[r.status] || 'resvStPending');
+          top.append(who, st);
+          const time = document.createElement('div'); time.className = 'pf-resv-time'; time.textContent = '🕒 ' + fmtTime(r.pickupAt);
+          const items = document.createElement('div'); items.className = 'pf-resv-items';
+          items.textContent = r.items.map(it => it.name + '×' + it.qty).join('、');
+          card.append(top, time, items);
+          if (r.note) { const nt = document.createElement('div'); nt.className = 'pf-resv-note'; nt.textContent = '📝 ' + r.note; card.appendChild(nt); }
+          if (r.status === 'pending') {
+            const acts = document.createElement('div'); acts.className = 'pf-resv-acts';
+            const setSt = async (status) => { try { await api('/api/reservations/' + encodeURIComponent(r.id), { method: 'PATCH', body: { status } }); loadResv(); } catch (e) { toast(errMsg(e.code)); } };
+            const done = document.createElement('button'); done.type = 'button'; done.className = 'pf-resv-done'; done.textContent = t('resvMarkDone'); done.addEventListener('click', () => setSt('done'));
+            const canc = document.createElement('button'); canc.type = 'button'; canc.className = 'pf-resv-cancel'; canc.textContent = t('resvMarkCancel'); canc.addEventListener('click', () => setSt('cancelled'));
+            acts.append(done, canc); card.appendChild(acts);
+          }
+          list.appendChild(card);
+        }
+      };
+      const loadResv = () => api('/api/me/reservations').then(r => paintResv(r.reservations || [])).catch(() => { list.textContent = ''; });
+      loadResv();
+    }
 
     // 作品网格
     if (!DATA.posts.length) {
       const empty = document.createElement('div');
       empty.className = 'pf-empty';
-      empty.innerHTML = `<div class="big">🍽️</div>${esc(t('pfNoPosts'))}`;
+      empty.innerHTML = DATA.blocked ? `<div class="big">🚫</div>${esc(t('pfBlockedNote'))}` : `<div class="big">🍽️</div>${esc(t('pfNoPosts'))}`;
       wrap.appendChild(empty);
     } else {
       const grid = document.createElement('div');
@@ -223,6 +321,7 @@
       rb.hidden = true;
     }
 
+    FoodyCart.refreshBar();   // 货架购物车：按当前选购恢复底部订单条
     setBackLabel();
   }
 
@@ -240,6 +339,14 @@
       DATA.isFollowing = r.following;
       DATA.stats.followerCount = r.followerCount;
       render();
+    } catch (e) { toast(errMsg(e.code)); }
+  }
+
+  async function toggleBlock() {
+    try {
+      const r = await api('/api/users/' + encodeURIComponent(DATA.user.username) + '/block', { method: 'POST' });
+      toast(r.blocked ? t('pfBlocked') : t('pfUnblocked'));
+      load();   // 重新拉数据：拉黑/取消后内容可见性变了
     } catch (e) { toast(errMsg(e.code)); }
   }
 
@@ -329,6 +436,10 @@
 
   $('#editClose').addEventListener('click', closeEdit);
   $('#editCancel').addEventListener('click', closeEdit);
+  $('#editChangePw').addEventListener('click', () => { closeEdit(); openChangePassword(); });
+  $('#editSessions').addEventListener('click', () => { closeEdit(); openSessions(); });
+  $('#editVerifyEmail').addEventListener('click', () => { closeEdit(); openEmailVerify(); });
+  $('#editDeleteAcct').addEventListener('click', () => { closeEdit(); openDeleteAccount(); });
   $('#editOverlay').addEventListener('click', (e) => { if (e.target === $('#editOverlay')) closeEdit(); });
   $('#editBio').addEventListener('input', () => { $('#bioCount').textContent = $('#editBio').value.length; });
   $('#editAvatarBtn').addEventListener('click', () => $('#editAvatarInput').click());

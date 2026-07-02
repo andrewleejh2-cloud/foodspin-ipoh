@@ -73,7 +73,12 @@
     fields.append(nm, pr, ds);
     const del = document.createElement('button'); del.type = 'button'; del.className = 'mie-del'; del.innerHTML = ICONS.close;
     del.addEventListener('click', () => row.remove());
-    row.append(photoBtn, fields, del);
+    row.dataset.soldout = item.soldOut ? '1' : '';
+    const sold = document.createElement('button'); sold.type = 'button'; sold.className = 'mie-sold-toggle';
+    const paintSold = () => { sold.classList.toggle('on', row.dataset.soldout === '1'); sold.textContent = t('shopSoldOut'); };
+    sold.addEventListener('click', () => { row.dataset.soldout = row.dataset.soldout === '1' ? '' : '1'; paintSold(); });
+    paintSold();
+    row.append(photoBtn, fields, sold, del);
     itemsEl.appendChild(row);
   }
   function addCat(name, items) {
@@ -98,9 +103,19 @@
         name: row.querySelector('.mie-name').value.trim(),
         price: row.querySelector('.mie-price').value.trim(),
         desc: row.querySelector('.mie-desc').value.trim(),
-        photo: row.dataset.photo || ''
+        photo: row.dataset.photo || '',
+        soldOut: row.dataset.soldout === '1'
       })).filter(it => it.name)
     })).filter(cat => cat.name || cat.items.length);
+  }
+  function fillStatusSelect() {
+    const sel = $('#fStatus'); if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '';
+    [['', t('statusHide')], ['open', t('statusOpen')], ['closed', t('statusClosed')]].forEach(([v, label]) => {
+      const o = document.createElement('option'); o.value = v; o.textContent = label; sel.appendChild(o);
+    });
+    sel.value = cur;
   }
 
   $('#backBtn').innerHTML = ICONS.back;
@@ -119,6 +134,71 @@
   $('#addLink').addEventListener('click', () => addLinkRow('', ''));
   $('#addCat').addEventListener('click', () => addCat('', []));
 
+  /* ---- AI 帮我写（标语+故事介绍）：结果只填表单，商家自己保存 ---- */
+  $('#aiGo').addEventListener('click', async () => {
+    const btn = $('#aiGo');
+    if (($('#fTagline').value.trim() || $('#fIntro').value.trim()) && !confirm(t('aiOverwrite'))) return;
+    btn.disabled = true; btn.classList.add('loading');
+    try {
+      const r = await api('/api/me/site/ai-copy', { method: 'POST', body: { hint: $('#aiHint').value.trim(), lang: LANG } });
+      if (r.tagline) $('#fTagline').value = r.tagline;
+      if (r.intro) $('#fIntro').value = r.intro;
+      toast(t('aiFilled'));
+    } catch (e) { toast(errMsg(e.code)); }
+    finally { btn.disabled = false; btn.classList.remove('loading'); }
+  });
+
+  function setSlugHint(kind, msg) { const h = $('#slugHint'); h.className = 'slug-hint ' + (kind || ''); h.textContent = msg || ''; }
+  let slugTimer, slugSeq = 0;
+  $('#fSlug').addEventListener('input', () => {
+    const s = $('#fSlug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if ($('#fSlug').value !== s) $('#fSlug').value = s;
+    clearTimeout(slugTimer);
+    const seq = ++slugSeq;                  // 只允许最新一次请求绘制提示（防慢响应回填旧结果）
+    if (!s) return setSlugHint('', '');
+    slugTimer = setTimeout(async () => {
+      try {
+        const r = await api('/api/me/site/slug-available?slug=' + encodeURIComponent(s));
+        if (seq !== slugSeq) return;        // 已有更新输入，丢弃过期结果
+        if (r.available) setSlugHint('ok', t('slugOk'));
+        else setSlugHint('bad', t(r.reason === 'taken' ? 'slugTaken' : r.reason === 'reserved' ? 'slugReserved' : 'slugBad'));
+      } catch { if (seq === slugSeq) setSlugHint('', ''); }
+    }, 350);
+  });
+
+  function accentOn() { return $('#accentRow').dataset.on === '1'; }
+  function setAccentOn(on, val) {
+    $('#accentRow').dataset.on = on ? '1' : '';
+    if (val) $('#fAccent').value = val;
+    $('#accentRow').classList.toggle('accent-active', on);
+  }
+  $('#fAccent').addEventListener('input', () => setAccentOn(true));
+  $('#accentClear').addEventListener('click', () => setAccentOn(false));
+
+  function addPhotoThumb(url) {
+    const cell = document.createElement('div'); cell.className = 'album-thumb'; cell.dataset.url = url;
+    const img = document.createElement('img'); img.src = url; img.alt = '';
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'album-del'; del.innerHTML = ICONS.close;
+    del.addEventListener('click', () => cell.remove());
+    cell.append(img, del); $('#albumGrid').appendChild(cell);
+  }
+  $('#addPhoto').addEventListener('click', () => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+    inp.addEventListener('change', async () => {
+      const cur = document.querySelectorAll('.album-thumb').length;
+      for (const f of [...inp.files].slice(0, 20 - cur)) {
+        const fd = new FormData(); fd.append('cover', f);
+        try { const r = await api('/api/me/site/menu-photo', { method: 'POST', body: fd }); addPhotoThumb(r.url); }
+        catch (e) { toast(errMsg(e.code)); }
+      }
+    });
+    inp.click();
+  });
+  function collectPhotos() { return [...document.querySelectorAll('.album-thumb')].map(c => ({ url: c.dataset.url })).slice(0, 20); }
+  function collectSections() {
+    return { gallery: $('#secGallery').checked, menu: $('#secMenu').checked, photos: $('#secPhotos').checked, contact: $('#secContact').checked };
+  }
+
   $('#siteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const links = [...document.querySelectorAll('.link-row')]
@@ -133,7 +213,13 @@
       links,
       theme: curTheme,
       menu: collectMenu(),
-      published: $('#fPublished').checked
+      status: $('#fStatus').value,
+      published: $('#fPublished').checked,
+      slug: $('#fSlug').value.trim(),
+      accent: accentOn() ? $('#fAccent').value : '',
+      announce: $('#fAnnounce').value.trim(),
+      photos: collectPhotos(),
+      sections: collectSections()
     };
     const btn = $('#saveBtn'); btn.disabled = true;
     try { await api('/api/me/site', { method: 'PATCH', body }); toast(t('siteSaved')); }
@@ -141,7 +227,7 @@
     finally { btn.disabled = false; }
   });
 
-  document.addEventListener('foody:lang', () => { setBackLabel(); paintThemePick(); paintCover($('#coverInner').querySelector('img') ? $('#coverInner').querySelector('img').src : null); });
+  document.addEventListener('foody:lang', () => { setBackLabel(); paintThemePick(); fillStatusSelect(); paintCover($('#coverInner').querySelector('img') ? $('#coverInner').querySelector('img').src : null); });
 
   document.addEventListener('DOMContentLoaded', async () => {
     applyLang();
@@ -150,8 +236,11 @@
     if (!ME) return void (location.href = 'index.html');
     let d = {};
     try { d = await api('/api/site/' + encodeURIComponent(ME.username)); } catch {}
+    $('#fSlug').value = d.slug || '';
+    $('#aiField').hidden = !d.aiReady;
     $('#fTitle').value = d.title || '';
     $('#fTagline').value = d.tagline || '';
+    $('#fAnnounce').value = d.announce || '';
     $('#fIntro').value = d.intro || '';
     $('#fHours').value = d.hours || '';
     $('#fAddress').value = d.address || '';
@@ -159,7 +248,16 @@
     (d.links || []).forEach(l => addLinkRow(l.label, l.url));
     curTheme = d.theme || 'warm';
     paintThemePick();
+    setAccentOn(!!d.accent, d.accent || '#D96A3B');
     (d.menu || []).forEach(cat => addCat(cat.name, cat.items));
+    (d.photos || []).forEach(p => addPhotoThumb(p.url));
+    const sec = d.sections || {};
+    $('#secGallery').checked = sec.gallery !== false;
+    $('#secMenu').checked = sec.menu !== false;
+    $('#secPhotos').checked = sec.photos !== false;
+    $('#secContact').checked = sec.contact !== false;
+    fillStatusSelect();
+    $('#fStatus').value = d.status || '';
     paintCover(d.cover || null);
   });
 })();

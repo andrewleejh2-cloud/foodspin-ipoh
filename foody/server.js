@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { createGeminiClient } = require('./lib/gemini');
 
 const ROOT = __dirname;
 // 数据/上传目录可用环境变量覆盖（部署到云端时指向挂载的持久磁盘，重启不丢数据）
@@ -75,11 +76,11 @@ const SEED_TAGS = {
 function loadDb() {
   if (fs.existsSync(DB_FILE)) {
     db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions']) {
+    for (const k of ['users', 'sessions', 'posts', 'comments', 'likes', 'saves', 'messages', 'follows', 'reports', 'modActions', 'orders', 'blocks', 'reservations']) {
       if (!Array.isArray(db[k])) db[k] = [];
     }
   } else {
-    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [] };
+    db = { users: [], sessions: [], posts: [], comments: [], likes: [], saves: [], messages: [], follows: [], reports: [], modActions: [], orders: [], blocks: [], reservations: [] };
     seed();
   }
   let changed = !fs.existsSync(DB_FILE);
@@ -178,12 +179,48 @@ function setSessionCookie(res, token, maxAgeSec) {
     `foody_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${secure}`);
 }
 
-function createSession(res, userId) {
+function createSession(req, res, userId) {
   const token = crypto.randomBytes(32).toString('hex');
-  db.sessions.push({ token, userId, expires: Date.now() + SESSION_DAYS * 86400000 });
+  db.sessions.push({
+    id: crypto.randomUUID(), token, userId,
+    createdAt: Date.now(),
+    ua: String(req.headers['user-agent'] || '').slice(0, 200),   // 设备/浏览器（解析成友好名给用户看）
+    ip: clientIp(req),                                            // 只给本人看自己的登录来源
+    expires: Date.now() + SESSION_DAYS * 86400000
+  });
   // 清理过期 session
   db.sessions = db.sessions.filter(s => s.expires > Date.now());
   setSessionCookie(res, token, SESSION_DAYS * 86400);
+}
+
+/* User-Agent → 友好设备名（如 "Chrome · Windows"）。纯函数、尽力而为、品牌名语言中立。 */
+function deviceLabel(ua) {
+  ua = String(ua || '');
+  let browser = '', osName = '';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/OPR\/|Opera/.test(ua)) browser = 'Opera';
+  else if (/Chrome\//.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua)) browser = 'Safari';
+  if (/Windows/.test(ua)) osName = 'Windows';
+  else if (/iPhone|iPad|iPod|iOS/.test(ua)) osName = 'iOS';
+  else if (/Android/.test(ua)) osName = 'Android';
+  else if (/Mac OS X|Macintosh/.test(ua)) osName = 'Mac';
+  else if (/Linux/.test(ua)) osName = 'Linux';
+  return [browser, osName].filter(Boolean).join(' · ');
+}
+
+/* ---- 找回密码（邮箱+电话核身 → 6 位验证码 → 重置）---- */
+const RESET_TTL = 10 * 60 * 1000;     // 验证码有效期 10 分钟
+const RESET_MAX_ATTEMPTS = 5;          // 同一码最多试错 5 次
+function genCode() { return String(crypto.randomInt(0, 1000000)).padStart(6, '0'); }
+function hashCode(userId, code) { return crypto.createHash('sha256').update(userId + ':' + String(code)).digest('hex'); }
+// 必须邮箱（不区分大小写）和电话（归一化）都匹配同一个账号
+function findByEmailPhone(email, phone) {
+  const e = String(email || '').trim().toLowerCase();
+  const ph = normPhone(phone);
+  if (!e || !ph) return null;
+  return db.users.find(u => (u.email || '').toLowerCase() === e && u.phoneWa === ph) || null;
 }
 
 function currentUser(req) {
@@ -290,7 +327,7 @@ function postJson(p, viewer) {
   const author = db.users.find(u => u.id === p.userId);
   const likes = db.likes.filter(l => l.postId === p.id);
   const saves = db.saves.filter(s => s.postId === p.id);
-  const commentCount = db.comments.filter(c => c.postId === p.id).length;
+  const commentCount = db.comments.filter(c => c.postId === p.id && !c.hidden).length;
   return {
     id: p.id,
     username: author ? author.username : '???',
@@ -311,6 +348,8 @@ function postJson(p, viewer) {
     savedByMe: !!(viewer && saves.some(s => s.userId === viewer.id)),
     // 是否已关注作者（给 feed 里的「+关注」按钮用；未登录或自己的帖都为 false）
     isFollowing: !!(viewer && author && viewer.id !== p.userId && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
+    // 作者是否发布了「我的网站」——给 feed 帖子上的网站按钮用（所有人可见）
+    sitePublished: !!(author && author.site && author.site.published),
     // 电话/WhatsApp 只给已登入的用户（保护隐私 + 符合“注册后才能用 WhatsApp 按钮”）
     waUrl: viewer && author && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null
   };
@@ -348,6 +387,48 @@ function removeCommentById(id) {
   return true;
 }
 
+/* 账号注销：硬删该用户及其全部关联数据 + 上传文件（不可恢复，PDPA 被遗忘权）。 */
+function deleteUserCascade(u) {
+  // 1) 删他的帖子（removePostById 连带删媒体文件 + 该帖的赞/收藏/评论）
+  for (const p of db.posts.filter(p => p.userId === u.id)) removePostById(p.id);
+  // 2) 删他在别人帖下的评论、给别人点的赞/收藏
+  db.comments = db.comments.filter(c => c.userId !== u.id);
+  db.likes = db.likes.filter(l => l.userId !== u.id);
+  db.saves = db.saves.filter(s => s.userId !== u.id);
+  // 3) 关注关系（双向）
+  db.follows = db.follows.filter(f => f.followerId !== u.id && f.followingId !== u.id);
+  // 4) 收发的私信
+  db.messages = db.messages.filter(m => m.fromId !== u.id && m.toId !== u.id);
+  // 5) 与他相关的举报（他举报的 + 关于他的）
+  db.reports = db.reports.filter(r => r.reporterId !== u.id && r.ownerId !== u.id && !(r.type === 'user' && r.targetId === u.id));
+  // 6) 上传文件：头像 + 网站封面/菜品图 + 货架图
+  const files = [];
+  if (u.avatar) files.push(u.avatar);
+  if (u.site) {
+    if (u.site.cover) files.push(u.site.cover);
+    for (const cat of (u.site.menu || [])) for (const it of (cat.items || [])) if (it.photo) files.push(it.photo);
+  }
+  for (const it of (u.shelf || [])) if (it.photo) files.push(it.photo);
+  for (const f of files) if (f && f.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(f)), () => {});
+  // 7) 全部会话 + 8) 用户本身
+  db.sessions = db.sessions.filter(s => s.userId !== u.id);
+  db.users = db.users.filter(x => x.id !== u.id);
+}
+
+/* 拉黑：相互不可见 + 不可互动。blockedSet(viewer) = 我拉黑的 + 拉黑我的（双向），用于过滤内容作者。 */
+function blockedSet(viewerId) {
+  const s = new Set();
+  if (!viewerId) return s;
+  for (const b of db.blocks) {
+    if (b.blockerId === viewerId) s.add(b.blockedId);
+    if (b.blockedId === viewerId) s.add(b.blockerId);
+  }
+  return s;
+}
+function isBlockedPair(a, b) {
+  return db.blocks.some(x => (x.blockerId === a && x.blockedId === b) || (x.blockerId === b && x.blockedId === a));
+}
+
 // 封禁 / 解封一个用户。封禁会踢掉其所有登入 session；不动历史内容（可逆，按需另行删除）
 function banUser(u, ban, reason, byId) {
   if (ban) {
@@ -360,6 +441,34 @@ function banUser(u, ban, reason, byId) {
     u.banned = false;
     delete u.bannedAt; delete u.banReason; delete u.bannedBy;
   }
+}
+
+/* 分级处置（封号之外的中间手段）：
+   - 临时禁言：user.mutedUntil（时间戳）。被禁言者仍可浏览/登录，但不能发帖/评论/私信（自动过期）。
+   - 警告：user.warnings=[{reason,note,by,at,seen}]，用户登录后看到一条未读警告提示。 */
+const MUTE_DAYS = 7;   // 举报队列「禁言」默认天数（管理员在用户列表可自定天数）
+function isMuted(u) { return !!(u && u.mutedUntil && u.mutedUntil > Date.now()); }
+// 禁言守卫中间件：放在 requireAuth 之后，拦截被禁言者的写操作
+function muteGuard(req, res, next) {
+  if (isMuted(req.user)) return res.status(403).json({ error: 'muted', until: req.user.mutedUntil });
+  next();
+}
+// 设/解禁言（days>0 设禁言，≤0 解禁）。返回新的 mutedUntil（0 表示未禁言）
+function setMute(u, days) {
+  if (days > 0) u.mutedUntil = Date.now() + days * 86400000;
+  else delete u.mutedUntil;
+  return u.mutedUntil || 0;
+}
+// 给用户加一条警告（未读）
+function warnUser(u, reason, note, byId) {
+  if (!Array.isArray(u.warnings)) u.warnings = [];
+  u.warnings.push({ reason: String(reason || 'other').slice(0, 30), note: String(note || '').trim().slice(0, 200), by: byId || null, at: Date.now(), seen: false });
+}
+// 最新一条未读警告（给 /api/me 用）
+function latestUnseenWarning(u) {
+  const ws = Array.isArray(u && u.warnings) ? u.warnings : [];
+  for (let i = ws.length - 1; i >= 0; i--) if (!ws[i].seen) return { reason: ws[i].reason, note: ws[i].note, at: ws[i].at };
+  return null;
 }
 
 // 管理操作审计：记录谁在何时对谁做了什么（删除/封号/驳回），只留最近 1000 条，出纠纷时可查
@@ -384,6 +493,20 @@ function autoFlag(type, targetId, ownerId, text) {
     reporterId: 'system', reason: 'auto', note: 'matched: ' + hit,
     status: 'open', action: null, createdAt: Date.now(), resolvedAt: null, resolvedBy: null
   });
+}
+
+/* 多人举报自动隐藏：同一帖/评论累计被这么多「不同真实用户」举报（仍未处理的 open 举报，
+   系统敏感词标记不计）就自动暂隐，从 feed/搜索/探索/主页/地点/评论区消失，等管理员复核。
+   管理员驳回 → 取消隐藏；删除/封号走原逻辑。阈值随时可调。 */
+const AUTO_HIDE_THRESHOLD = 5;
+function maybeAutoHide(type, targetId) {
+  const n = db.reports.filter(r =>
+    r.type === type && r.targetId === targetId && r.status === 'open' && r.reporterId !== 'system'
+  ).length;
+  if (n < AUTO_HIDE_THRESHOLD) return;
+  const obj = type === 'post' ? db.posts.find(p => p.id === targetId)
+            : type === 'comment' ? db.comments.find(c => c.id === targetId) : null;
+  if (obj && !obj.hidden) { obj.hidden = true; obj.hiddenAt = Date.now(); }
 }
 
 /* ---------------- 上传设置 ---------------- */
@@ -482,6 +605,27 @@ async function compressAvatar(filename) {
 /* ---------------- App ---------------- */
 const app = express();
 app.disable('x-powered-by');
+
+/* 发信器：配了 FOODY_BREVO_KEY 就用 Brevo 邮件 API（免费档、fetch 直调、无新依赖）；
+   没配 → 开发模式只打日志（找回密码逻辑照常可用、可测，真发邮件等你设 key）。挂 app.locals 便于测试注入。 */
+function makeMailer() {
+  const key = process.env.FOODY_BREVO_KEY;
+  const from = process.env.FOODY_MAIL_FROM || 'no-reply@foody.local';
+  if (key) {
+    return {
+      configured: true,
+      async send({ to, subject, text }) {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'api-key': key, 'content-type': 'application/json', accept: 'application/json' },
+          body: JSON.stringify({ sender: { email: from, name: 'Foody' }, to: [{ email: to }], subject, textContent: text })
+        });
+      }
+    };
+  }
+  return { configured: false, async send({ to, subject, text }) { console.log('[mail:dev] →', to, '|', subject, '\n', text); } };
+}
+app.locals.mailer = makeMailer();
 app.use(express.json({ limit: '1mb' }));
 
 /* 安全响应头（手写，不引入额外依赖）。CSP 允许 Google Fonts 与同源资源。 */
@@ -627,7 +771,7 @@ app.post('/api/register', registerLimit, (req, res) => {
     createdAt: Date.now()
   };
   db.users.push(user);
-  createSession(res, user.id);
+  createSession(req, res, user.id);
   saveDb();
   res.json({ user: pubUser(user) });
 });
@@ -643,7 +787,7 @@ app.post('/api/login', (req, res) => {
     return res.status(401).json({ error: 'bad_login' });
   }
   if (user.banned) return res.status(403).json({ error: 'banned' }); // 账号已被审核封禁
-  createSession(res, user.id);
+  createSession(req, res, user.id);
   saveDb();
   res.json({ user: pubUser(user) });
 });
@@ -658,12 +802,139 @@ app.post('/api/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---- 找回密码（登出态）---- */
+const resetReqLimit = rateLimit({ windowMs: 600000, max: 10 });     // 每 IP 每 10 分钟最多请求 10 次验证码（防刷发信；真正发信还要邮箱+电话都匹配）
+const resetConfirmLimit = rateLimit({ windowMs: 600000, max: 30 }); // 提交验证码限流
+
+// 第一步：邮箱+电话核身 → 生成 6 位码并发到邮箱。永远返回成功，不泄露账号是否存在。
+app.post('/api/auth/reset/request', resetReqLimit, async (req, res) => {
+  const { email, phone } = req.body || {};
+  const u = findByEmailPhone(email, phone);
+  if (u && !u.banned) {
+    const code = genCode();
+    u.reset = { codeHash: hashCode(u.id, code), expires: Date.now() + RESET_TTL, attempts: 0 };
+    saveDb();
+    try {
+      await req.app.locals.mailer.send({
+        to: u.email,
+        subject: 'Foody 密码重置验证码',
+        text: `你好 @${u.username}，\n你的 Foody 密码重置验证码是：${code}\n10 分钟内有效。如果不是你本人操作，请忽略此邮件。`
+      });
+    } catch (e) { console.error('[reset] 发码失败:', e.message); }
+  }
+  res.json({ ok: true });
+});
+
+// 第二步：核验证码 → 重置密码（重置后该用户所有会话失效）
+app.post('/api/auth/reset/confirm', resetConfirmLimit, (req, res) => {
+  const { email, phone, code, newPassword } = req.body || {};
+  const u = findByEmailPhone(email, phone);
+  if (!u || !u.reset) return res.status(400).json({ error: 'no_request' });
+  if (Date.now() > u.reset.expires) { delete u.reset; saveDb(); return res.status(400).json({ error: 'expired' }); }
+  if (u.reset.attempts >= RESET_MAX_ATTEMPTS) { delete u.reset; saveDb(); return res.status(400).json({ error: 'too_many' }); }
+  if (hashCode(u.id, code) !== u.reset.codeHash) {
+    u.reset.attempts++; saveDb();
+    return res.status(400).json({ error: 'bad_code' });
+  }
+  // 码对了；再校验新密码（不合法不消耗码，可用同一码重试）
+  if (String(newPassword || '').length < 6) return res.status(400).json({ error: 'bad_password' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  u.salt = salt; u.passHash = hashPassword(String(newPassword), salt);
+  delete u.reset;
+  db.sessions = db.sessions.filter(s => s.userId !== u.id);   // 重置后所有会话失效
+  saveDb();
+  res.json({ ok: true });
+});
+
 app.get('/api/me', (req, res) => {
   const user = currentUser(req);
-  res.json({ user: user ? pubUser(user) : null, states: STATES });
+  res.json({ user: user ? pubUser(user) : null, states: STATES, canSell: canSellGoods(user), shelf: (user && user.shelf) || [], shelfPickup: !!(user && user.shelfPickup), muted: isMuted(user) ? user.mutedUntil : 0, warning: user ? latestUnseenWarning(user) : null, emailVerified: !!(user && user.emailVerified) });
 });
 
 /* 编辑自己的资料（目前只有简介 bio，最多 160 字） */
+// 改密码（登录态）：校验旧密码 → 重设 → 踢掉该用户其它会话（保留当前这台，安全）
+app.post('/api/me/password', requireAuth, (req, res) => {
+  const { oldPassword, newPassword } = req.body || {};
+  if (!verifyPassword(String(oldPassword || ''), req.user.salt, req.user.passHash)) return res.status(400).json({ error: 'wrong_password' });
+  if (String(newPassword || '').length < 6) return res.status(400).json({ error: 'bad_password' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  req.user.salt = salt;
+  req.user.passHash = hashPassword(String(newPassword), salt);
+  const cur = getCookie(req, 'foody_session');
+  db.sessions = db.sessions.filter(s => s.userId !== req.user.id || s.token === cur);  // 其它会话失效
+  saveDb();
+  res.json({ ok: true });
+});
+
+// 把自己的警告全部标记为已读（看过提示条后调用）
+app.post('/api/me/warnings/seen', requireAuth, (req, res) => {
+  if (Array.isArray(req.user.warnings)) { for (const w of req.user.warnings) w.seen = true; saveDb(); }
+  res.json({ ok: true });
+});
+
+/* ---- 登录设备 / 会话管理 ---- */
+// 我的活跃会话（不返回 token）：设备名 + 登录时间 + 是否当前这台
+app.get('/api/me/sessions', requireAuth, (req, res) => {
+  const cur = getCookie(req, 'foody_session');
+  const mine = db.sessions.filter(s => s.userId === req.user.id);
+  let changed = false;
+  for (const s of mine) if (!s.id) { s.id = crypto.randomUUID(); changed = true; }   // 给老会话补 id
+  if (changed) saveDb();
+  const sessions = mine
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+    .map(s => ({ id: s.id, device: deviceLabel(s.ua), ip: s.ip || '', createdAt: s.createdAt || 0, current: s.token === cur }));
+  res.json({ sessions });
+});
+
+// 踢掉自己的某一台会话（按 id；只能踢自己的）
+app.delete('/api/me/sessions/:id', requireAuth, (req, res) => {
+  const before = db.sessions.length;
+  db.sessions = db.sessions.filter(s => !(s.userId === req.user.id && s.id === req.params.id));
+  if (db.sessions.length !== before) saveDb();
+  res.json({ ok: true });
+});
+
+// 退出其它所有设备（保留当前这台）
+app.post('/api/me/sessions/revoke-others', requireAuth, (req, res) => {
+  const cur = getCookie(req, 'foody_session');
+  db.sessions = db.sessions.filter(s => s.userId !== req.user.id || s.token === cur);
+  saveDb();
+  res.json({ ok: true });
+});
+
+// 注销账号（需重新输密码确认）：硬删本人及全部关联数据，不可恢复
+app.post('/api/me/delete', requireAuth, (req, res) => {
+  if (!verifyPassword(String((req.body || {}).password || ''), req.user.salt, req.user.passHash)) return res.status(400).json({ error: 'wrong_password' });
+  deleteUserCascade(req.user);
+  saveDb();
+  setSessionCookie(res, '', 0);   // 清当前 cookie
+  res.json({ ok: true });
+});
+
+/* ---- 邮箱验证（复用 mailer + 6 位码）---- */
+const emailVerifyLimit = rateLimit({ windowMs: 600000, max: 10 });
+app.post('/api/me/email/verify/request', requireAuth, emailVerifyLimit, async (req, res) => {
+  const u = req.user;
+  if (!u.email) return res.status(400).json({ error: 'no_email' });
+  if (u.emailVerified) return res.json({ ok: true, already: true });
+  const code = genCode();
+  u.emailVerify = { codeHash: hashCode(u.id, code), expires: Date.now() + RESET_TTL, attempts: 0 };
+  saveDb();
+  try {
+    await req.app.locals.mailer.send({ to: u.email, subject: 'Foody 邮箱验证码', text: `你好 @${u.username}，\n你的 Foody 邮箱验证码是：${code}\n10 分钟内有效。` });
+  } catch (e) { console.error('[email-verify] 发码失败:', e.message); }
+  res.json({ ok: true });
+});
+app.post('/api/me/email/verify/confirm', requireAuth, (req, res) => {
+  const u = req.user;
+  if (!u.emailVerify) return res.status(400).json({ error: 'no_request' });
+  if (Date.now() > u.emailVerify.expires) { delete u.emailVerify; saveDb(); return res.status(400).json({ error: 'expired' }); }
+  if (u.emailVerify.attempts >= RESET_MAX_ATTEMPTS) { delete u.emailVerify; saveDb(); return res.status(400).json({ error: 'too_many' }); }
+  if (hashCode(u.id, (req.body || {}).code) !== u.emailVerify.codeHash) { u.emailVerify.attempts++; saveDb(); return res.status(400).json({ error: 'bad_code' }); }
+  u.emailVerified = true; delete u.emailVerify; saveDb();
+  res.json({ ok: true });
+});
+
 app.patch('/api/me', requireAuth, (req, res) => {
   const { bio, username, note } = req.body || {};
   if (typeof username === 'string') {
@@ -706,40 +977,104 @@ function normLink(url) {
   return ''; // 拒绝 javascript: 等不安全协议
 }
 
+/* ---- AI 写文案（标语+故事介绍）：Gemini 免费档，key 只在服务器 ---- */
+const AI_COPY_DAILY_MAX = 10;   // 每用户每天成功生成次数上限
+const GEMINI_KEY = (process.env.FOODY_GEMINI_KEY || '').trim();
+const AI_READY = !!GEMINI_KEY;
+if (AI_READY) app.locals.gemini = createGeminiClient({ apiKey: GEMINI_KEY, model: (process.env.FOODY_GEMINI_MODEL || 'gemini-2.5-flash').trim() });
+
 const SITE_THEMES = ['warm', 'dark', 'fresh', 'berry', 'mono'];
+const SECTION_KEYS = ['gallery', 'menu', 'photos', 'contact'];
+function cleanSections(src) {
+  const out = {};
+  if (src && typeof src === 'object' && !Array.isArray(src)) {
+    for (const k of SECTION_KEYS) if (typeof src[k] === 'boolean') out[k] = src[k];
+  }
+  return out;
+}
+const RESERVED_SLUGS = new Set(['s', 'api', 'admin', 'foody', 'uploads', 'www', 'app', 'me', 'site', 'shop', 'help', 'about']);
+function normSlug(raw) { return String(raw || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); }
+function slugFormatOk(s) { return s.length >= 3 && s.length <= 30 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s); }
+function slugTaken(slug, exceptUserId) { return db.users.some(u => u.id !== exceptUserId && u.site && u.site.slug === slug); }
+function checkSlug(raw, userId) {
+  const s = normSlug(raw);
+  if (!slugFormatOk(s)) return { ok: false, code: 'bad_slug' };
+  if (RESERVED_SLUGS.has(s)) return { ok: false, code: 'reserved_slug' };
+  if (slugTaken(s, userId)) return { ok: false, code: 'slug_taken' };
+  return { ok: true, slug: s };
+}
+// 货架（商品）摆货权限：暂时只允许指定账号；以后放开就往名单里加用户名（小写），或改成用户 flag
+const SHELF_SELLERS = new Set(['安德鲁']);
+function canSellGoods(u) { return !!(u && SHELF_SELLERS.has(u.usernameLower)); }
+
+function buildSitePayload(u, viewer) {
+  const isMe = !!(viewer && viewer.id === u.id);
+  const s = u.site || {};
+  const posts = db.posts.filter(p => p.userId === u.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 12)
+    .map(p => ({ id: p.id, mediaUrl: p.mediaUrl, mediaType: p.mediaType }));
+  return {
+    username: u.username, avatar: u.avatar || null, isMe,
+    published: !!s.published, cover: s.cover || null,
+    title: s.title || '', tagline: s.tagline || '', intro: s.intro || '',
+    hours: s.hours || '', address: s.address || '', links: s.links || [],
+    theme: SITE_THEMES.includes(s.theme) ? s.theme : 'warm',
+    accent: /^#[0-9a-fA-F]{6}$/.test(s.accent || '') ? s.accent : '',
+    announce: s.announce || '',
+    photos: Array.isArray(s.photos) ? s.photos : [],
+    sections: cleanSections(s.sections),
+    slug: s.slug || '',
+    aiReady: isMe ? AI_READY : undefined,   // 仅本人可见；undefined 会被 JSON 序列化剔除
+    menu: Array.isArray(s.menu) ? s.menu : [],
+    status: s.status || '',
+    mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
+    waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
+    posts
+  };
+}
+
+app.get('/api/me/site/slug-available', requireAuth, (req, res) => {
+  const s = normSlug(String(req.query.slug || ''));
+  if (!slugFormatOk(s)) return res.json({ available: false, reason: 'bad' });
+  if (RESERVED_SLUGS.has(s)) return res.json({ available: false, reason: 'reserved' });
+  if (slugTaken(s, req.user.id)) return res.json({ available: false, reason: 'taken' });
+  res.json({ available: true, slug: s });
+});
+
+app.get('/api/site/by-slug/:slug', (req, res) => {
+  const viewer = currentUser(req);
+  const slug = normSlug(req.params.slug);
+  const u = slug ? db.users.find(x => x.site && x.site.slug === slug) : null;
+  if (!u) return res.status(404).json({ error: 'not_found' });
+  const isMe = !!(viewer && viewer.id === u.id);
+  if (!(u.site && u.site.published) && !isMe) return res.status(404).json({ error: 'not_published' });
+  res.json(buildSitePayload(u, viewer));
+});
 
 app.get('/api/site/:username', (req, res) => {
   const viewer = currentUser(req);
   const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
   if (!u) return res.status(404).json({ error: 'not_found' });
   const isMe = !!(viewer && viewer.id === u.id);
-  const s = u.site || {};
-  if (!s.published && !isMe) return res.status(404).json({ error: 'not_published' });
-  const posts = db.posts.filter(p => p.userId === u.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 12)
-    .map(p => ({ id: p.id, mediaUrl: p.mediaUrl, mediaType: p.mediaType }));
-  res.json({
-    username: u.username,
-    avatar: u.avatar || null,
-    isMe,
-    published: !!s.published,
-    cover: s.cover || null,
-    title: s.title || '',
-    tagline: s.tagline || '',
-    intro: s.intro || '',
-    hours: s.hours || '',
-    address: s.address || '',
-    links: s.links || [],
-    theme: SITE_THEMES.includes(s.theme) ? s.theme : 'warm',
-    menu: Array.isArray(s.menu) ? s.menu : [],
-    mapUrl: s.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address) : null,
-    waUrl: viewer && u.phoneWa ? `https://wa.me/${u.phoneWa}` : null,
-    posts
-  });
+  if (!(u.site && u.site.published) && !isMe) return res.status(404).json({ error: 'not_published' });
+  res.json(buildSitePayload(u, viewer));
 });
 
 app.patch('/api/me/site', requireAuth, (req, res) => {
   const b = req.body || {};
   const s = req.user.site || {};
+  // slug 需要明确反馈：非法/占用/保留 → 400 且整个 PATCH 不落盘
+  let nextSlug;   // undefined = 本次不动 slug
+  if (typeof b.slug === 'string') {
+    if (b.slug.trim() === '') nextSlug = '';
+    else {
+      const r = checkSlug(b.slug, req.user.id);
+      if (!r.ok) return res.status(400).json({ error: r.code });
+      nextSlug = r.slug;
+    }
+  }
+  // 孤儿图清理：快照旧的菜单图/相册图，落盘后 diff 删除被移除的文件
+  const oldMenuPhotos = Array.isArray(s.menu) ? s.menu.flatMap(c => (c.items || []).map(i => i.photo).filter(Boolean)) : [];
+  const oldAlbum = Array.isArray(s.photos) ? s.photos.map(p => p.url).filter(Boolean) : [];
   if (typeof b.title === 'string') s.title = b.title.trim().slice(0, 60);
   if (typeof b.tagline === 'string') s.tagline = b.tagline.trim().slice(0, 120);
   if (typeof b.intro === 'string') s.intro = b.intro.replace(/\r\n/g, '\n').trim().slice(0, 1000);
@@ -759,13 +1094,39 @@ app.patch('/api/me/site', requireAuth, (req, res) => {
         price: String(it.price || '').trim().slice(0, 20),
         desc: String(it.desc || '').replace(/\r\n/g, '\n').trim().slice(0, 200),
         // 菜品图只接受自己上传到 /uploads/ 的路径，杜绝注入外链
-        photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : ''
+        photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : '',
+        soldOut: !!it.soldOut
       })).filter(it => it.name)
     })).filter(cat => cat.name || cat.items.length);
   }
   if (typeof b.published === 'boolean') s.published = b.published;
+  if (typeof b.status === 'string' && ['', 'open', 'closed'].includes(b.status)) s.status = b.status;  // 营业状态：空=不显示
+  if (nextSlug !== undefined) s.slug = nextSlug;
+  if (typeof b.accent === 'string') {
+    const a = b.accent.trim();
+    if (a === '') s.accent = '';
+    else if (/^#[0-9a-fA-F]{6}$/.test(a)) s.accent = a;   // 非法忽略
+  }
+  if (typeof b.announce === 'string') s.announce = b.announce.replace(/\r\n/g, '\n').trim().slice(0, 200);
+  if (Array.isArray(b.photos)) {
+    s.photos = b.photos.slice(0, 20)
+      .map(p => ({ url: (p && typeof p.url === 'string' && p.url.startsWith('/uploads/')) ? p.url : '' }))
+      .filter(p => p.url);
+  }
+  if (b.sections && typeof b.sections === 'object' && !Array.isArray(b.sections)) s.sections = cleanSections(b.sections);
   req.user.site = s;
   saveDb();
+  // 只有这次 PATCH 真的带了 menu/photos 才对对应集合做 diff；新数据整体做保留集，防止 url 在两字段间挪动被误删
+  if (Array.isArray(b.menu) || Array.isArray(b.photos)) {
+    const keep = new Set([
+      ...(Array.isArray(s.menu) ? s.menu.flatMap(c => (c.items || []).map(i => i.photo).filter(Boolean)) : []),
+      ...(Array.isArray(s.photos) ? s.photos.map(p => p.url).filter(Boolean) : [])
+    ]);
+    const removed = [];
+    if (Array.isArray(b.menu)) for (const u of oldMenuPhotos) if (!keep.has(u)) removed.push(u);
+    if (Array.isArray(b.photos)) for (const u of oldAlbum) if (!keep.has(u)) removed.push(u);
+    for (const u of removed) if (u.startsWith('/uploads/')) fs.unlink(path.join(UPLOAD_DIR, path.basename(u)), () => {});
+  }
   res.json({ ok: true, site: s });
 });
 
@@ -784,7 +1145,7 @@ app.post('/api/me/site/cover', requireAuth, (req, res) => {
   });
 });
 
-// 菜单菜品图：单独上传压缩后返回 url，前端把它放进 menu[].items[].photo 再随 PATCH 保存
+// 菜单菜品图 / 货架商品图：单独上传压缩后返回 url，前端放进 photo 再随 PATCH 保存
 app.post('/api/me/site/menu-photo', requireAuth, (req, res) => {
   coverUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file' });
@@ -792,6 +1153,183 @@ app.post('/api/me/site/menu-photo', requireAuth, (req, res) => {
     const name = await compressImage(req.file.filename);
     res.json({ ok: true, url: '/uploads/' + name });
   });
+});
+
+/* AI 取材：全部服务器侧收集，防前端伪造 */
+function aiHarvest(u) {
+  const s = u.site || {};
+  const menuNames = [];
+  outer: for (const cat of (Array.isArray(s.menu) ? s.menu : [])) {
+    if (cat.name) menuNames.push(cat.name);
+    for (const it of (cat.items || [])) {
+      if (it.name) menuNames.push(it.name);
+      if (menuNames.length >= 30) break outer;
+    }
+    if (menuNames.length >= 30) break;
+  }
+  const places = [...new Set(db.posts.filter(p => p.userId === u.id && p.place).map(p => p.place))].slice(0, 5);
+  return { username: u.username, bio: u.bio || '', city: u.city || '', state: u.state || '', title: s.title || '', menuNames, places };
+}
+
+const AI_LANG_NAME = { zh: '简体中文', ms: 'Bahasa Melayu', en: 'English' };
+function aiPrompt(h, hint, lang) {
+  const L = AI_LANG_NAME[lang] || AI_LANG_NAME.zh;
+  return [
+    '你是马来西亚本地美食小店的文案助手。根据下面的真实资料，为这家小店写宣传文案。',
+    '只能依据给出的资料；资料里没有的具体事实（菜品、价格、年份、地址等）一律不得编造，可以用泛化的暖心表述。',
+    '输出语言：' + L + '。',
+    '只返回一个 JSON 对象，不要任何其它文字或代码围栏，格式：{"tagline":"一句吸睛标语(50字符内)","intro":"2-4段有人情味的小店故事(700字符内，段落用\\n分隔)"}',
+    '',
+    '资料：',
+    '店名/标题：' + (h.title || h.username),
+    '店主用户名：' + h.username,
+    h.bio ? '店主简介：' + h.bio : '',
+    (h.city || h.state) ? '所在地：' + [h.city, h.state].filter(Boolean).join(', ') : '',
+    h.menuNames.length ? '菜单（名字）：' + h.menuNames.join('、') : '',
+    h.places.length ? '常出现的地点标签：' + h.places.join('、') : '',
+    hint ? '店主补充提示：' + hint : ''
+  ].filter(Boolean).join('\n');
+}
+
+/* 从模型输出挖 JSON：剥 ``` 围栏 → 直接 parse → 失败取第一个 {...} 块重试 */
+function aiParseCopy(text) {
+  const t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  let obj = null;
+  try { obj = JSON.parse(t); } catch {
+    const m = t.match(/\{[\s\S]*\}/);
+    if (m) { try { obj = JSON.parse(m[0]); } catch {} }
+  }
+  if (!obj || typeof obj !== 'object') return null;
+  const tagline = String(obj.tagline || '').trim().slice(0, 120);
+  const intro = String(obj.intro || '').replace(/\r\n/g, '\n').trim().slice(0, 1000);
+  if (!tagline && !intro) return null;
+  return { tagline, intro };
+}
+
+const aiCopyIpLimit = rateLimit({ windowMs: 60000, max: Number(process.env.FOODY_AI_IP_MAX || 5) });   // 每 IP 每分钟（默认 5）
+app.post('/api/me/site/ai-copy', requireAuth, aiCopyIpLimit, async (req, res) => {
+  if (!AI_READY || !req.app.locals.gemini) return res.status(503).json({ error: 'ai_disabled' });
+  const today = new Date().toISOString().slice(0, 10);
+  const rec = (req.user.aiCopy && req.user.aiCopy.day === today) ? req.user.aiCopy : { day: today, n: 0 };
+  if (rec.n >= AI_COPY_DAILY_MAX) return res.status(429).json({ error: 'too_many' });
+  const b = req.body || {};
+  const hint = String(b.hint || '').trim().slice(0, 120);
+  const lang = ['zh', 'ms', 'en'].includes(b.lang) ? b.lang : 'zh';
+  try {
+    const text = await req.app.locals.gemini.generate(aiPrompt(aiHarvest(req.user), hint, lang));
+    const copy = aiParseCopy(text);
+    if (!copy) return res.status(502).json({ error: 'ai_failed' });
+    rec.n += 1; req.user.aiCopy = rec; saveDb();   // 只有成功才计数；结果绝不写入 user.site
+    res.json(copy);
+  } catch {
+    res.status(502).json({ error: 'ai_failed' });
+  }
+});
+
+// 货架（商品）：独立于「网页」，存 user.shelf。暂时只允许白名单账号（canSellGoods）摆货
+app.patch('/api/me/shelf', requireAuth, (req, res) => {
+  if (!canSellGoods(req.user)) return res.status(403).json({ error: 'forbidden' });
+  const b = req.body || {};
+  if (Array.isArray(b.shelf)) {
+    req.user.shelf = b.shelf.slice(0, 60).map(it => ({
+      name: String(it.name || '').trim().slice(0, 60),
+      price: String(it.price || '').trim().slice(0, 20),
+      desc: String(it.desc || '').replace(/\r\n/g, '\n').trim().slice(0, 200),
+      photo: (typeof it.photo === 'string' && it.photo.startsWith('/uploads/')) ? it.photo : '',
+      soldOut: !!it.soldOut
+    })).filter(it => it.name);
+    saveDb();
+  }
+  if (typeof b.shelfPickup === 'boolean') { req.user.shelfPickup = b.shelfPickup; saveDb(); }   // 支持自取/预定开关
+  res.json({ ok: true, shelf: req.user.shelf || [], shelfPickup: !!req.user.shelfPickup });
+});
+
+/* ---- 货架预定（自取/预定，不碰钱；预定记录 + 卖家可管理）---- */
+// 把买家选的商品按卖家货架当前价快照下来（只收未售罄的货架商品）
+function snapshotShelfItems(seller, items) {
+  const shelf = Array.isArray(seller.shelf) ? seller.shelf : [];
+  const out = [];
+  for (const it of (Array.isArray(items) ? items : [])) {
+    const name = String(it.name || '').trim();
+    const qty = Math.max(1, Math.min(99, parseInt(it.qty, 10) || 0));
+    if (!name) continue;
+    const g = shelf.find(s => String(s.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (!g || g.soldOut) continue;
+    out.push({ name: g.name, price: g.price || '', qty });
+  }
+  return out;
+}
+
+const reserveLimit = rateLimit({ windowMs: 600000, max: 30 });
+// 买家提交预定（登录态）。卖家须开了 shelfPickup；拉黑对/自己不行
+app.post('/api/reservations', requireAuth, reserveLimit, (req, res) => {
+  const b = req.body || {};
+  const seller = db.users.find(u => u.usernameLower === String(b.seller || '').trim().toLowerCase());
+  if (!seller || !seller.shelfPickup) return res.status(404).json({ error: 'not_found' });
+  if (seller.id === req.user.id) return res.status(400).json({ error: 'self' });
+  if (isBlockedPair(req.user.id, seller.id)) return res.status(403).json({ error: 'blocked' });
+  const items = snapshotShelfItems(seller, b.items);
+  if (!items.length) return res.status(400).json({ error: 'empty' });
+  const r = {
+    id: crypto.randomUUID(), sellerId: seller.id, buyerId: req.user.id,
+    items, pickupAt: Number(b.pickupAt) || 0, note: String(b.note || '').trim().slice(0, 200),
+    status: 'pending', createdAt: Date.now()
+  };
+  db.reservations.push(r);
+  saveDb();
+  res.json({ ok: true, id: r.id });
+});
+
+// 卖家看自己收到的预定（按自取时间排，近的在前）；买家可点进 profile → 爽约就拉黑
+app.get('/api/me/reservations', requireAuth, (req, res) => {
+  const list = db.reservations.filter(r => r.sellerId === req.user.id)
+    .sort((a, b) => (a.pickupAt || 0) - (b.pickupAt || 0))
+    .map(r => {
+      const buyer = db.users.find(u => u.id === r.buyerId);
+      return {
+        id: r.id,
+        buyer: buyer ? { username: buyer.username, avatar: buyer.avatar || null } : { username: '???', avatar: null },
+        items: r.items, pickupAt: r.pickupAt, note: r.note, status: r.status, createdAt: r.createdAt
+      };
+    });
+  res.json({ reservations: list });
+});
+
+// 卖家改预定状态：pending / done / cancelled
+app.patch('/api/reservations/:id', requireAuth, (req, res) => {
+  const r = db.reservations.find(x => x.id === req.params.id);
+  if (!r) return res.status(404).json({ error: 'not_found' });
+  if (r.sellerId !== req.user.id) return res.status(403).json({ error: 'forbidden' });
+  const status = (req.body || {}).status;
+  if (!['pending', 'done', 'cancelled'].includes(status)) return res.status(400).json({ error: 'bad_status' });
+  r.status = status;
+  saveDb();
+  res.json({ ok: true });
+});
+
+// 销量：顾客经 WhatsApp 下单时记一笔（不碰支付，记的是「下单量」）。需登录，自己点自己不计
+app.post('/api/orders', requireAuth, (req, res) => {
+  const b = req.body || {};
+  const seller = db.users.find(u => u.usernameLower === String(b.seller || '').trim().toLowerCase());
+  if (!seller) return res.status(404).json({ error: 'not_found' });
+  if (seller.id === req.user.id) return res.json({ ok: true });
+  const count = Math.max(1, Math.min(999, parseInt(b.count, 10) || 1));
+  const total = Math.max(0, Math.min(1e7, Number(b.total) || 0));
+  db.orders.push({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), sellerId: seller.id, buyerId: req.user.id, count, total, createdAt: Date.now() });
+  saveDb();
+  res.json({ ok: true });
+});
+
+// 销量汇总（仅本人）：按 近1天/7天/30天 统计下单数 + 约总额
+app.get('/api/me/sales', requireAuth, (req, res) => {
+  const now = Date.now(), DAY = 86400000;
+  const mine = db.orders.filter(o => o.sellerId === req.user.id);
+  const agg = (since) => {
+    let orders = 0, total = 0;
+    for (const o of mine) if ((o.createdAt || 0) >= since) { orders++; total += (o.total || 0); }
+    return { orders, total: Math.round(total * 100) / 100 };
+  };
+  res.json({ daily: agg(now - DAY), weekly: agg(now - 7 * DAY), monthly: agg(now - 30 * DAY) });
 });
 
 /* ---- 帖子 ---- */
@@ -812,6 +1350,9 @@ app.get('/api/posts', (req, res) => {
   // 被封禁用户的内容从 feed 隐藏（解封后自动恢复）
   const bannedIds = new Set(db.users.filter(u => u.banned).map(u => u.id));
   if (bannedIds.size) posts = posts.filter(p => !bannedIds.has(p.userId));
+  posts = posts.filter(p => !p.hidden);   // 多人举报自动隐藏的内容不进 feed
+  const blockedIds = blockedSet(viewer && viewer.id);   // 拉黑对的内容相互不可见
+  if (blockedIds.size) posts = posts.filter(p => !blockedIds.has(p.userId));
   if (state && STATES.includes(state)) posts = posts.filter(p => p.state === state);
   if (savedOnly) {
     const savedIds = new Set(db.saves.filter(s => s.userId === viewer.id).map(s => s.postId));
@@ -854,6 +1395,7 @@ app.get('/api/posts', (req, res) => {
 app.get('/api/search', (req, res) => {
   const q = String(req.query.q || '').trim().toLowerCase().replace(/^[#@]/, '');
   const bannedIds = new Set(db.users.filter(u => u.banned).map(u => u.id)); // 被封用户不出现在搜索结果
+  const blockedIds = blockedSet((currentUser(req) || {}).id);               // 拉黑对不出现在搜索结果
 
   const tagCount = new Map();
   for (const p of db.posts) {
@@ -877,7 +1419,7 @@ app.get('/api/search', (req, res) => {
 
   /* 用户：只给公开资料（用户名/地区/帖子数），不带电话 */
   const users = db.users
-    .filter(u => u.usernameLower.includes(q) && !u.banned)
+    .filter(u => u.usernameLower.includes(q) && !u.banned && !blockedIds.has(u.id))
     .slice(0, 8)
     .map(u => ({
       username: u.username,
@@ -888,7 +1430,7 @@ app.get('/api/search', (req, res) => {
     }));
 
   const posts = [...db.posts]
-    .filter(p => !bannedIds.has(p.userId))
+    .filter(p => !bannedIds.has(p.userId) && !p.hidden && !blockedIds.has(p.userId))
     .sort((a, b) => b.createdAt - a.createdAt)
     .filter(p => matchQ(p, q))
     .slice(0, 18)
@@ -912,10 +1454,11 @@ app.get('/api/search', (req, res) => {
 /* ---- 探索：按州 / 热门地点 / 热门标签聚合，给「探索页」浏览发现用（被封用户的内容不计入）---- */
 app.get('/api/explore', (req, res) => {
   const bannedIds = new Set(db.users.filter(u => u.banned).map(u => u.id));
+  const blockedIds = blockedSet((currentUser(req) || {}).id);   // 拉黑对不计入探索
   const stateCount = new Map(), placeCount = new Map(), tagCount = new Map();
   let total = 0;
   for (const p of db.posts) {
-    if (bannedIds.has(p.userId)) continue;
+    if (bannedIds.has(p.userId) || p.hidden || blockedIds.has(p.userId)) continue;
     total++;
     if (p.state) stateCount.set(p.state, (stateCount.get(p.state) || 0) + 1);
     const place = (p.place || '').trim();
@@ -929,7 +1472,7 @@ app.get('/api/explore', (req, res) => {
   const likeCountByPost = new Map();
   for (const l of db.likes) likeCountByPost.set(l.postId, (likeCountByPost.get(l.postId) || 0) + 1);
   const posts = db.posts
-    .filter(p => !bannedIds.has(p.userId))
+    .filter(p => !bannedIds.has(p.userId) && !p.hidden && !blockedIds.has(p.userId))
     .map(p => ({ p, likes: likeCountByPost.get(p.id) || 0 }))
     .sort((a, b) => b.likes - a.likes || b.p.createdAt - a.p.createdAt)
     .slice(0, 30)
@@ -948,8 +1491,10 @@ app.get('/api/users/:username', (req, res) => {
   const author = db.users.find(u => u.usernameLower === uname);
   if (!author) return res.status(404).json({ error: 'not_found' });
 
-  const myPosts = db.posts
-    .filter(p => p.userId === author.id)
+  const iBlocked = !!(viewer && db.blocks.some(b => b.blockerId === viewer.id && b.blockedId === author.id));
+  const pairBlocked = !!(viewer && viewer.id !== author.id && isBlockedPair(viewer.id, author.id));
+  const myPosts = pairBlocked ? [] : db.posts   // 拉黑对之间：主页不显示对方帖子
+    .filter(p => p.userId === author.id && !p.hidden)
     .sort((a, b) => b.createdAt - a.createdAt);
   const postIds = new Set(myPosts.map(p => p.id));
   const likeTotal = db.likes.reduce((n, l) => n + (postIds.has(l.postId) ? 1 : 0), 0);
@@ -971,7 +1516,12 @@ app.get('/api/users/:username', (req, res) => {
     isAdmin: !!(viewer && viewer.id === author.id && author.isAdmin), // 本人且是管理员 → profile 显示「审核后台」入口
     viewerLoggedIn: !!viewer,
     isFollowing: !!(viewer && db.follows.some(f => f.followerId === viewer.id && f.followingId === author.id)),
+    blocked: iBlocked,   // 我是否拉黑了 ta（给「取消拉黑」按钮）
     sitePublished: !!(author.site && author.site.published),
+    shopOpen: !!(author.site && author.site.published && Array.isArray(author.site.menu) && author.site.menu.some(c => Array.isArray(c.items) && c.items.length)),
+    shelf: Array.isArray(author.shelf) ? author.shelf : [],   // 货架商品（profile 上展示，访客可见）
+    shelfPickup: !!author.shelfPickup,   // 是否支持自取/预定（买家 UI 据此显示预定入口）
+    canSell: !!(viewer && viewer.id === author.id && canSellGoods(author)),   // 本人且白名单 → 显示「管理货架」
     waUrl: viewer && author.phoneWa ? `https://wa.me/${author.phoneWa}` : null,
     posts: myPosts.map(p => postJson(p, viewer))
   });
@@ -983,12 +1533,39 @@ app.post('/api/users/:username/follow', requireAuth, (req, res) => {
   const target = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
   if (!target) return res.status(404).json({ error: 'not_found' });
   if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  if (isBlockedPair(req.user.id, target.id)) return res.status(403).json({ error: 'blocked' });   // 拉黑对之间不能关注
   const i = db.follows.findIndex(f => f.followerId === req.user.id && f.followingId === target.id);
   let following;
   if (i >= 0) { db.follows.splice(i, 1); following = false; }
   else { db.follows.push({ followerId: req.user.id, followingId: target.id, createdAt: Date.now() }); following = true; }
   saveDb();
   res.json({ following, followerCount: db.follows.reduce((n, f) => n + (f.followingId === target.id ? 1 : 0), 0) });
+});
+
+// 拉黑 / 取消拉黑切换：POST /api/users/:username/block。拉黑时双向解除现有关注。
+app.post('/api/users/:username/block', requireAuth, (req, res) => {
+  const target = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!target) return res.status(404).json({ error: 'not_found' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  const i = db.blocks.findIndex(b => b.blockerId === req.user.id && b.blockedId === target.id);
+  let blocked;
+  if (i >= 0) { db.blocks.splice(i, 1); blocked = false; }
+  else {
+    db.blocks.push({ blockerId: req.user.id, blockedId: target.id, createdAt: Date.now() });
+    // 拉黑即双向解除关注
+    db.follows = db.follows.filter(f => !((f.followerId === req.user.id && f.followingId === target.id) || (f.followerId === target.id && f.followingId === req.user.id)));
+    blocked = true;
+  }
+  saveDb();
+  res.json({ blocked });
+});
+
+// 我拉黑的人
+app.get('/api/me/blocks', requireAuth, (req, res) => {
+  const users = db.blocks.filter(b => b.blockerId === req.user.id)
+    .map(b => db.users.find(u => u.id === b.blockedId)).filter(Boolean)
+    .map(u => ({ username: u.username, avatar: u.avatar || null, bio: u.bio || '' }));
+  res.json({ users });
 });
 
 // 关注/粉丝列表里的用户卡（带 viewer 视角的 isFollowing）
@@ -1018,7 +1595,7 @@ app.get('/api/users/:username/following', (req, res) => {
   res.json({ users: userListJson(ids, viewer) });
 });
 
-app.post('/api/posts', requireAuth, postLimit, (req, res) => {
+app.post('/api/posts', requireAuth, postLimit, muteGuard, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       const code = err.code === 'LIMIT_FILE_SIZE' ? 'file_too_big' : 'bad_file';
@@ -1114,8 +1691,9 @@ app.get('/api/posts/:id/comments', (req, res) => {
   const viewer = currentUser(req);
   const post = db.posts.find(p => p.id === req.params.id);
   if (!post) return res.status(404).json({ error: 'not_found' });
+  const blockedC = blockedSet(viewer && viewer.id);   // 拉黑对的评论相互不可见
   const comments = db.comments
-    .filter(c => c.postId === post.id)
+    .filter(c => c.postId === post.id && !c.hidden && !blockedC.has(c.userId))
     .sort((a, b) => a.createdAt - b.createdAt)
     .map(c => {
       const u = db.users.find(x => x.id === c.userId);
@@ -1131,7 +1709,7 @@ app.get('/api/posts/:id/comments', (req, res) => {
   res.json({ comments });
 });
 
-app.post('/api/posts/:id/comments', requireAuth, commentLimit, (req, res) => {
+app.post('/api/posts/:id/comments', requireAuth, commentLimit, muteGuard, (req, res) => {
   const post = db.posts.find(p => p.id === req.params.id);
   if (!post) return res.status(404).json({ error: 'not_found' });
   const text = String((req.body || {}).text || '').trim().slice(0, 300);
@@ -1142,7 +1720,7 @@ app.post('/api/posts/:id/comments', requireAuth, commentLimit, (req, res) => {
   saveDb();
   res.json({
     comment: { id: comment.id, username: req.user.username, avatar: req.user.avatar || null, text, createdAt: comment.createdAt, mine: true },
-    commentCount: db.comments.filter(c => c.postId === post.id).length
+    commentCount: db.comments.filter(c => c.postId === post.id && !c.hidden).length
   });
 });
 
@@ -1164,11 +1742,12 @@ function dmBetween(aId, bId) {
 }
 
 // 发私信：POST /api/messages { to: 对方用户名, text }
-app.post('/api/messages', requireAuth, messageLimit, (req, res) => {
+app.post('/api/messages', requireAuth, messageLimit, muteGuard, (req, res) => {
   const { to, text } = req.body || {};
   const target = db.users.find(u => u.usernameLower === String(to || '').trim().toLowerCase());
   if (!target) return res.status(404).json({ error: 'not_found' });
   if (target.id === req.user.id) return res.status(400).json({ error: 'self' });
+  if (isBlockedPair(req.user.id, target.id)) return res.status(403).json({ error: 'blocked' });   // 拉黑对之间不能私信
   const clean = String(text || '').trim().slice(0, 1000);
   if (!clean) return res.status(400).json({ error: 'missing' });
   const msg = { id: crypto.randomUUID(), fromId: req.user.id, toId: target.id, text: clean, createdAt: Date.now(), readAt: null };
@@ -1180,10 +1759,12 @@ app.post('/api/messages', requireAuth, messageLimit, (req, res) => {
 // 我的对话列表（收件箱）：GET /api/conversations
 app.get('/api/conversations', requireAuth, (req, res) => {
   const me = req.user.id;
+  const blocked = blockedSet(me);   // 拉黑对的会话不出现在收件箱
   const byOther = new Map();
   for (const m of db.messages) {
     if (m.fromId !== me && m.toId !== me) continue;
     const otherId = m.fromId === me ? m.toId : m.fromId;
+    if (blocked.has(otherId)) continue;
     let c = byOther.get(otherId);
     if (!c) { c = { last: m, unread: 0 }; byOther.set(otherId, c); }
     else if (m.createdAt > c.last.createdAt) c.last = m;
@@ -1202,7 +1783,8 @@ app.get('/api/conversations', requireAuth, (req, res) => {
 // 未读总数（顶栏小红点轮询用）：GET /api/me/unread
 app.get('/api/me/unread', requireAuth, (req, res) => {
   const me = req.user.id;
-  const count = db.messages.reduce((n, m) => n + (m.toId === me && !m.readAt ? 1 : 0), 0);
+  const blocked = blockedSet(me);
+  const count = db.messages.reduce((n, m) => n + (m.toId === me && !m.readAt && !blocked.has(m.fromId) ? 1 : 0), 0);
   res.json({ count });
 });
 
@@ -1211,6 +1793,7 @@ app.get('/api/messages/:username', requireAuth, (req, res) => {
   const other = db.users.find(u => u.usernameLower === String(req.params.username || '').trim().toLowerCase());
   if (!other) return res.status(404).json({ error: 'not_found' });
   const me = req.user.id;
+  if (isBlockedPair(me, other.id)) return res.json({ user: { username: other.username, avatar: other.avatar || null }, messages: [] });   // 拉黑对不显示历史
   const msgs = dmBetween(me, other.id);
   let changed = false;
   for (const m of msgs) if (m.toId === me && !m.readAt) { m.readAt = Date.now(); changed = true; }
@@ -1226,8 +1809,9 @@ app.get('/api/places/:place', (req, res) => {
   const viewer = currentUser(req);
   const key = String(req.params.place || '').trim().toLowerCase();
   if (!key) return res.status(404).json({ error: 'not_found' });
+  const blockedP = blockedSet(viewer && viewer.id);
   const posts = db.posts
-    .filter(p => (p.place || '').trim().toLowerCase() === key)
+    .filter(p => (p.place || '').trim().toLowerCase() === key && !p.hidden && !blockedP.has(p.userId))
     .sort((a, b) => b.createdAt - a.createdAt);
   if (!posts.length) return res.status(404).json({ error: 'not_found' });
   const name = posts[0].place;
@@ -1266,6 +1850,7 @@ function notifItemsFor(me) {
   const myPostIds = new Set(db.posts.filter(p => p.userId === me).map(p => p.id));
   const meUser = db.users.find(u => u.id === me);
   const meLower = meUser ? meUser.usernameLower : '';
+  const blocked = blockedSet(me);   // 拉黑对之间不互发通知
   const items = [];
   for (const l of db.likes) if (l.userId !== me && myPostIds.has(l.postId)) items.push({ type: 'like', actorId: l.userId, postId: l.postId, createdAt: l.createdAt || 0 });
   for (const c of db.comments) {
@@ -1283,7 +1868,7 @@ function notifItemsFor(me) {
     if (fAt !== undefined && (p.createdAt || 0) >= fAt) items.push({ type: 'newpost', actorId: p.userId, postId: p.id, text: p.caption || '', createdAt: p.createdAt || 0 });
   }
   items.sort((a, b) => b.createdAt - a.createdAt);
-  return items;
+  return blocked.size ? items.filter(it => !blocked.has(it.actorId)) : items;
 }
 
 app.get('/api/notifications', requireAuth, (req, res) => {
@@ -1355,6 +1940,7 @@ app.post('/api/reports', requireAuth, reportLimit, (req, res) => {
     note: String((req.body || {}).note || '').trim().slice(0, 200),
     status: 'open', action: null, createdAt: Date.now(), resolvedAt: null, resolvedBy: null
   });
+  if (type === 'post' || type === 'comment') maybeAutoHide(type, targetId); // 满阈值自动暂隐
   saveDb();
   res.json({ ok: true });
 });
@@ -1371,6 +1957,28 @@ app.get('/api/admin/summary', requireAdmin, (req, res) => {
   });
 });
 
+// 全部用户列表（仅管理员）：管理/封号用。只给管理相关字段，不含电话/邮箱等联系方式（保护隐私）
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  const postCount = new Map();
+  for (const p of db.posts) postCount.set(p.userId, (postCount.get(p.userId) || 0) + 1);
+  const users = db.users
+    .slice()
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))   // 最新注册在前
+    .map(u => ({
+      username: u.username,
+      avatar: u.avatar || null,
+      state: u.state || '',
+      city: u.city || '',
+      createdAt: u.createdAt || 0,
+      postCount: postCount.get(u.id) || 0,
+      banned: !!u.banned,
+      isAdmin: !!u.isAdmin,
+      mutedUntil: isMuted(u) ? u.mutedUntil : 0,
+      warnings: Array.isArray(u.warnings) ? u.warnings.length : 0
+    }));
+  res.json({ users });
+});
+
 // 举报队列（带目标内容快照）：GET /api/admin/reports?status=open|resolved|dismissed|all
 app.get('/api/admin/reports', requireAdmin, (req, res) => {
   const status = ['open', 'resolved', 'dismissed', 'all'].includes(req.query.status) ? req.query.status : 'open';
@@ -1378,23 +1986,26 @@ app.get('/api/admin/reports', requireAdmin, (req, res) => {
   if (status !== 'all') list = list.filter(r => r.status === status);
   const reports = list.slice(0, 200).map(r => {
     const reporter = r.reporterId === 'system' ? 'system' : ((db.users.find(u => u.id === r.reporterId) || {}).username || '???');
-    let target = null, exists = false, owner = null;
+    let target = null, exists = false, owner = null, autoHidden = false;
     if (r.type === 'post') {
       const p = db.posts.find(x => x.id === r.targetId);
-      if (p) { exists = true; owner = db.users.find(u => u.id === p.userId); target = { caption: p.caption || '', thumb: p.mediaUrl, mediaType: p.mediaType }; }
+      if (p) { exists = true; owner = db.users.find(u => u.id === p.userId); autoHidden = !!p.hidden; target = { caption: p.caption || '', thumb: p.mediaUrl, mediaType: p.mediaType }; }
     } else if (r.type === 'comment') {
       const c = db.comments.find(x => x.id === r.targetId);
-      if (c) { exists = true; owner = db.users.find(u => u.id === c.userId); target = { text: c.text, postId: c.postId }; }
+      if (c) { exists = true; owner = db.users.find(u => u.id === c.userId); autoHidden = !!c.hidden; target = { text: c.text, postId: c.postId }; }
     } else {
       const u = db.users.find(x => x.id === r.targetId);
       if (u) { exists = true; owner = u; target = { avatar: u.avatar || null, bio: u.bio || '' }; }
     }
+    // 该目标被举报的总次数（含各状态），让管理员看到热度
+    const reportCount = db.reports.reduce((n, x) => n + (x.type === r.type && x.targetId === r.targetId ? 1 : 0), 0);
     return {
       id: r.id, type: r.type, targetId: r.targetId, reason: r.reason, note: r.note || '',
       status: r.status, action: r.action || null, createdAt: r.createdAt, reporter,
-      target, exists,
+      target, exists, reportCount, autoHidden,
       ownerUsername: owner ? owner.username : null,
       ownerBanned: owner ? !!owner.banned : false,
+      ownerMuted: owner ? isMuted(owner) : false,
       ownerIsAdmin: owner ? !!owner.isAdmin : false
     };
   });
@@ -1409,6 +2020,16 @@ app.post('/api/admin/reports/:id', requireAdmin, (req, res) => {
 
   if (action === 'dismiss') {
     r.status = 'dismissed';
+    // 内容判定没问题：取消自动隐藏，并把该目标其它未处理举报一并结案
+    if (r.type === 'post' || r.type === 'comment') {
+      const obj = r.type === 'post' ? db.posts.find(p => p.id === r.targetId) : db.comments.find(c => c.id === r.targetId);
+      if (obj && obj.hidden) { obj.hidden = false; delete obj.hiddenAt; }
+      for (const o of db.reports) {
+        if (o.status === 'open' && o.type === r.type && o.targetId === r.targetId) {
+          o.status = 'dismissed'; o.resolvedAt = Date.now(); o.resolvedBy = req.user.id;
+        }
+      }
+    }
   } else if (action === 'delete') {
     if (r.type === 'post') removePostById(r.targetId);
     else if (r.type === 'comment') removeCommentById(r.targetId);
@@ -1426,6 +2047,13 @@ app.post('/api/admin/reports/:id', requireAdmin, (req, res) => {
     if (owner.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
     banUser(owner, true, 'report:' + r.reason, req.user.id);
     r.action = 'ban'; r.status = 'resolved';
+  } else if (action === 'mute' || action === 'warn') {
+    const owner = db.users.find(u => u.id === r.ownerId);
+    if (!owner) return res.status(404).json({ error: 'not_found' });
+    if (owner.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
+    if (action === 'mute') setMute(owner, MUTE_DAYS);
+    else warnUser(owner, r.reason, 'report:' + r.reason, req.user.id);
+    r.action = action; r.status = 'resolved';
   } else {
     return res.status(400).json({ error: 'bad_action' });
   }
@@ -1447,6 +2075,31 @@ app.post('/api/admin/users/:username/ban', requireAdmin, (req, res) => {
   res.json({ ok: true, banned: !!u.banned });
 });
 
+// 临时禁言 / 解禁：POST /api/admin/users/:username/mute { days }  （days>0 禁言、≤0 解禁）
+app.post('/api/admin/users/:username/mute', requireAdmin, (req, res) => {
+  const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!u) return res.status(404).json({ error: 'not_found' });
+  if (u.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
+  const days = Math.max(0, Math.min(365, parseInt((req.body || {}).days, 10) || 0));
+  const mutedUntil = setMute(u, days);
+  logMod(req.user.id, days > 0 ? 'mute' : 'unmute', { user: u.username, days });
+  saveDb();
+  res.json({ ok: true, mutedUntil });
+});
+
+// 警告：POST /api/admin/users/:username/warn { reason, note }
+app.post('/api/admin/users/:username/warn', requireAdmin, (req, res) => {
+  const u = db.users.find(x => x.usernameLower === String(req.params.username || '').trim().toLowerCase());
+  if (!u) return res.status(404).json({ error: 'not_found' });
+  if (u.isAdmin) return res.status(400).json({ error: 'cant_ban_admin' });
+  warnUser(u, (req.body || {}).reason, (req.body || {}).note, req.user.id);
+  logMod(req.user.id, 'warn', { user: u.username });
+  saveDb();
+  res.json({ ok: true });
+});
+
+app.get('/s/:slug', (req, res) => res.sendFile(path.join(ROOT, 'public', 'site.html')));
+
 /* ---- 静态文件 ---- */
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
 app.use(express.static(path.join(ROOT, 'public'), { extensions: ['html'] }));
@@ -1454,8 +2107,21 @@ app.use(express.static(path.join(ROOT, 'public'), { extensions: ['html'] }));
 /* ---------------- 启动 ---------------- */
 loadDb();
 applyAdmins();                       // 按 FOODY_ADMIN（默认 foody_demo）设定管理员
+// 一次性迁移：旧的 user.site.shelf 搬到顶层 user.shelf（货架已从「网页」独立到 profile）
+(function migrateShelf() {
+  let changed = false;
+  for (const u of db.users) {
+    if (u.site && Array.isArray(u.site.shelf)) {
+      if (u.site.shelf.length && !(Array.isArray(u.shelf) && u.shelf.length)) { u.shelf = u.site.shelf; }
+      delete u.site.shelf; changed = true;
+    }
+  }
+  if (changed) saveDb();
+})();
 backupDb();                          // 启动时先备份一份
-setInterval(backupDb, 6 * 3600000);  // 之后每 6 小时自动备份
+setInterval(backupDb, 6 * 3600000).unref();  // 之后每 6 小时自动备份（unref：测试进程不被它挂住）
+// 直接 `node server.js` 时才监听端口；被 require（测试）时只导出 app、不开监听
+if (require.main === module) {
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('  🍜 Foody (Beta) 已启动!');
@@ -1477,3 +2143,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('  按 Ctrl+C 停止服务器');
   console.log('');
 });
+}
+
+module.exports = app;
